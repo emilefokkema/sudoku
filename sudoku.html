@@ -1,0 +1,485 @@
+<html>
+<head>
+<title>Sudoku</title>
+</head>
+<body></body>
+<script language="JavaScript">
+(function(b){
+	var sudoku=(function(){
+		var leeg=function(){
+			var g=[];
+			for(var i=0;i<9;i++){g.push([0,0,0,0,0,0,0,0,0]);}
+			return g;
+		};
+		var Permutatielijst=function(n){
+			var nullen=function(){
+				var l=[];
+				for(var i=0;i<n;i++){l.push(0);}
+				return l;
+			};
+			var klaar=false;
+			var tak=(function(){
+				var huidig=nullen();
+				var gaVerder=function(){
+					var p=n-1;
+					while(p>=0){
+						if(huidig[p]<n-1-p){
+							huidig[p]++;
+							return true;
+						}else{
+							huidig[p]=0;
+							p--;
+						}
+					}
+					return false;
+				};
+				var permutatie=function(){
+					var p=nullen();
+					var i, j, k, index;
+					for(i=0;i<n;i++){
+						k=-1;
+						index=huidig[i];
+						for(j=0;j<n;j++){
+							if(p[j]==0){k++;}
+							if(k==index){
+								p[j]=i+1;
+								break;
+							}
+						}
+					}
+					return p;
+				};
+				return {huidig:function(){return huidig;},gaVerder:gaVerder,permutatie:permutatie};
+
+			})();
+			var eerste=true;
+			var volgende=function(){
+				if(eerste){
+					eerste=false;
+					return tak.permutatie();
+				}else{
+					if(tak.gaVerder()){
+						return tak.permutatie();
+					}else{
+						klaar=true;
+						return null;
+					}
+				}
+			};
+			return {volgende:volgende,isKlaar:function(){return klaar;}};
+		};
+		var versie=function(getallen){
+			var gi,g=[];
+			var rijPositie=function(index,j){return [index, j];};
+			var kolomPositie=function(index, j){return [j, index];};
+			var vakPositie=(function(){
+				var pos=function(i){return [Math.floor(i/3),i%3];};
+				return function(index,j){
+					var vakPos=pos(index);
+					var jPos=pos(j);
+					return [
+						3*vakPos[0]+jPos[0],
+						3*vakPos[1]+jPos[1]
+					];
+				};
+			})();
+			for(var i=0;i<9;i++){
+				gi=[];
+				for(var j=0;j<9;j++){
+					gi.push(getallen[i][j]);
+				}
+				g.push(gi);
+			}
+			var zet=function(rij, kolom, n){
+				g[rij][kolom]=n;
+			};
+			var checkVerzameling=function(positie){
+				return function(index, callbackFalse){
+					var pos,hier,gehad=[0,0,0,0,0,0,0,0,0];
+					for(var j=0;j<9;j++){
+						pos=positie(index,j);
+						hier=g[pos[0]][pos[1]];
+						if(hier>0){
+							if(gehad[hier-1]>0){if(callbackFalse){callbackFalse();}return false;}else{
+								gehad[hier-1]++;
+							}
+						}
+					}
+					return true;
+				};
+			};
+			var verzamelingenMetGetal=function(positie, aantalVerzamelingen){
+				return function(n){
+					var pos, v=[];
+					for(var i=0;i<aantalVerzamelingen;i++){
+						for(var j=0;j<9;j++){
+							pos=positie(i,j);
+							if(g[pos[0]][pos[1]]==n){
+								v.push(i);
+								break;
+							}
+						}
+					}
+					return v;
+				};
+			};
+			var checkRij=checkVerzameling(rijPositie);
+			var checkKolom=checkVerzameling(kolomPositie);
+			var checkVak=checkVerzameling(vakPositie);
+			var checkKolommen=function(){
+				for(var i=0;i<9;i++){if(!checkKolom(i)){return false;}}
+				return true;
+			};
+			var checkVakken=function(rijIndex){
+				var vakRij=Math.floor(rijIndex/3);
+				for(var i=0;i<3;i++){
+					if(!checkVak(3*vakRij+i)){return false;}
+				}
+				return true;
+			};
+			var rijenMetGetal=verzamelingenMetGetal(rijPositie, 9);
+			var kolommenMetGetal=verzamelingenMetGetal(kolomPositie, 9);
+			var vakkenMetGetal=verzamelingenMetGetal(vakPositie, 9);
+			return {
+				getallen:function(){return g;},
+				zet:function(rij, kolom, n){zet(rij, kolom, n);return this;},
+				checkRij:checkRij,
+				checkKolom:checkKolom,
+				checkVak:checkVak,
+				checkKolommen: checkKolommen,
+				checkVakken:checkVakken,
+				rijenMetGetal:rijenMetGetal,
+				kolommenMetGetal:kolommenMetGetal,
+				vakkenMetGetal:vakkenMetGetal
+			};
+		};
+		var gegeven=versie(leeg());
+
+		var vulIn=function(v, callback){
+			var getallenOver=(function(getallen){
+				var o=[];
+				var allemaal=function(){return [1,2,3,4,5,6,7,8,9];};
+				for(var i=0;i<9;i++){
+					var oi=allemaal();
+					var g=getallen[i];
+					var index;
+					for(var j=0;j<9;j++){
+						if(g[j]!=0){
+							index=oi.indexOf(g[j]);
+							oi.splice(index,1);
+						}
+					}
+					o.push(oi);
+				}
+				return o;
+			})(v.getallen()); 
+
+			var permutatoren=(function(over){
+				var p=[];
+				var vernieuw=[];
+				for(var i=0;i<9;i++){
+					vernieuw.push((function(index, size){
+						return function(){
+							p[index]=Permutatielijst(size);
+						};
+					})(i,over[i].length));
+				}
+				for(var i=0;i<9;i++){
+					vernieuw[i]();
+				}
+				var zijnKlaar=function(){
+					for(var i=0;i<9;i++){
+						if(!p[i].isKlaar()){return false;}
+					}
+					return true;
+				};
+				return {vernieuw:vernieuw,item:function(i){return p[i];},zijnKlaar:zijnKlaar}
+			})(getallenOver);
+
+			var vulRij=(function(over, getallen){
+				var vul=[];
+				for(var i=0;i<9;i++){
+					vul.push((function(index, over, getallen){
+						var plekken=[];
+						for(var i=0;i<9;i++){
+							if(getallen[i]==0){plekken.push(i);}
+						}
+						return function(permutatie){
+							for(var i=0;i<over.length;i++){
+								v.zet(index, plekken[permutatie[i]-1], over[i]);
+							}
+						};
+
+					})(i, over[i], getallen[i]));
+				}
+				return vul;
+			})(getallenOver, v.getallen());
+
+			var maakRijLeeg=(function(getallen){
+				var maak=[];
+				for(var i=0;i<9;i++){
+					maak.push((function(index, getallen){
+						var plekken=[];
+						for(var i=0;i<9;i++){
+							if(getallen[i]==0){plekken.push(i);}
+						}
+						return function(){
+							for(var i=0;i<plekken.length;i++){
+								v.zet(index, plekken[i], 0);
+							}
+						};
+					})(i, getallen[i]));
+				}
+				return maak;
+			})(v.getallen());
+
+
+			var huidigeRij=0;
+			var teller=0;
+			var p;
+			var condition=function(){return huidigeRij<9&&(!permutatoren.zijnKlaar());};
+			var go=function(){
+				teller=0;
+				while(teller<3000&&condition()){
+					if(p=permutatoren.item(huidigeRij).volgende()){
+						vulRij[huidigeRij](p);
+						if(v.checkKolommen()&&v.checkVakken(huidigeRij)){
+							huidigeRij++;
+						}
+					}else{
+						maakRijLeeg[huidigeRij]();
+						permutatoren.vernieuw[huidigeRij]();
+						huidigeRij--;
+					}
+					teller++;
+				}
+				if(callback){callback(v.getallen());}
+				if(condition()){setTimeout(go, 2);}
+			};
+			go();
+		};
+
+		return {
+			zet: gegeven.zet,
+			getallen:gegeven.getallen,
+			versie: versie,
+			vulIn: function(callback){vulIn(versie(gegeven.getallen()), callback);},
+			leeg:leeg
+		};
+	})();
+	var editor=(function(){
+		var editor=document.createElement('div');
+		var form=(function(){
+			var node=document.createElement('div');
+			node.setAttribute('style', 'width:450px;height:450px');
+			var makeRedRow,makeRed=[];
+			var makeNotRedRow, makeNotRed=[];
+			var setValueRow, setValue=[];
+			var table=document.createElement('table');
+			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
+			for(var i=0;i<9;i++){
+				makeRedRow=[];
+				makeNotRedRow=[];
+				setValueRow=[];
+				table.appendChild((function(row){
+					var tr=document.createElement('tr');
+					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
+					for(var i=0;i<9;i++){
+						tr.appendChild((function(index){
+							var td=document.createElement('td');
+							td.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
+							td.appendChild((function(){
+								var div=document.createElement('div');
+								var border=function(side, thickness){
+									var s;
+									switch(side){
+										case 0:s="border-top";break;
+										case 1:s="border-right";break;
+										case 2:s="border-bottom";break;
+										case 3:s="border-left";break;
+									}
+									return s+":"+thickness+"pt solid #000;";
+								};
+								div.setAttribute('style','width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+((index==0||index%3==0)?border(3,3):'')+((row==8||row%3==2)?border(2,3):''));
+								div.setAttribute('align', 'center');
+								var input=document.createElement('input');
+								input.setAttribute('type', 'text');
+								input.setAttribute('maxlength', 1);
+								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%)');
+								var makeRed_=function(color){
+									div.style.backgroundColor=color?color:"#FF0000";
+									input.style.backgroundColor=color?color:"#FF0000"
+								};
+								var makeNotRed_=function(){
+									div.style.backgroundColor="";
+									input.style.backgroundColor=""
+								};
+								var setValue_=function(v){input.value=v;};
+								var vakIndex=(function(){
+									var vakrij=Math.floor(row/3);
+									var vakkolom=Math.floor(index/3);
+									return 3*vakrij+vakkolom;
+								})();
+								makeRedRow.push(makeRed_);
+								makeNotRedRow.push(makeNotRed_);
+								setValueRow.push(setValue_);
+								var ignore=false;
+								input.onfocus=function(){
+									var v=input.value;
+									if(v){
+										var highlight=function(arr, f){
+											for(var i=0;i<arr.length;i++){
+												f(arr[i], "#BBBBBB");
+											}
+										};
+										highlight(sudoku.versie(sudoku.getallen()).rijenMetGetal(parseInt(v)), form.makeRedRow);
+										highlight(sudoku.versie(sudoku.getallen()).kolommenMetGetal(parseInt(v)), form.makeRedColumn);
+										highlight(sudoku.versie(sudoku.getallen()).vakkenMetGetal(parseInt(v)), form.makeRedSquare);
+									}
+								};
+								input.onkeyup=function(){
+									var v=input.value;
+									if(v!=""&&v.match(/[1-9]/g)==null){
+										makeRed_();
+										ignore=true;
+									}else{
+										form.makeNotRed();
+										if(v!=""){
+											var n=parseInt(v);
+											var versie=sudoku.versie(sudoku.getallen()).zet(row, index, n);
+											var check=versie.checkKolom(index, function(){ignore=true;form.makeRedColumn(index);})&&versie.checkRij(row, function(){ignore=true;form.makeRedRow(row);})&&versie.checkVak(vakIndex, function(){ignore=true;form.makeRedSquare(vakIndex);});
+											if(check){
+												sudoku.zet(row, index, n);
+												ignore=false;
+											}
+										}else{
+											sudoku.zet(row, index, 0);
+										}
+									}
+								};
+								input.onblur=function(){
+									if(ignore){
+										setValue_("");
+									}
+									form.makeNotRed();
+								}
+								div.appendChild(input);
+								return div;
+							})());
+							return td;
+						})(i));
+					}
+					return tr;
+				})(i));
+				makeRed.push(makeRedRow);
+				makeNotRed.push(makeNotRedRow);
+				setValue.push(setValueRow);
+			}
+			node.appendChild(table);
+			editor.appendChild(node);
+			return {
+				makeRedRow: function(i, color){
+					for(var j=0;j<9;j++){
+						makeRed[i][j](color);
+					}
+				},
+				makeRedColumn: function(j, color){
+					for(var i=0;i<9;i++){
+						makeRed[i][j](color);
+					}
+				},
+				makeRedSquare: function(i, color){
+					var pos=function(i){return [Math.floor(i/3),i%3];};
+					var jPos,vakPos=pos(i);
+					for(var j=0;j<9;j++){
+						jPos=pos(j);
+						makeRed[3*vakPos[0]+jPos[0]][3*vakPos[1]+jPos[1]](color);
+					}
+				},
+				makeNotRed: function(){
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							makeNotRed[i][j]();
+						}
+					}
+				},
+				setAll: function(numbers){
+					var n;
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							n=numbers[i][j]||0;
+							setValue[i][j](n==0?'':n);
+							sudoku.zet(i, j, n);
+						}
+					}
+				},
+			};
+		})();
+		form.setAll([
+			[4,0,0,0,0,0,0,7,0],
+			[9,0,0,0,0,6,0,1,0],
+			[0,8,0,0,3,9,6,0,0],
+			[1,0,6,2,0,0,9,0,0],
+			[0,0,0,0,0,7,0,0,0],
+			[0,5,4,0,0,3,0,0,7],
+			[0,0,0,0,8,1,4,6,0],
+			[6,0,0,5,0,0,0,0,0],
+			[0,0,0,9,0,0,0,0,8]]
+		);
+		var button=function(text, action){
+			var node=document.createElement('div');
+			node.setAttribute('style','-webkit-appearance:button;width:100px;height:40px;cursor:pointer;margin:5px;font-family:Verdana');
+			node.setAttribute('align','center');
+			node.appendChild((function(){
+				var div=document.createElement('div');
+				div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
+				div.appendChild(document.createTextNode(text));
+				return div;
+			})());
+			node.onclick=action;
+			return node;
+		};
+		editor.appendChild(button('GO',function(){sudoku.vulIn(function(d){form.setAll(d);});}));
+		editor.appendChild(button('Clear',function(){form.setAll(sudoku.leeg());}));
+		b.appendChild(editor);
+		(function(){
+			if(window.location.href.match(/^file/g)==null){
+				console.log("making iframe!");
+				var iframe=document.createElement('iframe');
+				iframe.onload=function(){
+					try{
+						(function(html){
+							form.setAll((function(arr){
+								for(var i=0;i<arr.length;i++){
+									var thing=arr[i].match(/>\s*?\d?\s*?</g)[0];
+									thing=thing.match(/\d/g);
+									if(thing){thing=thing[0]}else{thing=0;}
+									arr[i]=thing;
+								}
+								var rows=[];
+								for(var i=0;i<9;i++){
+									rows.push((function(){
+										var row=[];
+										for(var j=0;j<9;j++){
+											row.push(parseInt(arr[81+9*i+j]));
+										}
+										return row;
+									})())
+								}
+								return rows;
+							})(html.match(/<p\sid=".*?">\s*?\d?\s*?<\/p>/g)));
+						})(iframe.contentWindow.body.innerHTML);
+					}catch(e){console.log(e);}
+				};
+				iframe.setAttribute('src', 'http://www.sudokunet.nl/');
+				iframe.setAttribute('style', 'display:none');
+				editor.appendChild(iframe);
+			}
+		})();
+		return {setAll:form.setAll}
+	})();
+	window.sudoku=sudoku;
+	window.editor=editor;
+})(document.body);
+</script>
+</html>
