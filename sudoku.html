@@ -83,6 +83,7 @@
 					];
 				};
 			})();
+			
 			for(var i=0;i<9;i++){
 				gi=[];
 				for(var j=0;j<9;j++){
@@ -275,12 +276,14 @@
 			var makeRedRow,makeRed=[];
 			var makeNotRedRow, makeNotRed=[];
 			var setValueRow, setValue=[];
+			var toggleInitialColorRow, toggleInitialColor=[];
 			var table=document.createElement('table');
 			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
 			for(var i=0;i<9;i++){
 				makeRedRow=[];
 				makeNotRedRow=[];
 				setValueRow=[];
+				toggleInitialColorRow=[];
 				table.appendChild((function(row){
 					var tr=document.createElement('tr');
 					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
@@ -290,6 +293,20 @@
 							td.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
 							td.appendChild((function(){
 								var div=document.createElement('div');
+								var vakIndex=(function(){
+									var vakrij=Math.floor(row/3);
+									var vakkolom=Math.floor(index/3);
+									return 3*vakrij+vakkolom;
+								})();
+								var vak2Index=(function(){
+									if(row%4!=0&&index%4!=0){
+										var switcher=function(t){if(t<4){return 0;}else{return 1;}};
+										return 2*switcher(row)+switcher(index);
+									}else{
+										return -1;
+									}
+								})();
+								var initialColor="#FFFFFF";
 								var border=function(side, thickness){
 									var s;
 									switch(side){
@@ -300,36 +317,46 @@
 									}
 									return s+":"+thickness+"pt solid #000;";
 								};
-								div.setAttribute('style','width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+((index==0||index%3==0)?border(3,3):'')+((row==8||row%3==2)?border(2,3):''));
+								div.setAttribute('style','width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+border(3,(index==0||index%3==0)?3:1)+border(2,(row==8||row%3==2)?3:1)+'background-color:'+initialColor);
 								div.setAttribute('align', 'center');
 								var input=document.createElement('input');
 								input.setAttribute('type', 'text');
 								input.setAttribute('maxlength', 1);
-								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%)');
+								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);background-color:'+initialColor);
 								var makeRed_=function(color){
 									div.style.backgroundColor=color?color:"#FF0000";
 									input.style.backgroundColor=color?color:"#FF0000"
 								};
 								var makeNotRed_=function(){
-									div.style.backgroundColor="";
-									input.style.backgroundColor=""
+									div.style.backgroundColor=initialColor;
+									input.style.backgroundColor=initialColor;
 								};
+								var toggleInitialColor_=(function(ind){
+									var on=false;
+									return function(){
+										if(on){
+											initialColor="#FFFFFF";
+											makeNotRed_();
+											on=false;
+										}else{
+											initialColor=ind==-1?"#FFFFFF":"#BBBBBB";
+											makeRed_(initialColor);
+											on=true;
+										}
+									};
+								})(vak2Index);
 								var setValue_=function(v){input.value=v;};
-								var vakIndex=(function(){
-									var vakrij=Math.floor(row/3);
-									var vakkolom=Math.floor(index/3);
-									return 3*vakrij+vakkolom;
-								})();
 								makeRedRow.push(makeRed_);
 								makeNotRedRow.push(makeNotRed_);
 								setValueRow.push(setValue_);
+								toggleInitialColorRow.push(toggleInitialColor_);
 								var ignore=false;
 								input.onfocus=function(){
 									var v=input.value;
 									if(v){
 										var highlight=function(arr, f){
 											for(var i=0;i<arr.length;i++){
-												f(arr[i], "#BBBBBB");
+												f(arr[i], "#BB5555");
 											}
 										};
 										highlight(sudoku.versie(sudoku.getallen()).rijenMetGetal(parseInt(v)), form.makeRedRow);
@@ -374,6 +401,7 @@
 				makeRed.push(makeRedRow);
 				makeNotRed.push(makeNotRedRow);
 				setValue.push(setValueRow);
+				toggleInitialColor.push(toggleInitialColorRow);
 			}
 			node.appendChild(table);
 			editor.appendChild(node);
@@ -400,6 +428,13 @@
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
 							makeNotRed[i][j]();
+						}
+					}
+				},
+				toggleKind: function(){
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							toggleInitialColor[i][j]();
 						}
 					}
 				},
@@ -441,6 +476,14 @@
 		};
 		editor.appendChild(button('GO',function(){sudoku.vulIn(function(d){form.setAll(d);});}));
 		editor.appendChild(button('Clear',function(){form.setAll(sudoku.leeg());}));
+		editor.appendChild((function(){
+			var node=document.createElement('input');
+			node.setAttribute('type', 'checkbox');
+			node.onclick=function(){
+				form.toggleKind();
+			};
+			return node;
+		})());
 		b.appendChild(editor);
 		(function(){
 			if(window.location.href.match(/^file/g)==null){
