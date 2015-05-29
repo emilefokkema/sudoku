@@ -315,6 +315,8 @@
 			var makeNotRedRow, makeNotRed=[];
 			var setValueRow, setValue=[];
 			var toggleInitialColorRow, toggleInitialColor=[];
+			var eliminateFromRow, eliminateFrom=[];
+			var resetPossibilitiesForRow, resetPossibilitiesFor=[];
 			var otherState=false;
 			var table=document.createElement('table');
 			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
@@ -323,6 +325,8 @@
 				makeNotRedRow=[];
 				setValueRow=[];
 				toggleInitialColorRow=[];
+				eliminateFromRow=[];
+				resetPossibilitiesForRow=[];
 				table.appendChild((function(row){
 					var tr=document.createElement('tr');
 					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
@@ -356,7 +360,7 @@
 									}
 									return s+":"+thickness+"pt solid #000;";
 								};
-								div.setAttribute('style','width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+border(3,(index==0||index%3==0)?3:1)+border(2,(row==8||row%3==2)?3:1)+'background-color:'+initialColor);
+								div.setAttribute('style','position:relative;width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+border(3,(index==0||index%3==0)?3:1)+border(2,(row==8||row%3==2)?3:1)+'background-color:'+initialColor);
 								div.setAttribute('align', 'center');
 								var input=document.createElement('input');
 								input.setAttribute('type', 'text');
@@ -384,7 +388,18 @@
 										}
 									};
 								})(vak2Index);
-								var setValue_=function(v){input.value=v;};
+								var setValue_=function(v, commit){
+									input.value=v;
+									if(commit){commitValue(v);}	
+								};
+								var commitValue=function(v){
+									if(v){
+										form.eliminateFromRow(row, v);
+										form.eliminateFromColumn(index, v);
+										form.eliminateFromSquare(vakIndex, v);
+										if(otherState){form.eliminateFromSquare2(vak2Index, v);}
+									}
+								};
 								makeRedRow.push(makeRed_);
 								makeNotRedRow.push(makeNotRed_);
 								setValueRow.push(setValue_);
@@ -418,10 +433,12 @@
 											var check=versie.checkKolom(index, function(){ignore=true;form.makeRedColumn(index);})&&versie.checkRij(row, function(){ignore=true;form.makeRedRow(row);})&&versie.checkVak(vakIndex, function(){ignore=true;form.makeRedSquare(vakIndex);})&&((otherState&&vak2Index!=-1)?versie.checkVak2(vak2Index, function(){ignore=true;form.makeRedSquare2(vak2Index);}):true);
 											if(check){
 												sudoku.zet(row, index, n);
+												setValue_(n);
 												ignore=false;
 											}
 										}else{
 											sudoku.zet(row, index, 0);
+											form.setAll(sudoku.getallen());
 										}
 									}
 								};
@@ -430,8 +447,33 @@
 										setValue_("");
 									}
 									form.makeNotRed();
+									var v=parseInt(input.value);
+									if(v){commitValue(v);};
 								}
 								div.appendChild(input);
+								var possibilities=(function(){
+									var node=document.createElement('div');
+									node.setAttribute('style','position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px');
+									var p=[1,2,3,4,5,6,7,8,9];
+									var toString=function(){return p.join('');};
+									var display=function(){node.innerHTML=toString();};
+									var eliminate=function(n){
+										if(n){
+											var i=p.indexOf(n);
+											if(i>-1){
+												p.splice(i,1);
+												display();
+											}
+										}
+									};
+									var reset=function(){p=[1,2,3,4,5,6,7,8,9];display();};
+									display();
+									return {node:node,eliminate:eliminate,toString:toString,reset:reset};
+
+								})();
+								eliminateFromRow.push(possibilities.eliminate);
+								resetPossibilitiesForRow.push(possibilities.reset);
+								div.appendChild(possibilities.node);
 								return div;
 							})());
 							return td;
@@ -443,6 +485,8 @@
 				makeNotRed.push(makeNotRedRow);
 				setValue.push(setValueRow);
 				toggleInitialColor.push(toggleInitialColorRow);
+				eliminateFrom.push(eliminateFromRow);
+				resetPossibilitiesFor.push(resetPossibilitiesForRow);
 			}
 			node.appendChild(table);
 			editor.appendChild(node);
@@ -456,16 +500,36 @@
 					}
 				};
 			};
-
+			var eliminateFromSet=function(posF){
+				var position=function(index){return function(j){return posF(index, j);};};
+				return function(i, n){
+					var p, pos=position(i);
+					for(var j=0;j<9;j++){
+						p=pos(j);
+						eliminateFrom[p[0]][p[1]](n);
+					}
+				};
+			};
 			return {
 				makeRedRow: makeRedSet(sudoku.rijPositie),
 				makeRedColumn: makeRedSet(sudoku.kolomPositie),
 				makeRedSquare: makeRedSet(sudoku.vakPositie),
 				makeRedSquare2: makeRedSet(sudoku.vak2Positie),
+				eliminateFromRow: eliminateFromSet(sudoku.rijPositie),
+				eliminateFromColumn: eliminateFromSet(sudoku.kolomPositie),
+				eliminateFromSquare: eliminateFromSet(sudoku.vakPositie),
+				eliminateFromSquare2: eliminateFromSet(sudoku.vak2Positie),
 				makeNotRed: function(){
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
 							makeNotRed[i][j]();
+						}
+					}
+				},
+				resetPossibilities: function(){
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							resetPossibilitiesFor[i][j]();
 						}
 					}
 				},
@@ -478,11 +542,12 @@
 					}
 				},
 				setAll: function(numbers){
+					this.resetPossibilities();
 					var n;
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
 							n=numbers[i][j]||0;
-							setValue[i][j](n==0?'':n);
+							setValue[i][j](n==0?'':n, true);
 							sudoku.zet(i, j, n);
 						}
 					}
