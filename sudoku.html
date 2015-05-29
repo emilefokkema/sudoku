@@ -392,12 +392,14 @@
 									input.value=v;
 									if(commit){commitValue(v);}	
 								};
+								var hidePossibilities=function(){possibilities.hide();};
 								var commitValue=function(v){
 									if(v){
 										form.eliminateFromRow(row, v);
 										form.eliminateFromColumn(index, v);
 										form.eliminateFromSquare(vakIndex, v);
-										if(otherState){form.eliminateFromSquare2(vak2Index, v);}
+										if(otherState&&vak2Index>0){form.eliminateFromSquare2(vak2Index, v);}
+										hidePossibilities();
 									}
 								};
 								makeRedRow.push(makeRed_);
@@ -452,6 +454,7 @@
 								}
 								div.appendChild(input);
 								var possibilities=(function(){
+									var hidden=false;
 									var node=document.createElement('div');
 									node.setAttribute('style','position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px');
 									var p=[1,2,3,4,5,6,7,8,9];
@@ -462,13 +465,14 @@
 											var i=p.indexOf(n);
 											if(i>-1){
 												p.splice(i,1);
-												display();
+												if(!hidden){display();}
 											}
 										}
 									};
-									var reset=function(){p=[1,2,3,4,5,6,7,8,9];display();};
+									var hide=function(){node.innerHTML='';hidden=true;};
+									var reset=function(){hidden=false;p=[1,2,3,4,5,6,7,8,9];display();};
 									display();
-									return {node:node,eliminate:eliminate,toString:toString,reset:reset};
+									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide};
 
 								})();
 								eliminateFromRow.push(possibilities.eliminate);
