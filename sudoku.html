@@ -4,7 +4,7 @@
 </head>
 <body></body>
 <script language="JavaScript">
-(function(b){
+(function(b, setHash, getHash){
 	var sudoku=(function(){
 		var rijPositie=function(index,j){return [index, j];};
 		var kolomPositie=function(index, j){return [j, index];};
@@ -295,7 +295,7 @@
 		};
 
 		return {
-			zet: gegeven.zet,
+			zet: function(rij,kolom,n){gegeven.zet(rij,kolom,n);if(hash){hash.update();}},
 			getallen:gegeven.getallen,
 			versie: versie,
 			vulIn: function(callback, andereToestand){vulIn(versie(gegeven.getallen(), andereToestand), callback);},
@@ -398,7 +398,7 @@
 										form.eliminateFromRow(row, v);
 										form.eliminateFromColumn(index, v);
 										form.eliminateFromSquare(vakIndex, v);
-										if(otherState&&vak2Index>0){form.eliminateFromSquare2(vak2Index, v);}
+										if(otherState&&vak2Index>-1){form.eliminateFromSquare2(vak2Index, v);}
 										hidePossibilities();
 									}
 								};
@@ -435,7 +435,8 @@
 											var check=versie.checkKolom(index, function(){ignore=true;form.makeRedColumn(index);})&&versie.checkRij(row, function(){ignore=true;form.makeRedRow(row);})&&versie.checkVak(vakIndex, function(){ignore=true;form.makeRedSquare(vakIndex);})&&((otherState&&vak2Index!=-1)?versie.checkVak2(vak2Index, function(){ignore=true;form.makeRedSquare2(vak2Index);}):true);
 											if(check){
 												sudoku.zet(row, index, n);
-												setValue_(n);
+												moves.make(row, index, n);
+												setValue_(n, true);
 												ignore=false;
 											}
 										}else{
@@ -449,8 +450,8 @@
 										setValue_("");
 									}
 									form.makeNotRed();
-									var v=parseInt(input.value);
-									if(v){commitValue(v);};
+									//var v=parseInt(input.value);
+									//if(v){commitValue(v);};
 								}
 								div.appendChild(input);
 								var possibilities=(function(){
@@ -514,7 +515,7 @@
 					}
 				};
 			};
-			return {
+			var r= {
 				makeRedRow: makeRedSet(sudoku.rijPositie),
 				makeRedColumn: makeRedSet(sudoku.kolomPositie),
 				makeRedSquare: makeRedSet(sudoku.vakPositie),
@@ -544,9 +545,10 @@
 							toggleInitialColor[i][j]();
 						}
 					}
+					if(hash){hash.update();}
 				},
 				setAll: function(numbers){
-					this.resetPossibilities();
+					r.resetPossibilities();
 					var n;
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
@@ -558,19 +560,8 @@
 				},
 				otherState:function(){return otherState}
 			};
+			return r;
 		})();
-		form.setAll([
-			[1,0,0,4,0,0,7,0,0],
-			[0,0,0,0,0,0,0,2,3],
-			[0,0,0,0,2,0,4,0,6],
-			[0,0,0,0,9,0,0,0,1],
-			[0,1,0,8,0,5,0,9,0],
-			[0,0,0,0,0,0,5,7,0],
-			[0,0,0,6,0,0,0,0,0],
-			[0,7,0,0,0,2,0,0,0],
-			[8,0,0,0,3,0,0,4,0]
-			]
-		);
 		var button=function(text, action){
 			var node=document.createElement('div');
 			node.setAttribute('style','-webkit-appearance:button;width:100px;height:40px;cursor:pointer;margin:5px;font-family:Verdana');
@@ -586,6 +577,8 @@
 		};
 		editor.appendChild(button('GO',function(){sudoku.vulIn(function(d){form.setAll(d);}, form.otherState());}));
 		editor.appendChild(button('Clear',function(){form.setAll(sudoku.leeg());}));
+		editor.appendChild(button('Undo', function(){if(moves){moves.back();}}));
+		editor.appendChild(button('Undo all', function(){if(moves){while(moves.back()){}}}));
 		editor.appendChild((function(){
 			var node=document.createElement('input');
 			node.setAttribute('type', 'checkbox');
@@ -604,10 +597,72 @@
 			return node;
 		})());
 		b.appendChild(editor);
-		return {setAll:form.setAll}
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind}
 	})();
+	var hash=(function(){
+		var update=function(){
+			setHash((editor.otherState()?"1_":"0_")+(function(arr){var arr1=[];for(var i=0;i<arr.length;i++){arr1.push(arr[i].join(''));}return arr1;})(sudoku.getallen()).join(''));
+		};
+		var process=function(){
+			var h=getHash();
+			if(h){
+				if(h[0]==="1"){editor.toggleKind();}
+				h=h.substr(2);
+				var getallen=[];
+				for(var i=0;i<9;i++){
+					getallen.push((function(row){
+						var r=[];
+						for(var i=0;i<9;i++){
+							r.push(parseInt(row[i]));
+						}
+						return r;
+					})(h.substr(i*9,9)));
+				}
+				editor.setAll(getallen);
+				return true;
+			}
+			return false;
+		};
+		return {update:update,process:process};
+	})();
+	var list=(function(){
+		var l=[
+			[[0,7,0,0,0,5,0,0,0],[5,0,0,7,2,0,0,9,0],[8,0,0,0,0,0,0,0,0],[0,2,5,0,0,4,0,0,0],[0,0,6,3,7,1,5,0,0],[0,0,0,5,0,0,6,7,0],[0,0,0,0,0,0,0,0,2],[0,5,0,0,6,8,0,0,3],[0,0,0,9,0,0,0,1,0]],
+			[[0,2,0,0,4,8,0,5,3],[0,0,0,3,0,0,0,6,0],[0,0,3,0,0,6,1,0,0],[1,0,0,0,0,0,0,0,0],[0,8,0,5,0,7,0,2,0],[0,0,0,0,0,0,0,0,1],[0,0,9,6,0,0,8,0,0],[0,3,0,0,0,5,0,0,0],[7,5,0,8,9,0,0,4,0]],
+			[[0,1,0,0,0,0,0,0,0],[4,0,0,0,8,7,0,5,0],[0,7,0,0,0,3,6,0,0],[6,0,0,2,0,0,8,0,0],[0,4,2,0,0,0,7,3,0],[0,0,9,0,0,4,0,0,2],[0,0,8,9,0,0,0,7,0],[0,6,0,7,1,0,0,0,8],[0,0,0,0,0,0,0,2,0]],
+			[[0,0,7,0,1,0,0,2,0],[6,0,8,0,0,3,0,0,0],[5,0,0,9,0,0,0,4,8],[0,0,0,0,0,8,0,0,6],[0,0,4,0,0,0,5,0,0],[1,0,0,5,0,0,0,0,0],[9,5,0,0,0,7,0,0,4],[0,0,0,6,0,0,7,0,3],[0,4,0,0,8,0,9,0,0]],
+			[[0,0,0,0,8,0,7,0,2],[0,5,0,0,1,0,3,0,0],[0,2,0,3,0,0,0,8,0],[0,0,0,0,0,0,1,9,5],[0,4,0,0,0,0,0,3,0],[5,1,9,0,0,0,0,0,0],[0,8,0,0,0,2,0,4,0],[0,0,2,0,7,0,0,5,0],[3,0,1,0,9,0,0,0,0]],
+			[[0,0,0,0,0,0,0,9,7],[0,0,0,8,0,0,1,0,0],[0,0,0,0,0,1,0,6,2],[0,4,0,0,7,0,3,0,1],[0,0,5,0,4,0,7,0,0],[2,0,6,0,3,0,0,5,0],[8,5,0,3,0,0,0,0,0],[0,0,1,0,0,2,0,0,0],[7,9,0,0,0,0,0,0,0]],
+			[[0,7,6,0,0,0,0,0,0],[8,0,5,0,7,1,0,0,0],[3,0,0,0,9,0,0,0,0],[0,0,9,0,0,0,0,3,7],[0,8,0,3,0,2,0,4,0],[6,5,0,0,0,0,1,0,0],[0,0,0,0,1,0,0,0,3],[0,0,0,5,2,0,4,0,1],[0,0,0,0,0,0,9,6,0]],
+			[[6,0,1,3,0,4,0,0,0],[3,4,0,0,0,5,1,0,0],[0,0,0,0,0,7,0,0,0],[2,0,0,0,5,8,0,0,0],[0,0,8,0,0,0,4,0,0],[0,0,0,7,6,0,0,0,9],[0,0,0,5,0,0,0,0,0],[0,0,9,8,0,0,0,2,7],[0,0,0,2,0,6,3,0,5]],
+			[[7,0,0,0,0,0,0,5,2],[0,0,0,7,4,0,0,0,0],[2,0,0,0,0,8,9,0,0],[0,0,7,0,0,4,0,3,0],[0,6,0,0,2,0,0,1,0],[0,8,0,3,0,0,7,0,0],[0,0,4,6,0,0,0,0,1],[0,0,0,0,7,3,0,0,0],[8,9,0,0,0,0,0,0,6]]
+		];
+		var setRandom=function(){
+			editor.setAll(l[Math.floor(Math.random()*l.length)]);
+		};
+		return {setRandom:setRandom};
+	})();
+	var moves=(function(){
+		var list=[];
+		var make=function(r, c, n){
+			list.push({r:r,c:c,n:n});
+		};
+		var back=function(){
+			if(list.length>0){
+				var move=list.splice(list.length-1,1)[0];
+				sudoku.zet(move.r, move.c, 0);
+				editor.setAll(sudoku.getallen());
+				if(list.length>0){
+					return true;
+				}
+			}
+			return false;
+		};
+		return {make:make,back:back}
+	})();
+	if(!hash.process()){list.setRandom();hash.update();}
 	window.sudoku=sudoku;
 	window.editor=editor;
-})(document.body);
+})(document.body, function(h){window.location.hash=h;}, function(){return window.location.hash.substr(1);});
 </script>
 </html>
