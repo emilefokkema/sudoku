@@ -70,22 +70,34 @@
 					}
 					return false;
 				};
-				var permutatie=function(){
-					var p=nullen();
-					var i, j, k, index;
-					for(i=0;i<n;i++){
-						k=-1;
-						index=huidig[i];
-						for(j=0;j<n;j++){
-							if(p[j]==0){k++;}
-							if(k==index){
-								p[j]=i+1;
-								break;
+				var permutatie=(function(indexLijst){
+					return function(){
+						var p=nullen();
+						var i, j, k, index;
+						for(i=0;i<n;i++){
+							k=-1;
+							index=huidig[i];
+							for(j=0;j<n;j++){
+								if(p[j]==0){k++;}
+								if(k==index){
+									p[j]=indexLijst[i];
+									break;
+								}
 							}
 						}
+						return p;
+					};
+				})((function(n){
+					var oud=[];
+					for(var i=0;i<n;i++){
+						oud.push(i+1);
 					}
-					return p;
-				};
+					var nieuw=[];
+					while(oud.length>0){
+						nieuw.push(oud.splice(Math.floor(Math.random()*oud.length),1)[0]);
+					}
+					return nieuw;
+				})(n));
 				return {huidig:function(){return huidig;},gaVerder:gaVerder,permutatie:permutatie};
 
 			})();
@@ -581,6 +593,7 @@
 				eliminateFromSquare: eliminateFromSet(sudoku.vakPositie),
 				eliminateFromSquare2: eliminateFromSet(sudoku.vak2Positie),
 				startFilling: function(){filler.go();},
+				stopFilling: function(){filler.stop();},
 				makeNotRed: function(){
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
@@ -632,7 +645,7 @@
 			node.onclick=action;
 			return node;
 		};
-		editor.appendChild(button('GO',function(){sudoku.vulIn(function(d){form.setAll(d);}, form.otherState());}));
+		editor.appendChild(button('GO',function(){form.stopFilling(); sudoku.vulIn(function(d){form.setAll(d);}, form.otherState());}));
 		editor.appendChild(button('Clear',function(){form.setAll(sudoku.leeg());}));
 		editor.appendChild(button('Undo', function(){if(moves){moves.back();}}));
 		editor.appendChild(button('Undo all', function(){if(moves){while(moves.back()){}}}));
@@ -654,7 +667,7 @@
 			return node;
 		})());
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling}
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling}
 	})();
 	var hash=(function(){
 		var update=function(){
