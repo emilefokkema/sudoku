@@ -225,7 +225,7 @@
 		};
 		var gegeven=versie(leeg());
 
-		var vulIn=function(v, callback){
+		var vulIn=function(v, callback, callback2){
 			var getallenOver=(function(getallen){
 				var o=[];
 				var allemaal=function(){return [1,2,3,4,5,6,7,8,9];};
@@ -325,7 +325,9 @@
 					teller++;
 				}
 				if(callback){callback(v.getallen());}
-				if(doorgaan()){setTimeout(go, 2);}
+				if(doorgaan()){setTimeout(go, 2);}else{
+					if(callback2){callback2();}
+				}
 			};
 			go();
 		};
@@ -335,7 +337,7 @@
 			getallen:gegeven.getallen,
 			getallenRij: gegeven.getallenRij,
 			versie: versie,
-			vulIn: function(callback, andereToestand){vulIn(versie(gegeven.getallen(), andereToestand), callback);},
+			vulIn: function(callback, callback2, andereToestand){vulIn(versie(gegeven.getallen(), andereToestand), callback, callback2);},
 			leeg:leeg,
 			rijPositie:rijPositie,
 			kolomPositie:kolomPositie,
@@ -633,8 +635,8 @@
 			return r;
 		})();
 		var button=function(text, action){
-			var node=document.createElement('div');
-			node.setAttribute('style','-webkit-appearance:button;width:100px;height:40px;cursor:pointer;margin:5px;font-family:Verdana');
+			var node=document.createElement('span');
+			node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px');
 			node.setAttribute('align','center');
 			node.appendChild((function(){
 				var div=document.createElement('div');
@@ -645,7 +647,7 @@
 			node.onclick=action;
 			return node;
 		};
-		editor.appendChild(button('GO',function(){form.stopFilling(); sudoku.vulIn(function(d){form.setAll(d);}, form.otherState());}));
+		editor.appendChild(button('GO',function(){form.stopFilling(); sudoku.vulIn(function(d){form.setAll(d);}, function(){console.log("opgelost");}, form.otherState());}));
 		editor.appendChild(button('Clear',function(){form.setAll(sudoku.leeg());}));
 		editor.appendChild(button('Undo', function(){if(moves){moves.back();}}));
 		editor.appendChild(button('Undo all', function(){if(moves){while(moves.back()){}}}));
@@ -688,6 +690,7 @@
 						return r;
 					})(h.substr(i*9,9)));
 				}
+				if(!sudoku.versie(getallen).checkAlles()){return false;}
 				editor.setAll(getallen);
 				return true;
 			}
