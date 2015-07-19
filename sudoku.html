@@ -228,7 +228,9 @@
 		};
 		var gegeven=versie(leeg());
 
-		var vulIn=function(v, callback, callback2){
+		var vulIn=function(v, callback, callback2, vindTwee){
+			var go;
+			var eenGevonden=false;
 			var getallenOver=(function(getallen){
 				var o=[];
 				var allemaal=function(){return [1,2,3,4,5,6,7,8,9];};
@@ -310,44 +312,51 @@
 			var huidigeRij=0;
 			var teller=0;
 			var p;
-			var doorgaan=function(){return huidigeRij<9&&(!permutatoren.zijnKlaar());};
-			var go=(function(callback){
+			var doorgaan=function(){
+				return huidigeRij>-1&&huidigeRij<9&&(!permutatoren.zijnKlaar());
+			};
+			var klaar=function(){
+				if(huidigeRij==9){
+					if(callback2){callback2(v.getallen());}
+					if(vindTwee&&!eenGevonden){
+						eenGevonden=true;
+						huidigeRij--;
+						console.log("op zoek naar de volgende...");
+						go();
+					}
+				}
+			};
+			var doeStap=function(){
+				if(p=permutatoren.item(huidigeRij).volgende()){
+					vulRij[huidigeRij](p);
+					if(v.check(huidigeRij)){
+						huidigeRij++;
+					}
+				}else{
+					maakRijLeeg[huidigeRij]();
+					permutatoren.vernieuw[huidigeRij]();
+					huidigeRij--;
+				}
+			};
+			go=(function(callback){
 				if(callback){
 					return function(){
 						teller=0;
 						while(teller<200000&&doorgaan()){
-							if(p=permutatoren.item(huidigeRij).volgende()){
-								vulRij[huidigeRij](p);
-								if(v.check(huidigeRij)){
-									huidigeRij++;
-								}
-							}else{
-								maakRijLeeg[huidigeRij]();
-								permutatoren.vernieuw[huidigeRij]();
-								huidigeRij--;
-							}
+							doeStap();
 							teller++;
 						}
 						callback(v.getallen());
 						if(doorgaan()){setTimeout(go, 2);}else{
-							if(callback2){callback2(v.getallen());}
+							klaar();
 						}
 					};
 				}else{
 					return function(){
 						while(doorgaan()){
-							if(p=permutatoren.item(huidigeRij).volgende()){
-								vulRij[huidigeRij](p);
-								if(v.check(huidigeRij)){
-									huidigeRij++;
-								}
-							}else{
-								maakRijLeeg[huidigeRij]();
-								permutatoren.vernieuw[huidigeRij]();
-								huidigeRij--;
-							}
+							doeStap();
 						}
-						if(callback2){callback2(v.getallen());}
+						klaar();
 					};
 				}
 			})(callback);
@@ -406,6 +415,7 @@
 			var toggleInitialColorRow, toggleInitialColor=[];
 			var eliminateFromRow, eliminateFrom=[];
 			var resetPossibilitiesForRow, resetPossibilitiesFor=[];
+			var togglePossibilitiesViewRow, togglePossibilitiesView=[];
 			var fillRemainingPossibilityRow, fillRemainingPossibility=[];
 			var otherState=false;
 			var table=document.createElement('table');
@@ -418,6 +428,7 @@
 				eliminateFromRow=[];
 				resetPossibilitiesForRow=[];
 				fillRemainingPossibilityRow=[];
+				togglePossibilitiesViewRow=[];
 				table.appendChild((function(row){
 					var tr=document.createElement('tr');
 					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
@@ -564,10 +575,22 @@
 									var hide=function(){node.innerHTML='';hidden=true;};
 									var reset=function(){hidden=false;p=[1,2,3,4,5,6,7,8,9];display();};
 									var get=function(){return p;};
+									var toggleView=(function(state){
+										return function(){
+											if(state){
+												node.innerHTML='';
+												state=false;
+											}else{
+												if(!hidden){display();}
+												state=true;
+											}
+										};
+									})(true);
 									display();
-									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide,get:get};
+									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide,get:get,toggleView:toggleView};
 
 								})();
+								var togglePossibilitiesView_=function(){possibilities.toggleView();};
 								var fillRemainingPossibility_=(function(poss){
 									return function(){
 										var pos=possibilities.get();
@@ -579,6 +602,7 @@
 										}
 									};
 								})(possibilities);
+								togglePossibilitiesViewRow.push(togglePossibilitiesView_);
 								fillRemainingPossibilityRow.push(fillRemainingPossibility_);
 								eliminateFromRow.push(possibilities.eliminate);
 								resetPossibilitiesForRow.push(possibilities.reset);
@@ -597,6 +621,7 @@
 				eliminateFrom.push(eliminateFromRow);
 				resetPossibilitiesFor.push(resetPossibilitiesForRow);
 				fillRemainingPossibility.push(fillRemainingPossibilityRow);
+				togglePossibilitiesView.push(togglePossibilitiesViewRow);
 			}
 			node.appendChild(table);
 			editor.appendChild(node);
@@ -668,6 +693,13 @@
 					}
 					if(hash){hash.update();}
 				},
+				togglePossibilitiesView: function(){
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							togglePossibilitiesView[i][j]();
+						}
+					}
+				},
 				setAll: function(numbers){
 					r.resetPossibilities();
 					var n;
@@ -704,7 +736,12 @@
 			['Clear', function(){form.setAll(sudoku.leeg());}],
 			['Undo', function(){if(moves){moves.back();}}],
 			['Undo all', function(){if(moves){while(moves.back()){}}}],
-			['random',function(){form.setAll(sudoku.random().getallen());hash.update();}]
+			['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
+			['?', function(){
+				var n=0;
+				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, true);
+				console.log(n==1?"eenduidig":"niet eenduidig");
+			}]
 		];
 		for(var i=0;i<buttons.length;i++){
 			editor.appendChild(button(buttons[i][0], buttons[i][1]));
@@ -723,6 +760,15 @@
 				}else{
 					form.toggleKind();
 				}
+			};
+			return node;
+		})());
+		editor.appendChild((function(){
+			var node=document.createElement('input');
+			node.setAttribute('type', 'checkbox');
+			node.setAttribute('checked','true');
+			node.onclick=function(){
+				form.togglePossibilitiesView();
 			};
 			return node;
 		})());
