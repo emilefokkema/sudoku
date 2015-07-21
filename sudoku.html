@@ -241,7 +241,7 @@
 		};
 		var gegeven=versie(leeg());
 
-		var vulIn=function(v, callback, callback2, vindTwee){
+		var vulIn=function(v, callback, callback2, callback3, vindTwee){
 			var go;
 			var eenGevonden=false;
 			var getallenOver=(function(getallen){
@@ -337,6 +337,8 @@
 						console.log("op zoek naar de volgende...");
 						go();
 					}
+				}else{
+					if(callback3&&!(vindTwee&&eenGevonden)){callback3();}
 				}
 			};
 			var doeStap=function(){
@@ -420,7 +422,7 @@
 	})();
 	var editor=(function(){
 		var editor=document.createElement('div');
-		editor.setAttribute('style', 'width:450px;height:450px');
+		editor.setAttribute('style', 'width:450px;height:450px;position:relative');
 		var form=(function(){
 			var node=document.createElement('div');
 			node.setAttribute('style', 'width:450px;height:450px');
@@ -480,14 +482,12 @@
 								var input=document.createElement('input');
 								input.setAttribute('type', 'text');
 								input.setAttribute('maxlength', 1);
-								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:'+initialColor);
+								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent');
 								var makeRed_=function(color){
 									div.style.backgroundColor=color?color:"#FF0000";
-									input.style.backgroundColor=color?color:"#FF0000"
 								};
 								var makeNotRed_=function(){
 									div.style.backgroundColor=initialColor;
-									input.style.backgroundColor=initialColor;
 								};
 								var toggleInitialColor_=(function(ind){
 									var on=false;
@@ -625,6 +625,27 @@
 			}
 			cellFunctions=cellFunctions.finalize();
 			node.appendChild(table);
+			var layover=(function(parent){
+				var node=document.createElement('div');
+				var setText;
+				node.setAttribute('style', 'position:absolute;left:0px;top:0px;width:455px;height:450px;background-color:rgba(255,255,255,0.75);display:none');
+				node.setAttribute('align','center');
+				node.appendChild((function(){
+					var node=document.createElement('span');
+					node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000');
+					node.appendChild(document.createTextNode("hoi"));
+					setText=function(text, color){
+						node.innerHTML="";node.appendChild(document.createTextNode(text));
+						node.style.color=color?color:"#000";
+					};
+					return node;
+				})());
+				node.onclick=function(){
+					node.style.display="none";
+				};
+				parent.appendChild(node);
+				return {setText:function(text, color){node.style.display="initial";setText(text, color);}};
+			})(node);
 			editor.appendChild(node);
 			var makeRedSet=function(posF){
 				var position=function(index){return function(j){return posF(index, j);};};
@@ -661,6 +682,7 @@
 				return {go:function(){going=true;go();},stop:stop}
 			})();
 			var r= {
+				display: function(text, color){layover.setText(text, color);},
 				makeRedRow: makeRedSet(sudoku.rijPositie),
 				makeRedColumn: makeRedSet(sudoku.kolomPositie),
 				makeRedSquare: makeRedSet(sudoku.vakPositie),
@@ -781,7 +803,8 @@
 		var buttons=[
 			['GO', function(){
 				form.stopFilling();
-				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), function(d){form.setAll(d);}, null, form.otherState());
+				var getallen=sudoku.versie(sudoku.getallen()).getallen();
+				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), function(d){form.setAll(d);}, null, function(){form.setAll(getallen);form.display("geen oplossing!", "rgb(150,0,0)");}, form.otherState());
 			}],
 			['Clear', function(){form.setAll(sudoku.leeg());}],
 			['Undo', function(){if(moves){moves.back();}}],
@@ -789,8 +812,8 @@
 			['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
 			['?', function(){
 				var n=0;
-				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, true);
-				console.log(n==1?"eenduidig":"niet eenduidig");
+				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, function(){form.display("geen oplossing!", "rgb(150,0,0)");}, true);
+				if(n!=0){form.display(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
 			}]
 		];
 		for(var i=0;i<buttons.length;i++){
@@ -823,7 +846,7 @@
 			return node;
 		})());
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares}
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,display:form.display};
 	})();
 	var hash=(function(){
 		var update=function(){
