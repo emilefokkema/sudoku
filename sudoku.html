@@ -30,6 +30,19 @@
 				vakPos[1]+jPos[1]
 			];
 		};
+		var vakIndex=function(r,k){
+			var vakrij=Math.floor(r/3);
+			var vakkolom=Math.floor(k/3);
+			return 3*vakrij+vakkolom;
+		};
+		var vak2Index=function(r,k){
+			if(r%4!=0&&k%4!=0){
+				var switcher=function(t){if(t<4){return 0;}else{return 1;}};
+				return 2*switcher(r)+switcher(k);
+			}else{
+				return -1;
+			}
+		};
 		var volgendeCel=function(rij, kolom){
 			var r,k;
 			if(kolom<8){
@@ -400,6 +413,8 @@
 			vakPositie:vakPositie,
 			vak2Positie:vak2Positie,
 			volgendeCel: volgendeCel,
+			vakIndex: vakIndex,
+			vak2Index: vak2Index,
 			random: random
 		};
 	})();
@@ -409,26 +424,35 @@
 		var form=(function(){
 			var node=document.createElement('div');
 			node.setAttribute('style', 'width:450px;height:450px');
-			var makeRedRow,makeRed=[];
-			var makeNotRedRow, makeNotRed=[];
-			var setValueRow, setValue=[];
-			var toggleInitialColorRow, toggleInitialColor=[];
-			var eliminateFromRow, eliminateFrom=[];
-			var resetPossibilitiesForRow, resetPossibilitiesFor=[];
-			var togglePossibilitiesViewRow, togglePossibilitiesView=[];
-			var fillRemainingPossibilityRow, fillRemainingPossibility=[];
+			var cellFunctions=(function(functionNames){
+				var f={};
+				for(var i=0;i<functionNames.length;i++){
+					f[functionNames[i]]={total: [], row:[]};
+				}
+				return {
+					pushRow: function(){
+						for(var i=0;i<functionNames.length;i++){
+							f[functionNames[i]].total.push(f[functionNames[i]].row);
+							f[functionNames[i]].row=[];
+						}
+					},
+					addFunctions: function(functionArray){
+						for(var i=0;i<functionNames.length;i++){
+							f[functionNames[i]].row.push(functionArray[i]);
+						}
+					},
+					finalize: function(){
+						for(var i=0;i<functionNames.length;i++){
+							f[functionNames[i]]=f[functionNames[i]].total;
+						}
+						return f;
+					}
+				};
+			})(["makeRed", "makeNotRed", "setValue", "toggleInitialColor", "eliminateFrom", "resetPossibilitiesFor", "togglePossibilitiesView", "fillRemainingPossibility", "getPossibilities", "hasValue"]);
 			var otherState=false;
 			var table=document.createElement('table');
 			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
 			for(var i=0;i<9;i++){
-				makeRedRow=[];
-				makeNotRedRow=[];
-				setValueRow=[];
-				toggleInitialColorRow=[];
-				eliminateFromRow=[];
-				resetPossibilitiesForRow=[];
-				fillRemainingPossibilityRow=[];
-				togglePossibilitiesViewRow=[];
 				table.appendChild((function(row){
 					var tr=document.createElement('tr');
 					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
@@ -438,19 +462,8 @@
 							td.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
 							td.appendChild((function(){
 								var div=document.createElement('div');
-								var vakIndex=(function(){
-									var vakrij=Math.floor(row/3);
-									var vakkolom=Math.floor(index/3);
-									return 3*vakrij+vakkolom;
-								})();
-								var vak2Index=(function(){
-									if(row%4!=0&&index%4!=0){
-										var switcher=function(t){if(t<4){return 0;}else{return 1;}};
-										return 2*switcher(row)+switcher(index);
-									}else{
-										return -1;
-									}
-								})();
+								var vakIndex=sudoku.vakIndex(row, index);
+								var vak2Index=sudoku.vak2Index(row, index);
 								var initialColor="#FFFFFF";
 								var border=function(side, thickness){
 									var s;
@@ -504,10 +517,6 @@
 										hidePossibilities();
 									}
 								};
-								makeRedRow.push(makeRed_);
-								makeNotRedRow.push(makeNotRed_);
-								setValueRow.push(setValue_);
-								toggleInitialColorRow.push(toggleInitialColor_);
 								var ignore=false;
 								input.onfocus=function(){
 									var v=input.value;
@@ -574,7 +583,7 @@
 									};
 									var hide=function(){node.innerHTML='';hidden=true;};
 									var reset=function(){hidden=false;p=[1,2,3,4,5,6,7,8,9];display();};
-									var get=function(){return p;};
+									var get=function(){return (!hidden)?p:null;};
 									var toggleView=(function(state){
 										return function(){
 											if(state){
@@ -602,10 +611,8 @@
 										}
 									};
 								})(possibilities);
-								togglePossibilitiesViewRow.push(togglePossibilitiesView_);
-								fillRemainingPossibilityRow.push(fillRemainingPossibility_);
-								eliminateFromRow.push(possibilities.eliminate);
-								resetPossibilitiesForRow.push(possibilities.reset);
+								var hasValue=function(){return input.value!="";}
+								cellFunctions.addFunctions([makeRed_, makeNotRed_, setValue_, toggleInitialColor_, possibilities.eliminate, possibilities.reset, togglePossibilitiesView_, fillRemainingPossibility_, possibilities.get, hasValue]);
 								div.appendChild(possibilities.node);
 								return div;
 							})());
@@ -614,15 +621,9 @@
 					}
 					return tr;
 				})(i));
-				makeRed.push(makeRedRow);
-				makeNotRed.push(makeNotRedRow);
-				setValue.push(setValueRow);
-				toggleInitialColor.push(toggleInitialColorRow);
-				eliminateFrom.push(eliminateFromRow);
-				resetPossibilitiesFor.push(resetPossibilitiesForRow);
-				fillRemainingPossibility.push(fillRemainingPossibilityRow);
-				togglePossibilitiesView.push(togglePossibilitiesViewRow);
+				cellFunctions.pushRow();
 			}
+			cellFunctions=cellFunctions.finalize();
 			node.appendChild(table);
 			editor.appendChild(node);
 			var makeRedSet=function(posF){
@@ -631,7 +632,7 @@
 					var p, pos=position(i);
 					for(var j=0;j<9;j++){
 						p=pos(j);
-						makeRed[p[0]][p[1]](color);
+						cellFunctions.makeRed[p[0]][p[1]](color);
 					}
 				};
 			};
@@ -641,7 +642,7 @@
 					var p, pos=position(i);
 					for(var j=0;j<9;j++){
 						p=pos(j);
-						eliminateFrom[p[0]][p[1]](n);
+						cellFunctions.eliminateFrom[p[0]][p[1]](n);
 					}
 				};
 			};
@@ -650,7 +651,7 @@
 				var k=0;
 				var going=false;
 				var go=function(){
-					fillRemainingPossibility[r][k]();
+					cellFunctions.fillRemainingPossibility[r][k]();
 					var next=sudoku.volgendeCel(r,k);
 					r=next.rij;
 					k=next.kolom;
@@ -673,14 +674,14 @@
 				makeNotRed: function(){
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
-							makeNotRed[i][j]();
+							cellFunctions.makeNotRed[i][j]();
 						}
 					}
 				},
 				resetPossibilities: function(){
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
-							resetPossibilitiesFor[i][j]();
+							cellFunctions.resetPossibilitiesFor[i][j]();
 						}
 					}
 				},
@@ -688,7 +689,7 @@
 					otherState=!otherState;
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
-							toggleInitialColor[i][j]();
+							cellFunctions.toggleInitialColor[i][j]();
 						}
 					}
 					if(hash){hash.update();}
@@ -696,7 +697,7 @@
 				togglePossibilitiesView: function(){
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
-							togglePossibilitiesView[i][j]();
+							cellFunctions.togglePossibilitiesView[i][j]();
 						}
 					}
 				},
@@ -706,12 +707,61 @@
 					for(var i=0;i<9;i++){
 						for(var j=0;j<9;j++){
 							n=numbers[i][j]||0;
-							setValue[i][j](n==0?'':n, true);
+							cellFunctions.setValue[i][j](n==0?'':n, true);
 							sudoku.zet(i, j, n);
 						}
 					}
 				},
-				otherState:function(){return otherState}
+				otherState:function(){return otherState},
+				getTwinsInSquares: function(){
+					var arrayEquals=function(arr1, arr2){
+						if(!arr1||!arr2){return false;}
+						if(arr1.length!=arr2.length){return false;}
+						for(var i=0;i<arr1.length;i++){
+							if(arr1[i]!=arr2[i]){return false;}
+						}
+						return true;
+					};
+					var p, p1,p2,poss, allTwins, twins, waarZit, getallen;
+					allTwins=[];
+					for(var k=0;k<9;k++){
+						twins=[];
+						waarZit=[[],[],[],[],[],[],[],[],[]];
+						getallen=sudoku.getallen();
+						for(var i=0;i<9;i++){
+							p=sudoku.vakPositie(k,i);
+							if(!getallen[p[0]][p[1]]){
+								poss=cellFunctions.getPossibilities[p[0]][p[1]]();
+								for(var j=0;j<poss.length;j++){
+									waarZit[poss[j]-1].push(i);
+								}
+							}
+						}
+
+						//see if there are two numbers that only occur in two places
+						for(var i=0;i<9;i++){
+							for(var j=i+1;j<9;j++){
+								if(waarZit[i].length==2&&arrayEquals(waarZit[i], waarZit[j])){
+									twins.push([[i+1,j+1],[sudoku.vakPositie(k, waarZit[i][0]), sudoku.vakPositie(k, waarZit[i][1])]]);
+								}
+							}
+						}
+
+						//see if there are two places that have the same 2 possibilities
+						for(var i=0;i<9;i++){
+							for(var j=i+1;j<9;j++){
+								p1=sudoku.vakPositie(k, i);
+								p2=sudoku.vakPositie(k,j);
+								poss=cellFunctions.getPossibilities[p1[0]][p1[1]]();
+								if(poss&&poss.length==2&&arrayEquals(poss, cellFunctions.getPossibilities[p2[0]][p2[1]]())){
+									twins.push([poss,[p1,p2]]);
+								}
+							}
+						}
+						if(twins.length>0){allTwins.push(twins)};
+					}
+					return JSON.stringify(allTwins);
+				}
 			};
 			return r;
 		})();
@@ -773,7 +823,7 @@
 			return node;
 		})());
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling}
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares}
 	})();
 	var hash=(function(){
 		var update=function(){
