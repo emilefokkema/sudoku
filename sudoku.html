@@ -450,8 +450,9 @@
 						return f;
 					}
 				};
-			})(["makeRed", "makeNotRed", "setValue", "toggleInitialColor", "eliminateFrom", "resetPossibilitiesFor", "togglePossibilitiesView", "fillRemainingPossibility", "getPossibilities", "hasValue"]);
+			})(["makeRed", "makeNotRed", "setValue", "toggleInitialColor", "eliminateFrom", "resetPossibilitiesFor", "fillRemainingPossibility", "getPossibilities", "hasValue", "togglePossibilitiesView"]);
 			var otherState=false;
+			var highlighting=false;
 			var table=document.createElement('table');
 			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
 			for(var i=0;i<9;i++){
@@ -522,8 +523,10 @@
 									var v=input.value;
 									if(v){
 										var highlight=function(arr, f){
-											for(var i=0;i<arr.length;i++){
-												f(arr[i], "#BB5555");
+											if(highlighting){
+												for(var i=0;i<arr.length;i++){
+													f(arr[i], "#BB5555");
+												}
 											}
 										};
 										var versie=sudoku.versie(sudoku.getallen());
@@ -567,39 +570,32 @@
 								div.appendChild(input);
 								var possibilities=(function(){
 									var hidden=false;
+									var showingPossibilities=true;
 									var node=document.createElement('div');
 									node.setAttribute('style','position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px');
 									var p=[1,2,3,4,5,6,7,8,9];
 									var toString=function(){return p.join('');};
-									var display=function(){node.innerHTML=toString();};
+									var display=function(){if(!hidden&&showingPossibilities){node.innerHTML=toString();}};
 									var eliminate=function(n){
 										if(n){
 											var i=p.indexOf(n);
 											if(i>-1){
 												p.splice(i,1);
-												if(!hidden){display();}
+												display();
 											}
 										}
 									};
 									var hide=function(){node.innerHTML='';hidden=true;};
 									var reset=function(){hidden=false;p=[1,2,3,4,5,6,7,8,9];display();};
 									var get=function(){return (!hidden)?p:null;};
-									var toggleView=(function(state){
-										return function(){
-											if(state){
-												node.innerHTML='';
-												state=false;
-											}else{
-												if(!hidden){display();}
-												state=true;
-											}
-										};
-									})(true);
+									var toggleView=function(){
+										showingPossibilities=!showingPossibilities;
+										if(showingPossibilities){display();}else{node.innerHTML='';}
+									};
 									display();
-									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide,get:get,toggleView:toggleView};
+									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide,get:get, toggleView:toggleView};
 
 								})();
-								var togglePossibilitiesView_=function(){possibilities.toggleView();};
 								var fillRemainingPossibility_=(function(poss){
 									return function(){
 										var pos=possibilities.get();
@@ -612,7 +608,7 @@
 									};
 								})(possibilities);
 								var hasValue=function(){return input.value!="";}
-								cellFunctions.addFunctions([makeRed_, makeNotRed_, setValue_, toggleInitialColor_, possibilities.eliminate, possibilities.reset, togglePossibilitiesView_, fillRemainingPossibility_, possibilities.get, hasValue]);
+								cellFunctions.addFunctions([makeRed_, makeNotRed_, setValue_, toggleInitialColor_, possibilities.eliminate, possibilities.reset, fillRemainingPossibility_, possibilities.get, hasValue, possibilities.toggleView]);
 								div.appendChild(possibilities.node);
 								return div;
 							})());
@@ -647,6 +643,9 @@
 				return {setText:function(text, color){node.style.display="initial";setText(text, color);}};
 			})(node);
 			editor.appendChild(node);
+			var toggleHighlighting=function(){
+				highlighting=!highlighting;
+			};
 			var makeRedSet=function(posF){
 				var position=function(index){return function(j){return posF(index, j);};};
 				return function(i, color){
@@ -682,6 +681,7 @@
 				return {go:function(){going=true;go();},stop:stop}
 			})();
 			var r= {
+				toggleHighlighting: toggleHighlighting,
 				display: function(text, color){layover.setText(text, color);},
 				makeRedRow: makeRedSet(sudoku.rijPositie),
 				makeRedColumn: makeRedSet(sudoku.kolomPositie),
@@ -787,64 +787,97 @@
 			};
 			return r;
 		})();
-		var button=function(text, action){
-			var node=document.createElement('span');
-			node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px');
-			node.setAttribute('align','center');
-			node.appendChild((function(){
-				var div=document.createElement('div');
-				div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
-				div.appendChild(document.createTextNode(text));
-				return div;
-			})());
-			node.onclick=action;
-			return node;
-		};
-		var buttons=[
-			['GO', function(){
-				form.stopFilling();
-				var getallen=sudoku.versie(sudoku.getallen()).getallen();
-				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), function(d){form.setAll(d);}, null, function(){form.setAll(getallen);form.display("geen oplossing!", "rgb(150,0,0)");}, form.otherState());
-			}],
-			['Clear', function(){form.setAll(sudoku.leeg());}],
-			['Undo', function(){if(moves){moves.back();}}],
-			['Undo all', function(){if(moves){while(moves.back()){}}}],
-			['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
-			['?', function(){
-				var n=0;
-				sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, function(){form.display("geen oplossing!", "rgb(150,0,0)");}, true);
-				if(n!=0){form.display(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
-			}]
-		];
-		for(var i=0;i<buttons.length;i++){
-			editor.appendChild(button(buttons[i][0], buttons[i][1]));
-		}
-		editor.appendChild((function(){
-			var node=document.createElement('input');
-			node.setAttribute('type', 'checkbox');
-			node.onclick=function(){
-				if(node.checked){
-					var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
-					if(check){
-						form.toggleKind();
+		var panel=(function(parent){
+			var node=document.createElement('div');
+			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:455px;height:450px;background-color:rgba(255,255,255,0.75);display:none');
+			var button=function(text, action){
+				var node=document.createElement('span');
+				node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px');
+				node.setAttribute('align','center');
+				node.appendChild((function(){
+					var div=document.createElement('div');
+					div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
+					div.appendChild(document.createTextNode(text));
+					return div;
+				})());
+				node.onclick=function(){littleThing.show();hide();action();};
+				return node;
+			};
+			var checkBox=function(text, action, initialChecked){
+				var span=document.createElement('span');
+				span.appendChild(document.createTextNode(text));
+				var node=document.createElement('input');
+				node.setAttribute('type', 'checkbox');
+				if(initialChecked){node.setAttribute('checked','true');}
+				node.onclick=function(){littleThing.show();hide();action(node);};
+				span.appendChild(node);
+				return span;
+			};
+			var buttons=[
+				['GO', function(){
+					form.stopFilling();
+					var getallen=sudoku.versie(sudoku.getallen()).getallen();
+					sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), function(d){form.setAll(d);}, null, function(){form.setAll(getallen);form.display("geen oplossing!", "rgb(150,0,0)");}, form.otherState());
+				}],
+				['Clear', function(){form.setAll(sudoku.leeg());}],
+				['Undo', function(){if(moves){moves.back();}}],
+				['Undo all', function(){if(moves){while(moves.back()){}}}],
+				['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
+				['?', function(){
+					var n=0;
+					sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, function(){form.display("geen oplossing!", "rgb(150,0,0)");}, true);
+					if(n!=0){form.display(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
+				}]
+			];
+			var checkBoxes=[
+				['andere', function(node){
+					if(node.checked){
+						var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
+						if(check){
+							form.toggleKind();
+						}else{
+							node.checked=false;
+						}
 					}else{
-						node.checked=false;
+						form.toggleKind();
 					}
-				}else{
-					form.toggleKind();
-				}
-			};
-			return node;
-		})());
-		editor.appendChild((function(){
-			var node=document.createElement('input');
-			node.setAttribute('type', 'checkbox');
-			node.setAttribute('checked','true');
-			node.onclick=function(){
-				form.togglePossibilitiesView();
-			};
-			return node;
-		})());
+				}],
+				['mogelijkheden', function(){form.togglePossibilitiesView();}, true],
+				['autofill', (function(){
+					var filling=false;
+					return function(){
+						if(!filling){
+							filling=true;
+							form.startFilling();
+						}else{
+							form.stopFilling();
+							filling=false;
+						}
+					};
+				})()],
+				['highlight', function(){form.toggleHighlighting();}]
+
+			];
+			for(var i=0;i<buttons.length;i++){
+				node.appendChild(button(buttons[i][0], buttons[i][1]));
+			}
+			for(var i=0;i<checkBoxes.length;i++){
+				node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
+			}
+			parent.appendChild(node);
+			var show=function(){node.style.display="initial";};
+			var hide=function(){node.style.display="none"};
+			return {show:show,hide:hide};
+		})(editor);
+		var littleThing=(function(parent){
+			var node=document.createElement('div');
+			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:12px;height:12px;background-color:#000');
+			var show=function(){node.style.display="initial";};
+			var hide=function(){node.style.display="none"};
+			node.onclick=function(){hide();panel.show();};
+			parent.appendChild(node);
+			return {show:show,hide:hide};
+		})(editor);
 		b.appendChild(editor);
 		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,display:form.display};
 	})();
@@ -911,7 +944,6 @@
 		return {make:make,back:back}
 	})();
 	if(!hash.process()){editor.setAll(sudoku.random().getallen());hash.update();}
-	editor.startFilling();
 	window.sudoku=sudoku;
 	window.editor=editor;
 })(document.body, function(h){window.location.hash=h;}, function(){return window.location.hash.substr(1);});
