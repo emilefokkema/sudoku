@@ -422,6 +422,7 @@
 	})();
 	var editor=(function(){
 		var editor=document.createElement('div');
+		var littleThing;
 		editor.setAttribute('style', 'width:450px;height:450px;position:relative');
 		var form=(function(){
 			var node=document.createElement('div');
@@ -621,6 +622,15 @@
 			}
 			cellFunctions=cellFunctions.finalize();
 			node.appendChild(table);
+			littleThing=(function(parent){
+				var node=document.createElement('div');
+				node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:12px;height:12px;background-color:#000');
+				var show=function(){node.style.display="initial";};
+				var hide=function(){node.style.display="none"};
+				node.onclick=function(){hide();panel.show();};
+				parent.appendChild(node);
+				return {show:show,hide:hide};
+			})(node);
 			var layover=(function(parent){
 				var node=document.createElement('div');
 				var setText;
@@ -789,10 +799,13 @@
 		})();
 		var panel=(function(parent){
 			var node=document.createElement('div');
+			node.setAttribute('align', 'center');
 			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:455px;height:450px;background-color:rgba(255,255,255,0.75);display:none');
+			var node2=document.createElement('div');
+			node2.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 			var button=function(text, action){
-				var node=document.createElement('span');
-				node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px');
+				var node=document.createElement('div');
+				node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px');
 				node.setAttribute('align','center');
 				node.appendChild((function(){
 					var div=document.createElement('div');
@@ -800,7 +813,7 @@
 					div.appendChild(document.createTextNode(text));
 					return div;
 				})());
-				node.onclick=function(){littleThing.show();hide();action();};
+				node.onclick=action;
 				return node;
 			};
 			var checkBox=function(text, action, initialChecked){
@@ -809,7 +822,7 @@
 				var node=document.createElement('input');
 				node.setAttribute('type', 'checkbox');
 				if(initialChecked){node.setAttribute('checked','true');}
-				node.onclick=function(){littleThing.show();hide();action(node);};
+				node.onclick=function(){action(node);};
 				span.appendChild(node);
 				return span;
 			};
@@ -859,23 +872,21 @@
 
 			];
 			for(var i=0;i<buttons.length;i++){
-				node.appendChild(button(buttons[i][0], buttons[i][1]));
+				node2.appendChild(button(buttons[i][0], buttons[i][1]));
 			}
 			for(var i=0;i<checkBoxes.length;i++){
-				node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
+				node2.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
 			}
+			var closeButton=(function(parent){
+				var node=document.createElement('div');
+				node.setAttribute('style', 'position:absolute;right:4px;top:4px;background-color:rgba(0,0,0,0.25);width:12px;height:12px');
+				node.onclick=function(){hide();};
+				parent.appendChild(node);
+			})(node);
+			node.appendChild(node2);
 			parent.appendChild(node);
 			var show=function(){node.style.display="initial";};
-			var hide=function(){node.style.display="none"};
-			return {show:show,hide:hide};
-		})(editor);
-		var littleThing=(function(parent){
-			var node=document.createElement('div');
-			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:12px;height:12px;background-color:#000');
-			var show=function(){node.style.display="initial";};
-			var hide=function(){node.style.display="none"};
-			node.onclick=function(){hide();panel.show();};
-			parent.appendChild(node);
+			var hide=function(){littleThing.show();node.style.display="none"};
 			return {show:show,hide:hide};
 		})(editor);
 		b.appendChild(editor);
