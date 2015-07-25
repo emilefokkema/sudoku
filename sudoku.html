@@ -241,9 +241,8 @@
 		};
 		var gegeven=versie(leeg());
 
-		var vulIn=function(v, callback, callback2, callback3, vindTwee){
+		var vulIn=function(v, regularUpdate, callSuccess, callFailure){
 			var go;
-			var eenGevonden=false;
 			var getallenOver=(function(getallen){
 				var o=[];
 				var allemaal=function(){return [1,2,3,4,5,6,7,8,9];};
@@ -330,15 +329,14 @@
 			};
 			var klaar=function(){
 				if(huidigeRij==9){
-					if(callback2){callback2(v.getallen());}
-					if(vindTwee&&!eenGevonden){
-						eenGevonden=true;
+					var doorstart=false;
+					if(callSuccess){doorstart=callSuccess(v.getallen());}
+					if(doorstart){
 						huidigeRij--;
-						console.log("op zoek naar de volgende...");
 						go();
 					}
 				}else{
-					if(callback3&&!(vindTwee&&eenGevonden)){callback3();}
+					if(callFailure){callFailure();}
 				}
 			};
 			var doeStap=function(){
@@ -361,7 +359,7 @@
 							doeStap();
 							teller++;
 						}
-						callback(v.getallen());
+						callback(v.getallen(), huidigeRij/8);
 						if(doorgaan()){setTimeout(go, 2);}else{
 							klaar();
 						}
@@ -374,7 +372,8 @@
 						klaar();
 					};
 				}
-			})(callback);
+			})(regularUpdate);
+			if(regularUpdate){console.log("updating");regularUpdate(v.getallen(), huidigeRij/8);}
 			go();
 		};
 
@@ -791,82 +790,147 @@
 			var node=document.createElement('div');
 			node.setAttribute('align', 'center');
 			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:'+(initialSize+5)+'px;height:'+initialSize+'px;background-color:rgb(0,0,0);border:3pt solid #000');
-			var node2=document.createElement('div');
-			node2.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
-			var button=function(text, action){
+			var setProgressBar=(function(parent){
+				var node0=document.createElement('div');
+				node0.setAttribute('style','width:450px;height:450px;position:relative');
+				node0.setAttribute('align', 'left');
 				var node=document.createElement('div');
-				node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px');
-				node.setAttribute('align','center');
-				node.appendChild((function(){
-					var div=document.createElement('div');
-					div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
-					div.appendChild(document.createTextNode(text));
-					return div;
-				})());
-				node.onclick=action;
-				return node;
-			};
-			var checkBox=function(text, action, initialChecked){
-				var span=document.createElement('span');
-				span.appendChild(document.createTextNode(text));
-				var node=document.createElement('input');
-				node.setAttribute('type', 'checkbox');
-				if(initialChecked){node.setAttribute('checked','true');}
-				node.onclick=function(){action(node);};
-				span.appendChild(node);
-				return span;
-			};
-			var buttons=[
-				['GO', function(){
-					form.stopFilling();
-					var getallen=sudoku.versie(sudoku.getallen()).getallen();
-					sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), function(d){form.setAll(d);}, null, function(){form.setAll(getallen);form.display("geen oplossing!", "rgb(150,0,0)");}, form.otherState());
-				}],
-				['Clear', function(){form.setAll(sudoku.leeg());}],
-				['Undo', function(){if(moves){moves.back();}}],
-				['Undo all', function(){if(moves){while(moves.back()){}}}],
-				['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
-				['?', function(){
-					var n=0;
-					sudoku.vulIn(sudoku.versie(sudoku.getallen(), form.otherState()), null, function(d){n++;}, function(){form.display("geen oplossing!", "rgb(150,0,0)");}, true);
-					if(n!=0){form.display(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
-				}]
-			];
-			var checkBoxes=[
-				['andere', function(node){
-					if(node.checked){
-						var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
-						if(check){
-							form.toggleKind();
-						}else{
-							node.checked=false;
-						}
-					}else{
-						form.toggleKind();
+				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:#000;height:50px;width:50%');
+				node0.appendChild(node);
+				var nodeAppended=false;
+				return function(p){
+					if(!nodeAppended){parent.removeChild(controls);parent.appendChild(node0);nodeAppended=true;}
+					node.style.width=(p*100)+"%";
+					if(p==-1&&nodeAppended){
+						parent.removeChild(node0);
+						parent.appendChild(controls);
+						nodeAppended=false;
 					}
-				}],
-				['mogelijkheden', function(){form.togglePossibilitiesView();}, true],
-				['autofill', (function(){
-					var filling=false;
-					return function(){
-						if(!filling){
-							filling=true;
-							form.startFilling();
+				};
+			})(node);
+			var controls=(function(){
+				var node=document.createElement('div');
+				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
+				var button=function(text, action){
+					var node=document.createElement('div');
+					node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px');
+					node.setAttribute('align','center');
+					node.appendChild((function(){
+						var div=document.createElement('div');
+						div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
+						div.appendChild(document.createTextNode(text));
+						return div;
+					})());
+					node.onclick=function(e){e.cancelBubble=true;action();};
+					return node;
+				};
+				var checkBox=function(text, action, initialChecked){
+					var span=document.createElement('span');
+					span.appendChild(document.createTextNode(text));
+					var node=document.createElement('input');
+					node.setAttribute('type', 'checkbox');
+					if(initialChecked){node.setAttribute('checked','true');}
+					node.onclick=function(){action(node);};
+					span.appendChild(node);
+					return span;
+				};
+				var buttons=[
+					['GO', function(){
+						form.stopFilling();
+						var getallen=sudoku.versie(sudoku.getallen()).getallen();
+						sudoku.vulIn(
+							sudoku.versie(sudoku.getallen(), form.otherState()),
+							function(d, p){form.setAll(d);setProgressBar(Math.max(0, Math.min(p,1)));},
+							function(){setProgressBar(-1);return false;},
+							function(){form.setAll(getallen);setProgressBar(-1);setText("geen oplossing!", "rgb(150,0,0)");}
+							);
+					}],
+					['Clear', function(){form.setAll(sudoku.leeg());}],
+					['Undo', function(){if(moves){moves.back();}}],
+					['Undo all', function(){if(moves){while(moves.back()){}}}],
+					['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
+					['?', function(){
+						var n=0;
+						var klaar=function(){
+							if(n!=0){setText(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
+						};
+						sudoku.vulIn(
+							sudoku.versie(sudoku.getallen(), form.otherState()),
+							function(d,p){setProgressBar(Math.max(0, Math.min(p,1)));},
+							function(d){
+								n++;
+								if(n==1){
+									return true;
+								}else{
+									setProgressBar(-1);
+									setText("niet eenduidig", "rgb(200,150,0)");
+									return false;
+								}
+							},
+							function(){
+								setProgressBar(-1);
+								if(n==0){
+									setText("geen oplossing!", "rgb(150,0,0)");
+								}else{
+									setText("eenduidig", "rgb(0,150,0)");
+								}
+							}
+							);
+					}]
+				];
+				var checkBoxes=[
+					['andere', function(node){
+						if(node.checked){
+							var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
+							if(check){
+								form.toggleKind();
+							}else{
+								node.checked=false;
+							}
 						}else{
-							form.stopFilling();
-							filling=false;
+							form.toggleKind();
 						}
-					};
-				})()],
-				['highlight', function(){form.toggleHighlighting();}]
+					}],
+					['mogelijkheden', function(){form.togglePossibilitiesView();}, true],
+					['autofill', (function(){
+						var filling=false;
+						return function(){
+							if(!filling){
+								filling=true;
+								form.startFilling();
+							}else{
+								form.stopFilling();
+								filling=false;
+							}
+						};
+					})()],
+					['highlight', function(){form.toggleHighlighting();}]
 
-			];
-			for(var i=0;i<buttons.length;i++){
-				node2.appendChild(button(buttons[i][0], buttons[i][1]));
-			}
-			for(var i=0;i<checkBoxes.length;i++){
-				node2.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
-			}
+				];
+				for(var i=0;i<buttons.length;i++){
+					node.appendChild(button(buttons[i][0], buttons[i][1]));
+				}
+				for(var i=0;i<checkBoxes.length;i++){
+					node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
+				}
+				return node;
+			})();
+			var setText=(function(parent){
+				var node0=document.createElement('div');
+				node0.setAttribute('style','width:450px;height:450px;position:relative');
+				var node=document.createElement('span');
+				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000');
+				node.appendChild(document.createTextNode("hoi"));
+				node0.appendChild(node);
+				return function(text, color){
+					console.log("setting text");
+					parent.removeChild(controls);
+					parent.appendChild(node0);
+					node.innerHTML="";node.appendChild(document.createTextNode(text));
+					node.style.color=color?color:"#000";
+					parent.onclick=function(){parent.removeChild(node0);parent.appendChild(controls);};
+				};
+			})(node);
 			var changeSizeTo=(function(initial, node){
 				var s=initial;
 				var g;
@@ -906,7 +970,7 @@
 			var show=function(){
 				node.style.backgroundColor="rgba(255,255,255,0.75)";
 				changeSizeTo(442, function(){
-					node.appendChild(node2);
+					node.appendChild(controls);
 					node.appendChild(closeButton);
 					node.onclick=function(){};
 				});
@@ -914,7 +978,7 @@
 			var hide=function(e){
 				e.preventDefault();
 				e.cancelBubble=true;
-				node.removeChild(node2);
+				node.removeChild(controls);
 				node.removeChild(closeButton);
 				changeSizeTo(initialSize, function(){
 					node.style.backgroundColor="rgb(0,0,0)";
@@ -922,10 +986,10 @@
 				});
 			};
 			node.onclick=show;
-			return {show:show,hide:hide};
+			return {show:show,hide:hide, setText:setText};
 		})(editor);
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,getTwinsInRows:form.getTwinsInRows, getTwinsInColumns: form.getTwinsInColumns, display:form.display};
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,getTwinsInRows:form.getTwinsInRows, getTwinsInColumns: form.getTwinsInColumns, display:panel.setText};
 	})();
 	var hash=(function(){
 		var update=function(){
