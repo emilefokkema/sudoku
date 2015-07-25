@@ -622,15 +622,6 @@
 			}
 			cellFunctions=cellFunctions.finalize();
 			node.appendChild(table);
-			littleThing=(function(parent){
-				var node=document.createElement('div');
-				node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:12px;height:12px;background-color:#000');
-				var show=function(){node.style.display="initial";};
-				var hide=function(){node.style.display="none"};
-				node.onclick=function(){hide();panel.show();};
-				parent.appendChild(node);
-				return {show:show,hide:hide};
-			})(node);
 			var layover=(function(parent){
 				var node=document.createElement('div');
 				var setText;
@@ -690,6 +681,66 @@
 				var stop=function(){going=false;};
 				return {go:function(){going=true;go();},stop:stop}
 			})();
+			var allCells=function(cellFunction){
+				for(var i=0;i<9;i++){
+					for(var j=0;j<9;j++){
+						cellFunction[i][j]();
+					}
+				}
+			};
+			var getTwinsInSets=(function(){
+				var arrayEquals=function(arr1, arr2){
+					if(!arr1||!arr2){return false;}
+					if(arr1.length!=arr2.length){return false;}
+					for(var i=0;i<arr1.length;i++){
+						if(arr1[i]!=arr2[i]){return false;}
+					}
+					return true;
+				};
+				return function(posF, numberOfSets){
+					return function(){
+						var p, p1,p2,poss, allTwins, twins, waarZit, getallen;
+						allTwins=[];
+						for(var k=0;k<numberOfSets;k++){
+							twins=[];
+							waarZit=[[],[],[],[],[],[],[],[],[]];
+							getallen=sudoku.getallen();
+							for(var i=0;i<9;i++){
+								p=posF(k,i);
+								if(!getallen[p[0]][p[1]]){
+									poss=cellFunctions.getPossibilities[p[0]][p[1]]();
+									for(var j=0;j<poss.length;j++){
+										waarZit[poss[j]-1].push(i);
+									}
+								}
+							}
+
+							//see if there are two numbers that only occur in two places
+							for(var i=0;i<9;i++){
+								for(var j=i+1;j<9;j++){
+									if(waarZit[i].length==2&&arrayEquals(waarZit[i], waarZit[j])){
+										twins.push([[i+1,j+1],[posF(k, waarZit[i][0]), posF(k, waarZit[i][1])]]);
+									}
+								}
+							}
+
+							//see if there are two places that have the same 2 possibilities
+							for(var i=0;i<9;i++){
+								for(var j=i+1;j<9;j++){
+									p1=posF(k, i);
+									p2=posF(k,j);
+									poss=cellFunctions.getPossibilities[p1[0]][p1[1]]();
+									if(poss&&poss.length==2&&arrayEquals(poss, cellFunctions.getPossibilities[p2[0]][p2[1]]())){
+										twins.push([poss,[p1,p2]]);
+									}
+								}
+							}
+							if(twins.length>0){allTwins.push(twins)};
+						}
+						return JSON.stringify(allTwins);
+					};
+				};
+			})();
 			var r= {
 				toggleHighlighting: toggleHighlighting,
 				display: function(text, color){layover.setText(text, color);},
@@ -704,34 +755,18 @@
 				startFilling: function(){filler.go();},
 				stopFilling: function(){filler.stop();},
 				makeNotRed: function(){
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							cellFunctions.makeNotRed[i][j]();
-						}
-					}
+					allCells(cellFunctions.makeNotRed);
 				},
 				resetPossibilities: function(){
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							cellFunctions.resetPossibilitiesFor[i][j]();
-						}
-					}
+					allCells(cellFunctions.resetPossibilitiesFor);
 				},
 				toggleKind: function(){
 					otherState=!otherState;
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							cellFunctions.toggleInitialColor[i][j]();
-						}
-					}
+					allCells(cellFunctions.toggleInitialColor);
 					if(hash){hash.update();}
 				},
 				togglePossibilitiesView: function(){
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							cellFunctions.togglePossibilitiesView[i][j]();
-						}
-					}
+					allCells(cellFunctions.togglePossibilitiesView);
 				},
 				setAll: function(numbers){
 					r.resetPossibilities();
@@ -745,62 +780,16 @@
 					}
 				},
 				otherState:function(){return otherState},
-				getTwinsInSquares: function(){
-					var arrayEquals=function(arr1, arr2){
-						if(!arr1||!arr2){return false;}
-						if(arr1.length!=arr2.length){return false;}
-						for(var i=0;i<arr1.length;i++){
-							if(arr1[i]!=arr2[i]){return false;}
-						}
-						return true;
-					};
-					var p, p1,p2,poss, allTwins, twins, waarZit, getallen;
-					allTwins=[];
-					for(var k=0;k<9;k++){
-						twins=[];
-						waarZit=[[],[],[],[],[],[],[],[],[]];
-						getallen=sudoku.getallen();
-						for(var i=0;i<9;i++){
-							p=sudoku.vakPositie(k,i);
-							if(!getallen[p[0]][p[1]]){
-								poss=cellFunctions.getPossibilities[p[0]][p[1]]();
-								for(var j=0;j<poss.length;j++){
-									waarZit[poss[j]-1].push(i);
-								}
-							}
-						}
-
-						//see if there are two numbers that only occur in two places
-						for(var i=0;i<9;i++){
-							for(var j=i+1;j<9;j++){
-								if(waarZit[i].length==2&&arrayEquals(waarZit[i], waarZit[j])){
-									twins.push([[i+1,j+1],[sudoku.vakPositie(k, waarZit[i][0]), sudoku.vakPositie(k, waarZit[i][1])]]);
-								}
-							}
-						}
-
-						//see if there are two places that have the same 2 possibilities
-						for(var i=0;i<9;i++){
-							for(var j=i+1;j<9;j++){
-								p1=sudoku.vakPositie(k, i);
-								p2=sudoku.vakPositie(k,j);
-								poss=cellFunctions.getPossibilities[p1[0]][p1[1]]();
-								if(poss&&poss.length==2&&arrayEquals(poss, cellFunctions.getPossibilities[p2[0]][p2[1]]())){
-									twins.push([poss,[p1,p2]]);
-								}
-							}
-						}
-						if(twins.length>0){allTwins.push(twins)};
-					}
-					return JSON.stringify(allTwins);
-				}
+				getTwinsInRows: getTwinsInSets(sudoku.rijPositie, 9),
+				getTwinsInColumns: getTwinsInSets(sudoku.kolomPositie, 9),
+				getTwinsInSquares: getTwinsInSets(sudoku.vakPositie, 9)
 			};
 			return r;
 		})();
 		var panel=(function(parent){
 			var node=document.createElement('div');
 			node.setAttribute('align', 'center');
-			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:455px;height:450px;background-color:rgba(255,255,255,0.75);display:none');
+			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:7px;height:7px;background-color:rgb(0,0,0);border:3pt solid #000');
 			var node2=document.createElement('div');
 			node2.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 			var button=function(text, action){
@@ -877,20 +866,39 @@
 			for(var i=0;i<checkBoxes.length;i++){
 				node2.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
 			}
-			var closeButton=(function(parent){
+			var closeButton=(function(){
 				var node=document.createElement('div');
-				node.setAttribute('style', 'position:absolute;right:4px;top:4px;background-color:rgba(0,0,0,0.25);width:12px;height:12px');
-				node.onclick=function(){hide();};
-				parent.appendChild(node);
-			})(node);
-			node.appendChild(node2);
+				node.setAttribute('style', 'position:absolute;right:4px;top:4px;background-color:rgb(0,0,0);width:12px;height:12px');
+				node.onclick=function(e){hide(e);};
+				return node;
+			})();
 			parent.appendChild(node);
-			var show=function(){node.style.display="initial";};
-			var hide=function(){littleThing.show();node.style.display="none"};
+			var show=function(){
+				console.log("show");
+				node.style.width="447px";
+				node.style.height="442px";
+				node.style.backgroundColor="rgba(255,255,255,0.75)";
+				node.appendChild(node2);
+				node.appendChild(closeButton);
+				node.onclick=function(){};
+			};
+			var hide=function(e){
+				console.log("hide");
+				e.preventDefault();
+				e.cancelBubble=true;
+				console.log(e);
+				node.removeChild(node2);
+				node.removeChild(closeButton);
+				node.style.width="7px";
+				node.style.height="7px";
+				node.style.backgroundColor="rgb(0,0,0)";
+				node.onclick=show;
+			};
+			node.onclick=show;
 			return {show:show,hide:hide};
 		})(editor);
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,display:form.display};
+		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,getTwinsInSquares: form.getTwinsInSquares,getTwinsInRows:form.getTwinsInRows, getTwinsInColumns: form.getTwinsInColumns, display:form.display};
 	})();
 	var hash=(function(){
 		var update=function(){
