@@ -502,6 +502,22 @@
 								var makeNotRed_=function(){
 									div.style.backgroundColor=initialColor;
 								};
+								var highlightImpossibles=function(){
+									var v=input.value;
+									var p;
+									if(v){
+										v=parseInt(v);
+										for(var i=0;i<9;i++){
+											for(var j=0;j<9;j++){
+												p=cellFunctions.getPossibilities[i][j]();
+												if(p==null||p.indexOf(v)==-1){
+													cellFunctions.makeRed[i][j]("#BB5555");
+												}
+											}
+										}
+
+									}
+								};
 								var toggleInitialColor_=(function(ind){
 									var on=false;
 									return function(){
@@ -531,23 +547,7 @@
 									}
 								};
 								var ignore=false;
-								input.onfocus=function(){
-									var v=input.value;
-									if(v){
-										var highlight=function(arr, f){
-											if(highlighting){
-												for(var i=0;i<arr.length;i++){
-													f(arr[i], "#BB5555");
-												}
-											}
-										};
-										var versie=sudoku.versie(sudoku.getallen());
-										highlight(versie.rijenMetGetal(parseInt(v)), form.makeRedRow);
-										highlight(versie.kolommenMetGetal(parseInt(v)), form.makeRedColumn);
-										highlight(versie.vakkenMetGetal(parseInt(v)), form.makeRedSquare);
-										if(otherState){highlight(versie.vakken2MetGetal(parseInt(v)), form.makeRedSquare2);}
-									}
-								};
+								input.onfocus=highlightImpossibles;
 								input.onkeyup=function(){
 									var v=input.value;
 									if(v!=""&&v.match(/[1-9]/g)==null){
@@ -564,6 +564,7 @@
 												setValue_(n, true);
 												ignore=false;
 												moves.make(row, index, n);
+												highlightImpossibles();
 											}
 										}else{
 											sudoku.zet(row, index, 0);
@@ -836,7 +837,7 @@
 				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 				var button=function(text, action){
 					var node=document.createElement('div');
-					node.setAttribute('style','-webkit-appearance:button;width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px');
+					node.setAttribute('style','width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px;border:3pt solid #000;background-color:#fff');
 					node.setAttribute('align','center');
 					node.appendChild((function(){
 						var div=document.createElement('div');
@@ -848,7 +849,7 @@
 					return node;
 				};
 				var checkBox=function(text, action, initialChecked){
-					var span=document.createElement('span');
+					var span=document.createElement('div');
 					span.appendChild(document.createTextNode(text));
 					var node=document.createElement('input');
 					node.setAttribute('type', 'checkbox');
