@@ -787,9 +787,10 @@
 			return r;
 		})();
 		var panel=(function(parent){
+			var initialSize=7;
 			var node=document.createElement('div');
 			node.setAttribute('align', 'center');
-			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:7px;height:7px;background-color:rgb(0,0,0);border:3pt solid #000');
+			node.setAttribute('style','position:absolute;left:0px;bottom:0px;width:'+(initialSize+5)+'px;height:'+initialSize+'px;background-color:rgb(0,0,0);border:3pt solid #000');
 			var node2=document.createElement('div');
 			node2.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 			var button=function(text, action){
@@ -866,6 +867,35 @@
 			for(var i=0;i<checkBoxes.length;i++){
 				node2.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
 			}
+			var changeSizeTo=(function(initial, node){
+				var s=initial;
+				var g;
+				var d, d0;
+				var callback;
+				var setSize=function(){
+					node.style.width=(s+5)+"px";
+					node.style.height=s+"px";
+				};
+				var makeStep=function(){
+					s=s+(g-s)/2;
+					d=d/2;
+					setSize();
+					if(d>d0/100){
+						setTimeout(makeStep, 20);
+					}else{
+						s=g;
+						setSize();
+						callback();
+					}
+				};
+				return function(g_, callback_){
+					g=g_;
+					d=Math.abs(s-g_);
+					d0=d;
+					callback=callback_||function(){};
+					makeStep();
+				};
+			})(initialSize, node);
 			var closeButton=(function(){
 				var node=document.createElement('div');
 				node.setAttribute('style', 'position:absolute;right:4px;top:4px;background-color:rgb(0,0,0);width:12px;height:12px');
@@ -874,25 +904,22 @@
 			})();
 			parent.appendChild(node);
 			var show=function(){
-				console.log("show");
-				node.style.width="447px";
-				node.style.height="442px";
 				node.style.backgroundColor="rgba(255,255,255,0.75)";
-				node.appendChild(node2);
-				node.appendChild(closeButton);
-				node.onclick=function(){};
+				changeSizeTo(442, function(){
+					node.appendChild(node2);
+					node.appendChild(closeButton);
+					node.onclick=function(){};
+				});
 			};
 			var hide=function(e){
-				console.log("hide");
 				e.preventDefault();
 				e.cancelBubble=true;
-				console.log(e);
 				node.removeChild(node2);
 				node.removeChild(closeButton);
-				node.style.width="7px";
-				node.style.height="7px";
-				node.style.backgroundColor="rgb(0,0,0)";
-				node.onclick=show;
+				changeSizeTo(initialSize, function(){
+					node.style.backgroundColor="rgb(0,0,0)";
+					node.onclick=show;
+				});
 			};
 			node.onclick=show;
 			return {show:show,hide:hide};
