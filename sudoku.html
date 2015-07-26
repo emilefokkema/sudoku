@@ -43,21 +43,27 @@
 				return -1;
 			}
 		};
-		var volgendeCel=function(rij, kolom){
+		var volgendeCel=function(rij, kolom, hoever){
 			var r,k;
-			if(kolom<8){
-				r=rij;
-				k=kolom+1;
-			}else{
-				if(rij<8){
-					r=rij+1;
-					k=0;
+			var volgende=function(){
+				if(kolom<8){
+					r=rij;
+					k=kolom+1;
 				}else{
-					r=0;
-					k=0;
+					if(rij<8){
+						r=rij+1;
+						k=0;
+					}else{
+						r=0;
+						k=0;
+					}
 				}
-			}
-			return {rij:r,kolom:k};
+				rij=r;
+				kolom=k;
+			};
+			volgende();
+			if(hoever){for(var i=0;i<hoever-1;i++){volgende();}}
+			return {rij:rij,kolom:kolom};
 		};
 		var leeg=function(){
 			var g=[];
@@ -224,6 +230,7 @@
 			return {
 				getallen:function(){return g;},
 				zet:function(rij, kolom, n){zet(rij, kolom, n);return this;},
+				op: function(rij, kolom){return g[rij][kolom];},
 				checkRij:checkRij,
 				checkKolom:checkKolom,
 				checkVak:checkVak,
@@ -377,28 +384,60 @@
 			go();
 		};
 
-		var random=function(){
+		var random=function(minN){
 			var v=versie(leeg());
 			vulIn(v);
-			var verwijderEen=(function(getallen){
-				var aanwezig=[];
-				for(var i=0;i<81;i++){
-					aanwezig.push((function(i){
-						var rij=Math.floor(i/9);
-						var kolom=i%9;
-						return {r:rij,k:kolom,g:getallen[rij][kolom]};
-					})(i));
-				}
-				return function(){
-					var i=Math.floor(aanwezig.length*Math.random());
-					var welke=aanwezig[i];
-					v.zet(welke.r, welke.k, 0);
-					aanwezig.splice(i,1);
+			var rij=0;
+			var kolom=0;
+			var over=81;
+			var volgende;
+			minN=minN?minN:27;
+			var isUnique=function(v){
+				//console.log("[random] begin checking for uniqueness...");
+				var n=0;
+				var result=true;
+				vulIn(
+						versie(v.getallen()),
+						null,
+						function(d){
+							n++;
+							if(n==1){return true;}else{result=false;return false;}
+						},
+						null
+					);
+				//console.log("[random] done checking for uniqueness");
+				return result;
+			};
+			var naarVolgendeBewoonde=function(hoeveel){
+				var volgende;
+				var go=function(){
+					do{
+						volgende=volgendeCel(rij,kolom);
+						rij=volgende.rij;
+						kolom=volgende.kolom;
+					}while(!v.op(rij,kolom));
 				};
-			})(v.getallen());
-			for(var i=0;i<50;i++){
-				verwijderEen();
+				go();
+				if(hoeveel){for(var i=0;i<hoeveel-1;i++){go();}}
+			};
+			var slaOver=function(){
+				var eerstRij=rij;
+				var eerstKolom=kolom;
+				var gezocht=false;
+				while(!isUnique(versie(v.getallen()).zet(rij, kolom, 0))){
+					gezocht=true;
+					console.log("[random] overslaan")
+					naarVolgendeBewoonde();
+				}
+				if(gezocht&&rij==eerstRij&&kolom==eerstKolom){return false;}
+				return true;
+			};
+			while(over>minN&&slaOver()){
+				v.zet(rij,kolom,0);
+				over--;
+				naarVolgendeBewoonde(1+Math.floor(Math.random()*2));
 			}
+			console.log("[random] klaar (over: "+over+")");
 			return v;
 		};
 
@@ -876,6 +915,7 @@
 				};
 				var buttons=[
 					['GO', function(){
+						setProgressBar(0);
 						form.stopFilling();
 						var getallen=sudoku.versie(sudoku.getallen()).getallen();
 						sudoku.vulIn(
@@ -888,7 +928,7 @@
 					['Clear', function(){form.setAll(sudoku.leeg());}],
 					['Undo', function(){if(moves){moves.back();}}],
 					['Undo all', function(){if(moves){while(moves.back()){}}}],
-					['random',function(){form.setAll(sudoku.random().getallen());hash.update();}],
+					['random',function(){if(!form.otherState()){form.setAll(sudoku.random().getallen());hash.update();}}],
 					['?', function(){
 						var n=0;
 						var klaar=function(){
