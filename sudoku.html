@@ -505,7 +505,7 @@
 								var highlightImpossibles=function(){
 									var v=input.value;
 									var p;
-									if(v){
+									if(highlighting&&v){
 										v=parseInt(v);
 										for(var i=0;i<9;i++){
 											for(var j=0;j<9;j++){
@@ -583,7 +583,7 @@
 								div.appendChild(input);
 								var possibilities=(function(){
 									var hidden=false;
-									var showingPossibilities=true;
+									var showingPossibilities=false;
 									var node=document.createElement('div');
 									node.setAttribute('style','position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px');
 									var p=[1,2,3,4,5,6,7,8,9];
@@ -837,7 +837,7 @@
 				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 				var button=function(text, action){
 					var node=document.createElement('div');
-					node.setAttribute('style','width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;margin:5px;border:3pt solid #000;background-color:#fff');
+					node.setAttribute('style','width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;background-color:#fff');
 					node.setAttribute('align','center');
 					node.appendChild((function(){
 						var div=document.createElement('div');
@@ -849,14 +849,30 @@
 					return node;
 				};
 				var checkBox=function(text, action, initialChecked){
-					var span=document.createElement('div');
-					span.appendChild(document.createTextNode(text));
-					var node=document.createElement('input');
-					node.setAttribute('type', 'checkbox');
-					if(initialChecked){node.setAttribute('checked','true');}
-					node.onclick=function(){action(node);};
-					span.appendChild(node);
-					return span;
+					var div=document.createElement('div');
+					div.setAttribute('style','height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px');
+					div.appendChild((function(){
+						var table=document.createElement('table');
+						table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit');
+						table.appendChild((function(){
+							var tr=document.createElement('tr');
+							var td1=document.createElement('td');
+							td1.appendChild(document.createTextNode(text));
+							td2=document.createElement('td');
+							td2.setAttribute('style','width:20px');
+							var node=document.createElement('input');
+							node.setAttribute('style','border:3pt solid #000');
+							node.setAttribute('type', 'checkbox');
+							if(initialChecked){node.setAttribute('checked','true');}
+							node.onclick=function(){action(node);};
+							td2.appendChild(node);
+							tr.appendChild(td1);
+							tr.appendChild(td2);
+							return tr;
+						})());
+						return table;
+					})());
+					return div;
 				};
 				var buttons=[
 					['GO', function(){
@@ -915,7 +931,7 @@
 							form.toggleKind();
 						}
 					}],
-					['mogelijkheden', function(){form.togglePossibilitiesView();}, true],
+					['mogelijkheden', function(){form.togglePossibilitiesView();}],
 					['autofill', (function(){
 						var filling=false;
 						return function(){
