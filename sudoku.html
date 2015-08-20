@@ -10,19 +10,36 @@
 (function(b, setHash, getHash){
 	var timedOutWhile=function(condition, whatToDo, whatToDoAfter){
 		var step=function(){
-			if(condition()){
-				setTimeout(function(){whatToDo(step);}, 50);
-			}else{
-				if(whatToDoAfter){whatToDoAfter();}
-			}
+			condition(function(bool){
+				if(bool){
+					setTimeout(function(){whatToDo(step);}, 50);
+				}else{
+					if(whatToDoAfter){whatToDoAfter();}
+				}
+			});
 		};
 		step();
 	};
-	(function(){
-		var i=0;
-		//while(i<10){i++};
-		timedOutWhile(function(){return i<10},function(next){i++;console.log(i);next();});
+
+	var maak=(function(){
+		var maak=function(tagName){
+			var node=document.createElement(tagName);
+			node.met=function(attr, val){
+				node.setAttribute(attr, val);
+				return node;
+			};
+			return node;
+		};
+		maak.kind=function(parent, child){
+			parent.appendChild(child);
+			return parent;
+		};
+		maak.tekst=function(t){
+			return document.createTextNode(t);
+		};
+		return maak;
 	})();
+
 	var maakSudoku=function(){
 		var rijPositie=function(index,j){return [index, j];};
 		var kolomPositie=function(index, j){return [j, index];};
@@ -443,7 +460,7 @@
 				go();
 				if(hoeveel){for(var i=0;i<hoeveel-1;i++){go();}}
 			};
-			var slaOver=function(){
+			var slaOver=function(returnBool){
 				var eerstRij=rij;
 				var eerstKolom=kolom;
 				var gezocht=false;
@@ -452,10 +469,15 @@
 					log("overslaan")
 					naarVolgendeBewoonde();
 				}
-				if(gezocht&&rij==eerstRij&&kolom==eerstKolom){return false;}
-				return true;
+				if(gezocht&&rij==eerstRij&&kolom==eerstKolom){returnBool(false);return;}
+				returnBool(true);
 			};
-			timedOutWhile(function(){return over>minN&&slaOver();},
+			timedOutWhile(
+				function(returnBool){
+					if(over<=minN){returnBool(false);}else{
+						slaOver(returnBool);
+					}
+				},
 				function(next){
 					v.zet(rij,kolom,0);
 					over--;
@@ -466,14 +488,7 @@
 					log("klaar (over: "+over+")");
 					if(finalCallback){finalCallback(v.getallen(), v.getallenRij());}
 				}
-				);
-			// while(over>minN&&slaOver()){
-			// 	v.zet(rij,kolom,0);
-			// 	over--;
-			// 	naarVolgendeBewoonde(1+Math.floor(Math.random()*2));
-			// }
-			// log("klaar (over: "+over+")");
-			// if(finalCallback){finalCallback(v.getallen(), v.getallenRij());}
+			);
 		};
 
 		var hasher;
@@ -934,30 +949,22 @@
 					return node;
 				};
 				var checkBox=function(text, action, initialChecked){
-					var div=document.createElement('div');
-					div.setAttribute('style','height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px');
-					div.appendChild((function(){
-						var table=document.createElement('table');
-						table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit');
-						table.appendChild((function(){
-							var tr=document.createElement('tr');
-							var td1=document.createElement('td');
-							td1.appendChild(document.createTextNode(text));
-							td2=document.createElement('td');
-							td2.setAttribute('style','width:20px');
-							var node=document.createElement('input');
-							node.setAttribute('style','border:3pt solid #000');
-							node.setAttribute('type', 'checkbox');
-							if(initialChecked){node.setAttribute('checked','true');}
-							node.onclick=function(){action(node);};
-							td2.appendChild(node);
-							tr.appendChild(td1);
-							tr.appendChild(td2);
-							return tr;
-						})());
-						return table;
-					})());
-					return div;
+					return (function(parent){
+						return maak.kind(parent, (function(parent){
+							return maak.kind(parent, (function(parent){
+								maak.kind(parent, (function(parent){
+									return maak.kind(parent, maak.tekst(text));
+								})(maak('td')));
+								return maak.kind(parent, (function(parent){
+									return maak.kind(parent, (function(parent){
+										if(initialChecked){parent.met('checked','true')}
+										parent.onclick=function(){action(parent);};
+										return parent;
+									})(maak('input').met('style','border:3pt solid #000').met('type','checkbox')));
+								})(maak('td').met('style','width:20px')));
+							})(maak('tr')));
+						})(maak('table').met('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit')));
+					})(maak('div').met('style','height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px'));
 				};
 				var buttons=[
 					['GO', function(){
