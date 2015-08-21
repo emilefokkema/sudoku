@@ -40,6 +40,45 @@
 		return maak;
 	})();
 
+	var makeNode=(function(){
+		var maak=function(tagName){
+			var node=document.createElement(tagName);
+			node.html=function(s){
+				node.innerHTML=s;
+				return node;
+			};
+			return node;
+		};
+		var getAllNodes=function(node){
+			var r=[];
+			var res0,res=document.evaluate('//*', node);
+			while(res0=res.iterateNext()){
+				r.push(res0);
+			}
+			return r;
+		};
+		var makeNode=function(html){
+			var baseNode=maak('template').html(html).content.childNodes[0];
+			if(arguments.length>1&&'function'===typeof arguments[1]){
+				var f=arguments[1];
+				var nodesToPass=[];
+				var id,idN,node,allNodes=getAllNodes(baseNode);
+				for(var i=0;i<allNodes.length;i++){
+					node=allNodes[i];
+					id=node.getAttribute('id');
+					if(id&&!isNaN(idN=parseInt(id))){
+						nodesToPass.push({n:idN,node:node});
+						node.removeAttribute('id');
+					}
+				}
+				nodesToPass=nodesToPass.sort(function(a,b){return a.n-b.n;}).map(function(o){return o.node;});
+				f.apply(null, nodesToPass);
+			}
+			return baseNode;
+		}
+		return makeNode;
+	})();
+	
 	var maakSudoku=function(){
 		var rijPositie=function(index,j){return [index, j];};
 		var kolomPositie=function(index, j){return [j, index];};
@@ -932,39 +971,61 @@
 					}
 				};
 			})(node);
+			var setText;
+			makeNode('<div id="1" style="width:450px;height:450px;position:relative"><span id="2" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000">hoi</span></div>',
+				function(layover, span){
+					setText=function(text, color){
+						if(showing=="controls"){
+							node.removeChild(controls);
+							node.appendChild(layover);
+							showing="text";
+						}
+						span.innerHTML="";
+						span.appendChild(document.createTextNode(text));
+						span.style.color=color?color:"#000";
+						node.onclick=function(){node.removeChild(layover);node.appendChild(controls);showing="controls";node.onclick=function(){};};
+					};
+				});
+			
 			var controls=(function(){
-				var node=document.createElement('div');
-				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)');
 				var button=function(text, action){
-					var node=document.createElement('div');
-					node.setAttribute('style','width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;background-color:#fff');
-					node.setAttribute('align','center');
-					node.appendChild((function(){
-						var div=document.createElement('div');
-						div.setAttribute('style','position:relative;top:50%;transform:translateY(-50%)');
-						div.appendChild(document.createTextNode(text));
-						return div;
-					})());
-					node.onclick=function(e){e.cancelBubble=true;action();};
-					return node;
+					return makeNode('<div id="1" style="width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;background-color:#fff" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">'+text+'</div></div>',
+						function(button){
+							button.onclick=function(e){e.cancelBubble=true;action();};
+						});
 				};
 				var checkBox=function(text, action, initialChecked){
-					return (function(parent){
-						return maak.kind(parent, (function(parent){
-							return maak.kind(parent, (function(parent){
-								maak.kind(parent, (function(parent){
-									return maak.kind(parent, maak.tekst(text));
-								})(maak('td')));
-								return maak.kind(parent, (function(parent){
-									return maak.kind(parent, (function(parent){
-										if(initialChecked){parent.met('checked','true')}
-										parent.onclick=function(){action(parent);};
-										return parent;
-									})(maak('input').met('style','border:3pt solid #000').met('type','checkbox')));
-								})(maak('td').met('style','width:20px')));
-							})(maak('tr')));
-						})(maak('table').met('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit')));
-					})(maak('div').met('style','height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px'));
+					return makeNode('<div id="2" style="cursor:pointer;height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td>'+text+'</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>',
+						function(checkbox, div){
+							var turnOn=function(){
+								div.style.backgroundColor='#bbb';
+								checkbox.setAttribute('checked','true');
+								initialChecked=true;
+							};
+							var turnOff=function(){
+								div.style.backgroundColor='transparent';
+								checkbox.removeAttribute('checked');
+								initialChecked=false;
+							};
+							if(initialChecked){turnOn();}
+							div.onclick=function(e){
+								e.cancelBubble=true;
+								if(initialChecked){
+									turnOff();
+								}else{
+									turnOn();
+								}
+								action(initialChecked, turnOn, turnOff);
+							};
+							checkbox.onclick=function(e){
+								e.preventDefault();
+								if(checkbox.checked&&!initialChecked){
+									checkbox.removeAttribute('checked');
+								}else if(!checkbox.checked&&initialChecked){
+									checkbox.setAttribute('checked','true');
+								}
+							};
+						})
 				};
 				var buttons=[
 					['GO', function(){
@@ -1022,13 +1083,14 @@
 					}]
 				];
 				var checkBoxes=[
-					['andere', function(node){
-						if(node.checked){
+					['andere', function(checked, turnOn, turnOff){
+						if(checked){
 							var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
+							console.log(check);
 							if(check){
 								form.toggleKind();
 							}else{
-								node.checked=false;
+								turnOff();
 							}
 						}else{
 							form.toggleKind();
@@ -1051,33 +1113,16 @@
 					['twins', function(){form.toggleShadingView();}]
 
 				];
-				for(var i=0;i<buttons.length;i++){
-					node.appendChild(button(buttons[i][0], buttons[i][1]));
-				}
-				for(var i=0;i<checkBoxes.length;i++){
-					node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
-				}
-				return node;
+				return makeNode('<div id="1" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)"></div>',
+					function(node){
+						for(var i=0;i<buttons.length;i++){
+							node.appendChild(button(buttons[i][0], buttons[i][1]));
+						}
+						for(var i=0;i<checkBoxes.length;i++){
+							node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
+						}
+					});
 			})();
-			var setText=(function(parent){
-				var node0=document.createElement('div');
-				node0.setAttribute('style','width:450px;height:450px;position:relative');
-				var node=document.createElement('span');
-				node.setAttribute('style','position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000');
-				node.appendChild(document.createTextNode("hoi"));
-				node0.appendChild(node);
-				return function(text, color){
-					if(showing=="controls"){
-						parent.removeChild(controls);
-						parent.appendChild(node0);
-						showing="text";
-					}
-					node.innerHTML="";
-					node.appendChild(document.createTextNode(text));
-					node.style.color=color?color:"#000";
-					parent.onclick=function(){parent.removeChild(node0);parent.appendChild(controls);showing="controls";};
-				};
-			})(node);
 			var changeSizeTo=(function(initial, node){
 				var s=initial;
 				var g;
