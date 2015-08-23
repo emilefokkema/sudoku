@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 </head>
 <body></body>
+<script src="makeNode.js"></script>
 <script language="JavaScript">
 (function(b, setHash, getHash){
 	var timedOutWhile=function(condition, whatToDo, whatToDoAfter){
@@ -38,45 +39,6 @@
 			return document.createTextNode(t);
 		};
 		return maak;
-	})();
-
-	var makeNode=(function(){
-		var maak=function(tagName){
-			var node=document.createElement(tagName);
-			node.html=function(s){
-				node.innerHTML=s;
-				return node;
-			};
-			return node;
-		};
-		var getAllNodes=function(node){
-			var r=[];
-			var res0,res=document.evaluate('//*', node);
-			while(res0=res.iterateNext()){
-				r.push(res0);
-			}
-			return r;
-		};
-		var makeNode=function(html){
-			var baseNode=maak('template').html(html).content.childNodes[0];
-			if(arguments.length>1&&'function'===typeof arguments[1]){
-				var f=arguments[1];
-				var nodesToPass=[];
-				var id,idN,node,allNodes=getAllNodes(baseNode);
-				for(var i=0;i<allNodes.length;i++){
-					node=allNodes[i];
-					id=node.getAttribute('id');
-					if(id&&!isNaN(idN=parseInt(id))){
-						nodesToPass.push({n:idN,node:node});
-						node.removeAttribute('id');
-					}
-				}
-				nodesToPass=nodesToPass.sort(function(a,b){return a.n-b.n;}).map(function(o){return o.node;});
-				f.apply(null, nodesToPass);
-			}
-			return baseNode;
-		}
-		return makeNode;
 	})();
 	
 	var maakSudoku=function(){
@@ -971,10 +933,9 @@
 					}
 				};
 			})(node);
-			var setText;
-			makeNode('<div id="1" style="width:450px;height:450px;position:relative"><span id="2" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000">hoi</span></div>',
+			var setText=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><span id="2" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:20px;color:#000">hoi</span></div>',
 				function(layover, span){
-					setText=function(text, color){
+					return function(text, color){
 						if(showing=="controls"){
 							node.removeChild(controls);
 							node.appendChild(layover);
@@ -987,142 +948,146 @@
 					};
 				});
 			
-			var controls=(function(){
-				var button=function(text, action){
-					return makeNode('<div id="1" style="width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;background-color:#fff" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">'+text+'</div></div>',
-						function(button){
-							button.onclick=function(e){e.cancelBubble=true;action();};
-						});
-				};
-				var checkBox=function(text, action, initialChecked){
-					return makeNode('<div id="2" style="cursor:pointer;height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td>'+text+'</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>',
-						function(checkbox, div){
-							var turnOn=function(){
-								div.style.backgroundColor='#bbb';
-								checkbox.setAttribute('checked','true');
-								initialChecked=true;
-							};
-							var turnOff=function(){
-								div.style.backgroundColor='transparent';
-								checkbox.removeAttribute('checked');
-								initialChecked=false;
-							};
-							if(initialChecked){turnOn();}
-							div.onclick=function(e){
-								e.cancelBubble=true;
-								if(initialChecked){
-									turnOff();
-								}else{
-									turnOn();
-								}
-								action(initialChecked, turnOn, turnOff);
-							};
-							checkbox.onclick=function(e){
-								e.preventDefault();
-								if(checkbox.checked&&!initialChecked){
-									checkbox.removeAttribute('checked');
-								}else if(!checkbox.checked&&initialChecked){
-									checkbox.setAttribute('checked','true');
-								}
-							};
-						})
-				};
-				var buttons=[
-					['GO', function(){
-						setProgressBar(0);
-						form.stopFilling();
-						var getallen=sudoku.versie(sudoku.getallen()).getallen();
-						sudoku.vulIn(
-							sudoku.versie(sudoku.getallen(), form.otherState()),
-							function(d, p){form.setAll(d);setProgressBar(Math.max(0, Math.min(p,1)));},
-							function(){setProgressBar(-1);return false;},
-							function(){form.setAll(getallen);setProgressBar(-1);setText("geen oplossing!", "rgb(150,0,0)");}
-							);
-					}],
-					['Clear', function(){form.setAll(sudoku.leeg());}],
-					['Undo', function(){if(moves){moves.back();}}],
-					['Undo all', function(){if(moves){while(moves.back()){}}}],
-					['random',function(){
-						if(!form.otherState()){
-							sudoku.random(
-								function(t){setText(t);},
-								null,
-								function(getallen, rij){form.setAll(getallen);hash.update(rij);}
-								);
-							//form.setAll(sudoku.random(function(t){console.log(t);}).getallen());
-							//hash.update();
-						}
-					}],
-					['?', function(){
-						var n=0;
-						var klaar=function(){
-							if(n!=0){setText(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
+			var controls=makeNode('<div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)">$(things)</div>',
+				null,
+				{
+					things:(function(){
+						var buttonTemplate='<div id="1" style="width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;background-color:#fff" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div>';
+						var checkBoxTemplate='<div id="2" style="cursor:pointer;height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td>$(text)</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>';
+						var button=function(text, action){
+							return makeNode(
+										buttonTemplate,
+										function(button){
+											button.onclick=function(e){e.cancelBubble=true;action();};
+										},
+										{text:text}
+									);
 						};
-						sudoku.vulIn(
-							sudoku.versie(sudoku.getallen(), form.otherState()),
-							function(d,p){setProgressBar(Math.max(0, Math.min(p,1)));},
-							function(d){
-								n++;
-								if(n==1){
-									return true;
-								}else{
-									setProgressBar(-1);
-									setText("niet eenduidig", "rgb(200,150,0)");
-									return false;
-								}
-							},
-							function(){
-								setProgressBar(-1);
-								if(n==0){
-									setText("geen oplossing!", "rgb(150,0,0)");
-								}else{
-									setText("eenduidig", "rgb(0,150,0)");
-								}
-							}
-							);
-					}]
-				];
-				var checkBoxes=[
-					['andere', function(checked, turnOn, turnOff){
-						if(checked){
-							var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
-							console.log(check);
-							if(check){
-								form.toggleKind();
-							}else{
-								turnOff();
-							}
-						}else{
-							form.toggleKind();
-						}
-					}],
-					['mogelijkheden', function(){form.togglePossibilitiesView();}],
-					['autofill', (function(){
-						var filling=false;
-						return function(){
-							if(!filling){
-								filling=true;
-								form.startFilling();
-							}else{
+						var checkBox=function(text, action, initialChecked){
+							return makeNode(
+										checkBoxTemplate,
+										function(checkbox, div){
+											var turnOn=function(){
+												div.style.backgroundColor='#bbb';
+												checkbox.setAttribute('checked','true');
+												initialChecked=true;
+											};
+											var turnOff=function(){
+												div.style.backgroundColor='transparent';
+												checkbox.removeAttribute('checked');
+												initialChecked=false;
+											};
+											if(initialChecked){turnOn();}
+											div.onclick=function(e){
+												e.cancelBubble=true;
+												if(initialChecked){
+													turnOff();
+												}else{
+													turnOn();
+												}
+												action(initialChecked, turnOn, turnOff);
+											};
+											checkbox.onclick=function(e){
+												e.preventDefault();
+												if(checkbox.checked&&!initialChecked){
+													checkbox.removeAttribute('checked');
+												}else if(!checkbox.checked&&initialChecked){
+													checkbox.setAttribute('checked','true');
+												}
+											};
+										},
+										{text:text}
+									);
+						};
+						var buttons=[
+							['GO', function(){
+								setProgressBar(0);
 								form.stopFilling();
-								filling=false;
-							}
-						};
-					})()],
-					['highlight', function(){form.toggleHighlighting();}],
-					['twins', function(){form.toggleShadingView();}]
+								var getallen=sudoku.versie(sudoku.getallen()).getallen();
+								sudoku.vulIn(
+									sudoku.versie(sudoku.getallen(), form.otherState()),
+									function(d, p){form.setAll(d);setProgressBar(Math.max(0, Math.min(p,1)));},
+									function(){setProgressBar(-1);return false;},
+									function(){form.setAll(getallen);setProgressBar(-1);setText("geen oplossing!", "rgb(150,0,0)");}
+									);
+							}],
+							['Clear', function(){form.setAll(sudoku.leeg());}],
+							['Undo', function(){if(moves){moves.back();}}],
+							['Undo all', function(){if(moves){while(moves.back()){}}}],
+							['random',function(){
+								if(!form.otherState()){
+									sudoku.random(
+										function(t){setText(t);},
+										null,
+										function(getallen, rij){form.setAll(getallen);hash.update(rij);}
+										);
+								}
+							}],
+							['?', function(){
+								var n=0;
+								var klaar=function(){
+									if(n!=0){setText(n==1?"eenduidig":"niet eenduidig", n==1?"rgb(0,150,0)":"rgb(200,150,0)");}
+								};
+								sudoku.vulIn(
+									sudoku.versie(sudoku.getallen(), form.otherState()),
+									function(d,p){setProgressBar(Math.max(0, Math.min(p,1)));},
+									function(d){
+										n++;
+										if(n==1){
+											return true;
+										}else{
+											setProgressBar(-1);
+											setText("niet eenduidig", "rgb(200,150,0)");
+											return false;
+										}
+									},
+									function(){
+										setProgressBar(-1);
+										if(n==0){
+											setText("geen oplossing!", "rgb(150,0,0)");
+										}else{
+											setText("eenduidig", "rgb(0,150,0)");
+										}
+									}
+									);
+							}]
+						];
+						var checkBoxes=[
+							['andere', function(checked, turnOn, turnOff){
+								if(checked){
+									var check=sudoku.versie(sudoku.getallen(), true).checkAlles();
+									console.log(check);
+									if(check){
+										form.toggleKind();
+									}else{
+										turnOff();
+									}
+								}else{
+									form.toggleKind();
+								}
+							}],
+							['mogelijkheden', function(){form.togglePossibilitiesView();}],
+							['autofill', (function(){
+								var filling=false;
+								return function(){
+									if(!filling){
+										filling=true;
+										form.startFilling();
+									}else{
+										form.stopFilling();
+										filling=false;
+									}
+								};
+							})()],
+							['highlight', function(){form.toggleHighlighting();}],
+							['twins', function(){form.toggleShadingView();}]
 
-				];
-				return makeNode('<div id="1" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)"></div>',
-					function(node){
-						for(var i=0;i<buttons.length;i++){
-							node.appendChild(button(buttons[i][0], buttons[i][1]));
-						}
-						for(var i=0;i<checkBoxes.length;i++){
-							node.appendChild(checkBox(checkBoxes[i][0], checkBoxes[i][1], checkBoxes[i][2]));
-						}
-					});
-			})();
+						];
+						return buttons.map(function(b){return button(b[0], b[1]);}).concat(checkBoxes.map(function(c){return checkBox(c[0],c[1],c[2]);}));
+					})()
+				}
+				);
+			
 			var changeSizeTo=(function(initial, node){
 				var s=initial;
 				var g;
@@ -1152,12 +1117,10 @@
 					makeStep();
 				};
 			})(initialSize, node);
-			var closeButton=(function(){
-				var node=document.createElement('div');
-				node.setAttribute('style', 'position:absolute;right:4px;top:4px;background-color:rgb(0,0,0);width:12px;height:12px');
-				node.onclick=function(e){hide(e);};
-				return node;
-			})();
+			var closeButton=makeNode('<div id="1" style="position:absolute;cursor:pointer;right:4px;top:4px;background-color:rgb(0,0,0);width:12px;height:12px"></div>',
+				function(node){
+					node.onclick=function(e){hide(e);};
+				});
 			parent.appendChild(node);
 			var show=function(){
 				node.style.backgroundColor="rgba(255,255,255,0.75)";
