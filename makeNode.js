@@ -9,8 +9,8 @@
 	};
 	var getAllNodes=function(node){
 		var r=[];
-		var res0,res=document.evaluate('//*', node);
-		while(res0=res.iterateNext()){
+		var res0,nodeIterator=document.createNodeIterator(node, NodeFilter.SHOW_ELEMENT);
+		while(res0=nodeIterator.nextNode()){
 			r.push(res0);
 		}
 		return r;
