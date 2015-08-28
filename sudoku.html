@@ -513,10 +513,56 @@
 		};
 	};
 	var sudoku=maakSudoku();
+
 	var editor=(function(){
 		var editor=document.createElement('div');
 		var littleThing;
 		editor.setAttribute('style', 'width:450px;height:450px;position:relative');
+		var form2=makeNode('<div id="1" style="width:450px;height:450px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(rows)"></table></div>',
+			function(node){
+				var otherState=false;
+				var highlighting=false;
+				var shading=false;
+				console.log(this.cells);
+				editor.appendChild(node);
+			},
+			[9,function(rowIndex){
+				var row=makeNode('<tr id="1" style="margin:0px;padding:0px;border-spacing:0px" offspring="$(tds)"></tr>',
+					function(tr){
+						return {
+							tr:tr,
+							cells:this.cells
+						};
+					},
+					[9,function(columnIndex){
+						var border=function(side, thickness){
+							var s;
+							switch(side){
+								case 0:s="border-top";break;
+								case 1:s="border-right";break;
+								case 2:s="border-bottom";break;
+								case 3:s="border-left";break;
+							}
+							return s+":"+thickness+"pt solid #000;";
+						};
+						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;"><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div></div></td>',
+							function(td, div){
+								
+								return {
+									td:td,
+									cell:"a"
+								};
+							});
+						return {
+							tds:cell.td,
+							cells:cell.cell
+						};
+					}]);
+				return {
+					rows:row.tr,
+					cells:row.cells
+				};
+			}]);
 		var form=(function(){
 			var node=document.createElement('div');
 			node.setAttribute('style', 'width:450px;height:450px');
@@ -729,7 +775,7 @@
 			}
 			cellFunctions=cellFunctions.finalize();
 			node.appendChild(table);
-			editor.appendChild(node);
+			//editor.appendChild(node);
 			var toggleHighlighting=function(){
 				highlighting=!highlighting;
 			};
@@ -903,6 +949,7 @@
 			};
 			return r;
 		})();
+
 		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0);border:3pt solid #000"></div>',function(node){
 				var showing="controls",initialSize=7;
 				node.style.width=(initialSize+5)+"px";
