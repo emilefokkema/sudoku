@@ -9,6 +9,15 @@
 <script src="makeNode.js"></script>
 <script language="JavaScript">
 (function(b, setHash, getHash){
+	var sheet=makeNode('<style id="1"></style>',
+		function(s){
+			document.head.appendChild(s);
+			return s.sheet;
+		});
+	sheet.insertRule('.sudoku-button {width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:1pt solid #000;background-color:#fff;}', 0);
+	sheet.insertRule('.sudoku-button:hover {background-color: #dddddd;}', 1);
+	sheet.insertRule('.sudoku-switch {cursor:pointer;height:35px;width:100%;font-family:Verdana;font-size:12px;font-weight:bold;margin:0px;background-color:#fff}',2);
+
 	var timedOutWhile=function(condition, whatToDo, whatToDoAfter){
 		var step=function(){
 			condition(function(bool){
@@ -513,7 +522,7 @@
 		};
 	};
 	var sudoku=maakSudoku();
-	var sudoku2=maakSudoku();
+
 	var editor=(function(){
 		var editor=document.createElement('div');
 		var littleThing;
@@ -523,7 +532,6 @@
 			function(node){
 				var highlighting,shading,otherState=false;
 				var self=this;
-				//var sudoku=sudoku2;
 				var allCells=function(f){
 					return self.cells.map(function(r){return r.map(f);})[0][0];
 				};
@@ -585,7 +593,6 @@
 									p=posF(k,i);
 									if(!getallen[p[0]][p[1]]){
 										poss=self.cells[p[0]][p[1]].getPossibilities();
-										//poss=cellFunctions.getPossibilities[p[0]][p[1]]();
 										for(var j=0;j<poss.length;j++){
 											waarZit[poss[j]-1].push(i);
 										}
@@ -607,7 +614,6 @@
 										p1=posF(k, i);
 										p2=posF(k,j);
 										poss=self.cells[p1[0]][p1[1]].getPossibilities();
-										//poss=cellFunctions.getPossibilities[p1[0]][p1[1]]();
 										if(poss&&poss.length==2&&arrayEquals(poss, self.cells[p2[0]][p2[1]].getPossibilities())){
 											twins.push([poss,[p1,p2]]);
 										}
@@ -622,7 +628,6 @@
 				var showTwinsInSets=function(){
 					console.log("showTwinsInSets");
 					allCells(function(c){c.shade('transparent');});
-					//allCells(cellFunctions.shade, ["transparent"]);
 					var p1,p2;
 					var twins=getTwinsInSets(sudoku.vakPositie, 9)().concat(getTwinsInSets(sudoku.rijPositie, 9)()).concat(getTwinsInSets(sudoku.kolomPositie, 9)());
 					if(otherState){twins=twins.concat(getTwinsInSets(sudoku.vak2Positie, 4)());}
@@ -632,8 +637,6 @@
 							p2=twins[i][j][1][1];
 							self.cells[p1[0]][p1[1]].shade("rgba(85,85,187,0.1)");
 							self.cells[p2[0]][p2[1]].shade("rgba(85,85,187,0.1)");
-							//cellFunctions.shade[p1[0]][p1[1]]("rgba(85,85,187,0.1)");
-							//cellFunctions.shade[p2[0]][p2[1]]("rgba(85,85,187,0.1)");
 						}
 					}
 				};
@@ -672,7 +675,6 @@
 					var going=false;
 					var go=function(){
 						self.cells[r][k].fillRemainingPossibility();
-						//cellFunctions.fillRemainingPossibility[r][k]();
 						var next=sudoku.volgendeCel(r,k);
 						r=next.rij;
 						k=next.kolom;
@@ -709,7 +711,6 @@
 			[9,function(rowIndex, getToReturn){
 				var self=this;
 				var cells=function(){return self.cells;};
-				//var sudoku=sudoku2;
 				var row=makeNode('<tr id="1" style="margin:0px;padding:0px;border-spacing:0px" offspring="$(tds)"></tr>',
 					function(tr){
 						return {
@@ -718,7 +719,7 @@
 						};
 					},
 					[9,function(columnIndex){
-						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><div id="5" style="position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px"></div></div></td>',
+						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><div id="5" style="position:absolute;left:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;top:'+(rowIndex==0?3:0)+'px;font-family:Arial;color:#999999;font-size:8px"></div></div></td>',
 							function(td, div, sh, input, possNode){
 								var otherState=false;
 								var highlighting=false;
@@ -814,7 +815,7 @@
 											var toSet=pos[0];
 											setValue(toSet, true);
 											sudoku.zet(rowIndex, columnIndex, toSet);
-											//moves.make(rowIndex, columnIndex, toSet);
+											moves.make(rowIndex, columnIndex, toSet);
 										}
 									};
 								})();
@@ -836,7 +837,7 @@
 												sudoku.zet(rowIndex, columnIndex, n);
 												setValue(n, true);
 												ignore=false;
-												//moves.make(rowIndex, columnIndex, n);
+												moves.make(rowIndex, columnIndex, n);
 												highlightImpossibles();
 											}
 										}else{
@@ -881,393 +882,9 @@
 					rows:row.tr,
 					cells:row.cells,
 				};
-			}]);
-		var form1=(function(){
-			var node=document.createElement('div');
-			node.setAttribute('style', 'width:450px;height:450px');
-			var cellFunctions=(function(functionNames){
-				var f={};
-				for(var i=0;i<functionNames.length;i++){
-					f[functionNames[i]]={total: [], row:[]};
-				}
-				return {
-					pushRow: function(){
-						for(var i=0;i<functionNames.length;i++){
-							f[functionNames[i]].total.push(f[functionNames[i]].row);
-							f[functionNames[i]].row=[];
-						}
-					},
-					addFunctions: function(functionArray){
-						for(var i=0;i<functionNames.length;i++){
-							f[functionNames[i]].row.push(functionArray[i]);
-						}
-					},
-					finalize: function(){
-						for(var i=0;i<functionNames.length;i++){
-							f[functionNames[i]]=f[functionNames[i]].total;
-						}
-						return f;
-					}
-				};
-			})(["makeRed", "makeNotRed", "setValue", "toggleInitialColor", "eliminateFrom", "resetPossibilitiesFor", "fillRemainingPossibility", "getPossibilities", "hasValue", "togglePossibilitiesView", "shade"]);
-			var otherState=false;
-			var highlighting=false;
-			var shading=false;
-			var table=document.createElement('table');
-			table.setAttribute('style','width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit');
-			for(var i=0;i<9;i++){
-				table.appendChild((function(row){
-					var tr=document.createElement('tr');
-					tr.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
-					for(var i=0;i<9;i++){
-						tr.appendChild((function(index){
-							var td=document.createElement('td');
-							td.setAttribute('style','margin:0px;padding:0px;border-spacing:0px');
-							td.appendChild((function(){
-								var div=document.createElement('div');
-								var vakIndex=sudoku.vakIndex(row, index);
-								var vak2Index=sudoku.vak2Index(row, index);
-								var initialColor="#FFFFFF";
-								var border=function(side, thickness){
-									var s;
-									switch(side){
-										case 0:s="border-top";break;
-										case 1:s="border-right";break;
-										case 2:s="border-bottom";break;
-										case 3:s="border-left";break;
-									}
-									return s+":"+thickness+"pt solid #000;";
-								};
-								div.setAttribute('style','position:relative;width:100%;height:100%;'+border(0,row==0?3:1)+border(1,index==8?3:1)+border(3,(index==0||index%3==0)?3:1)+border(2,(row==8||row%3==2)?3:1)+'background-color:'+initialColor);
-								div.setAttribute('align', 'center');
-								var shade=(function(parent){
-									var view=false;
-									var sh=document.createElement('div');
-									sh.setAttribute('style', 'position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent');
-									parent.appendChild(sh);
-									return function(color){
-										if(shading){sh.style.backgroundColor=color}else{
-											sh.style.backgroundColor="transparent";
-										}
-									};
-								})(div);
-								var input=document.createElement('input');
-								input.setAttribute('type', 'text');
-								input.setAttribute('maxlength', 1);
-								input.setAttribute('style', 'border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent');
-								var makeRed_=function(color){
-									div.style.backgroundColor=color?color:"#FF0000";
-								};
-								var makeNotRed_=function(){
-									div.style.backgroundColor=initialColor;
-								};
-								var highlightImpossibles=function(){
-									var v=input.value;
-									var p;
-									if(highlighting&&v){
-										v=parseInt(v);
-										for(var i=0;i<9;i++){
-											for(var j=0;j<9;j++){
-												p=cellFunctions.getPossibilities[i][j]();
-												if(p==null||p.indexOf(v)==-1){
-													cellFunctions.makeRed[i][j]("#BB5555");
-												}
-											}
-										}
+			}]
+			);
 
-									}
-								};
-								var toggleInitialColor_=(function(ind){
-									var on=false;
-									return function(){
-										if(on){
-											initialColor="#FFFFFF";
-											makeNotRed_();
-											on=false;
-										}else{
-											initialColor=ind==-1?"#FFFFFF":"#BBBBBB";
-											makeRed_(initialColor);
-											on=true;
-										}
-									};
-								})(vak2Index);
-								var setValue_=function(v, commit){
-									input.value=v;
-									if(commit){commitValue(v);}	
-								};
-								var hidePossibilities=function(){possibilities.hide();};
-								var commitValue=function(v){
-									if(v){
-										form.eliminateFromRow(row, v);
-										form.eliminateFromColumn(index, v);
-										form.eliminateFromSquare(vakIndex, v);
-										if(otherState&&vak2Index>-1){form.eliminateFromSquare2(vak2Index, v);}
-										hidePossibilities();
-									}
-								};
-								var ignore=false;
-								input.onfocus=highlightImpossibles;
-								input.onkeyup=function(){
-									var v=input.value;
-									if(v!=""&&v.match(/[1-9]/g)==null){
-										makeRed_();
-										ignore=true;
-									}else{
-										form.makeNotRed();
-										if(v!=""){
-											var n=parseInt(v);
-											var versie=sudoku.versie(sudoku.getallen()).zet(row, index, n);
-											var check=versie.checkKolom(index, function(){ignore=true;form.makeRedColumn(index);})&&versie.checkRij(row, function(){ignore=true;form.makeRedRow(row);})&&versie.checkVak(vakIndex, function(){ignore=true;form.makeRedSquare(vakIndex);})&&((otherState&&vak2Index!=-1)?versie.checkVak2(vak2Index, function(){ignore=true;form.makeRedSquare2(vak2Index);}):true);
-											if(check){
-												sudoku.zet(row, index, n);
-												setValue_(n, true);
-												ignore=false;
-												moves.make(row, index, n);
-												highlightImpossibles();
-											}
-										}else{
-											sudoku.zet(row, index, 0);
-											form.setAll(sudoku.getallen());
-										}
-									}
-								};
-								input.onblur=function(){
-									if(ignore){
-										setValue_("");
-									}
-									form.makeNotRed();
-									//var v=parseInt(input.value);
-									//if(v){commitValue(v);};
-								}
-								div.appendChild(input);
-								var possibilities=(function(){
-									var hidden=false;
-									var showingPossibilities=false;
-									var node=document.createElement('div');
-									node.setAttribute('style','position:absolute;left:0px;top:0px;font-family:Arial;color:#999999;font-size:8px');
-									var p=[1,2,3,4,5,6,7,8,9];
-									var toString=function(){return p.join('');};
-									var display=function(){if(!hidden&&showingPossibilities){node.innerHTML=toString();}};
-									var eliminate=function(n){
-										if(n){
-											var i=p.indexOf(n);
-											if(i>-1){
-												p.splice(i,1);
-												display();
-											}
-										}
-									};
-									var hide=function(){node.innerHTML='';hidden=true;};
-									var reset=function(){hidden=false;p=[1,2,3,4,5,6,7,8,9];display();};
-									var get=function(){return (!hidden)?p:null;};
-									var toggleView=function(){
-										showingPossibilities=!showingPossibilities;
-										if(showingPossibilities){display();}else{node.innerHTML='';}
-									};
-									display();
-									return {node:node,eliminate:eliminate,toString:toString,reset:reset,hide:hide,get:get, toggleView:toggleView};
-
-								})();
-								var fillRemainingPossibility_=(function(poss){
-									return function(){
-										var pos=possibilities.get();
-										if((!input.value)&&pos.length==1){
-											console.log("filling");
-											var toSet=pos[0];
-											setValue_(toSet, true);
-											sudoku.zet(row, index, toSet);
-											moves.make(row, index, toSet);
-										}
-									};
-								})(possibilities);
-								var hasValue=function(){return input.value!="";}
-								cellFunctions.addFunctions([makeRed_, makeNotRed_, setValue_, toggleInitialColor_, possibilities.eliminate, possibilities.reset, fillRemainingPossibility_, possibilities.get, hasValue, possibilities.toggleView, shade]);
-								div.appendChild(possibilities.node);
-								return div;
-							})());
-							return td;
-						})(i));
-					}
-					return tr;
-				})(i));
-				cellFunctions.pushRow();
-			}
-			cellFunctions=cellFunctions.finalize();
-			node.appendChild(table);
-			//editor.appendChild(node);
-			var toggleHighlighting=function(){
-				highlighting=!highlighting;
-			};
-			var makeRedSet=function(posF){
-				var position=function(index){return function(j){return posF(index, j);};};
-				return function(i, color){
-					var p, pos=position(i);
-					for(var j=0;j<9;j++){
-						p=pos(j);
-						cellFunctions.makeRed[p[0]][p[1]](color);
-					}
-				};
-			};
-			var eliminateFromSet=function(posF){
-				var position=function(index){return function(j){return posF(index, j);};};
-				return function(i, n){
-					var p, pos=position(i);
-					for(var j=0;j<9;j++){
-						p=pos(j);
-						cellFunctions.eliminateFrom[p[0]][p[1]](n);
-					}
-				};
-			};
-			var filler=(function(){
-				var r=0;
-				var k=0;
-				var going=false;
-				var go=function(){
-					cellFunctions.fillRemainingPossibility[r][k]();
-					var next=sudoku.volgendeCel(r,k);
-					r=next.rij;
-					k=next.kolom;
-					if(going){setTimeout(go, 20);}
-				};
-				var stop=function(){going=false;};
-				return {go:function(){going=true;go();},stop:stop}
-			})();
-			var allCells=function(cellFunction, args){
-				for(var i=0;i<9;i++){
-					for(var j=0;j<9;j++){
-						cellFunction[i][j].apply(null, args);
-					}
-				}
-			};
-			var getTwinsInSets=(function(){
-				var arrayEquals=function(arr1, arr2){
-					if(!arr1||!arr2){return false;}
-					if(arr1.length!=arr2.length){return false;}
-					for(var i=0;i<arr1.length;i++){
-						if(arr1[i]!=arr2[i]){return false;}
-					}
-					return true;
-				};
-				var twinSet=function(){
-					var t=[];
-					var has=function(twin){
-						for(var i=0;i<t.length;i++){
-							if(arrayEquals(t[i][0], twin[0])){return true;}
-						}
-						return false;
-					};
-					return {
-						push:function(twin){if(!has(twin)){t.push(twin);}},
-						any: function(){return t.length>0;},
-						set: function(){return t;}
-					};
-				};
-				return function(posF, numberOfSets){
-					return function(){
-						var p, p1,p2,poss, allTwins, twins, waarZit, getallen;
-						allTwins=[];
-						for(var k=0;k<numberOfSets;k++){
-							twins=twinSet();
-							waarZit=[[],[],[],[],[],[],[],[],[]];
-							getallen=sudoku.getallen();
-							for(var i=0;i<9;i++){
-								p=posF(k,i);
-								if(!getallen[p[0]][p[1]]){
-									poss=cellFunctions.getPossibilities[p[0]][p[1]]();
-									for(var j=0;j<poss.length;j++){
-										waarZit[poss[j]-1].push(i);
-									}
-								}
-							}
-
-							//see if there are two numbers that only occur in two places
-							for(var i=0;i<9;i++){
-								for(var j=i+1;j<9;j++){
-									if(waarZit[i].length==2&&arrayEquals(waarZit[i], waarZit[j])){
-										twins.push([[i+1,j+1],[posF(k, waarZit[i][0]), posF(k, waarZit[i][1])]]);
-									}
-								}
-							}
-
-							//see if there are two places that have the same 2 possibilities
-							for(var i=0;i<9;i++){
-								for(var j=i+1;j<9;j++){
-									p1=posF(k, i);
-									p2=posF(k,j);
-									poss=cellFunctions.getPossibilities[p1[0]][p1[1]]();
-									if(poss&&poss.length==2&&arrayEquals(poss, cellFunctions.getPossibilities[p2[0]][p2[1]]())){
-										twins.push([poss,[p1,p2]]);
-									}
-								}
-							}
-							if(twins.any()){allTwins.push(twins.set())};
-						}
-						return allTwins;
-					};
-				};
-			})();
-			var showTwinsInSets=function(){
-				allCells(cellFunctions.shade, ["transparent"]);
-				var p1,p2;
-				var twins=getTwinsInSets(sudoku.vakPositie, 9)().concat(getTwinsInSets(sudoku.rijPositie, 9)()).concat(getTwinsInSets(sudoku.kolomPositie, 9)());
-				if(otherState){twins=twins.concat(getTwinsInSets(sudoku.vak2Positie, 4)());}
-				for(var i=0;i<twins.length;i++){
-					for(var j=0;j<twins[i].length;j++){
-						p1=twins[i][j][1][0];
-						p2=twins[i][j][1][1];
-						cellFunctions.shade[p1[0]][p1[1]]("rgba(85,85,187,0.1)");
-						cellFunctions.shade[p2[0]][p2[1]]("rgba(85,85,187,0.1)");
-					}
-				}
-			};
-			var toggleShadingView=function(){
-				shading=!shading;
-				showTwinsInSets();
-			};
-			var r= {
-				toggleHighlighting: toggleHighlighting,
-				toggleShadingView:toggleShadingView,
-				makeRedRow: makeRedSet(sudoku.rijPositie),
-				makeRedColumn: makeRedSet(sudoku.kolomPositie),
-				makeRedSquare: makeRedSet(sudoku.vakPositie),
-				makeRedSquare2: makeRedSet(sudoku.vak2Positie),
-				eliminateFromRow: eliminateFromSet(sudoku.rijPositie),
-				eliminateFromColumn: eliminateFromSet(sudoku.kolomPositie),
-				eliminateFromSquare: eliminateFromSet(sudoku.vakPositie),
-				eliminateFromSquare2: eliminateFromSet(sudoku.vak2Positie),
-				startFilling: function(){filler.go();},
-				stopFilling: function(){filler.stop();},
-				makeNotRed: function(){
-					allCells(cellFunctions.makeNotRed);
-				},
-				resetPossibilities: function(){
-					allCells(cellFunctions.resetPossibilitiesFor);
-				},
-				toggleKind: function(){
-					otherState=!otherState;
-					allCells(cellFunctions.toggleInitialColor);
-					if(hash){hash.update();}
-				},
-				togglePossibilitiesView: function(){
-					allCells(cellFunctions.togglePossibilitiesView);
-				},
-				setAll: function(numbers){
-					r.resetPossibilities();
-					var n;
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							n=numbers[i][j]||0;
-							cellFunctions.setValue[i][j](n==0?'':n, true);
-							sudoku.zet(i, j, n);
-						}
-					}
-					showTwinsInSets();
-				},
-				otherState:function(){return otherState},
-				showTwinsInSets:showTwinsInSets
-			};
-			return r;
-		})();
 		form=form2;
 		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0);border:3pt solid #000"></div>',function(node){
 				var showing="controls",initialSize=7;
@@ -1308,11 +925,11 @@
 						};
 					});
 				
-				var controls=makeNode('<div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)"><table style="width:100%"><tr><td align="right" style="width:50%" offspring="$(buttons)"></td><td align="left" style="width:50%" offspring="$(checkBoxes)"></td></tr></table></div>',
+				var controls=makeNode('<div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)"><table style="width:100%"><tr><td align="right" style="width:50%" offspring="$(buttons)"></td><td align="left" style="width:50%"><div style="border:1pt solid #000;width:150px">$(checkBoxes)</div></td></tr></table></div>',
 					null,
 					(function(){
-						var buttonTemplate='<div id="1" style="width:75px;height:30px;cursor:pointer;margin:0px;font-family:Verdana;font-size:12px;font-weight: bold;margin:5px;border:3pt solid #000;border-radius:20%;background-color:#fff" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div>';
-						var checkBoxTemplate='<div id="2" style="cursor:pointer;height:20px;width:150px;font-family:Verdana;font-size:12px;font-weight:bold;margin:5px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td>$(text)</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>';
+						var buttonTemplate='<div id="1" class="sudoku-button" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div>';
+						var checkBoxTemplate='<div id="2" class="sudoku-switch"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td style="padding:5px">$(text)</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>';
 						var button=function(text, action){
 							return makeNode(
 										buttonTemplate,
@@ -1327,12 +944,14 @@
 										checkBoxTemplate,
 										function(checkbox, div){
 											var turnOn=function(){
-												div.style.backgroundColor='#bbb';
+												div.style.backgroundColor='#ddd';
+												
 												checkbox.setAttribute('checked','true');
 												initialChecked=true;
 											};
 											var turnOff=function(){
-												div.style.backgroundColor='transparent';
+												div.style.backgroundColor='#fff';
+												
 												checkbox.removeAttribute('checked');
 												initialChecked=false;
 											};
