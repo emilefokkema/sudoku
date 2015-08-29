@@ -15,14 +15,14 @@
 		}
 		return r;
 	};
-	var assemble=function(assemblable){
+	var assemble=function(assemblable, getToReturn){
 		var n=assemblable[0];
 		var gen=assemblable[1];
 		var p;
 		var obj={};
 		var newOne;
 		for(var i=0;i<n;i++){
-			newOne=gen(i);
+			newOne=gen.apply(obj, [i, getToReturn]);
 			for(p in newOne){
 				if(obj.hasOwnProperty(p)){
 					obj[p].push(newOne[p]);
@@ -115,12 +115,13 @@
 			var nodesToPass=[];
 			var toAppend,match,id,idN,node,allNodes=getAllNodes(baseNode);
 			var toReturn;
+			var getToReturn=function(){return toReturn;};
 			var offspringId,offspringIds;
 			var things;
 			if(arguments.length>2){
 				things=arguments[2];
 				if(isAssemblable(things)){
-					things=assemble(things);
+					things=assemble(things, getToReturn);
 				}
 			}
 			for(var i=0;i<allNodes.length;i++){
