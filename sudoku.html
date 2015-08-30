@@ -528,9 +528,75 @@
 		var littleThing;
 		var form;
 		editor.setAttribute('style', 'width:450px;height:450px;position:relative');
-		var form2=makeNode('<div id="1" style="width:450px;height:450px"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(rows)"></table></div>',
-			function(node){
-				var highlighting,shading,otherState=false;
+		var form2=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><table style="position:absolute;left:0px;top:0px;width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(backgroundRows)"></table><svg xmlns="http://www.w3.org/2000/svg" id="2" style="position:absolute;left:0px;top:0px;width:100%;height:100%"></svg><table style="position:absolute;left:0px;top:0px;width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(rows)"></table></div>',
+			function(node, middleSvg){
+				var middle=(function(){
+					var style='fill:transparent;stroke-width:1;stroke:rgba(0,0,0,0.5)';
+					var drawSquare=function(left, top, side){
+						middleSvg.appendChild((function(){
+							var el=document.createElementNS("http://www.w3.org/2000/svg", 'rect');
+							el.setAttribute('width',side);
+							el.setAttribute('height',side);
+							el.setAttribute('x', left);
+							el.setAttribute('y',top);
+							el.setAttribute('style',style);
+							return el;
+						})());
+					};
+					var drawLine=function(x1,y1,x2,y2){
+						middleSvg.appendChild((function(){
+							var el=document.createElementNS("http://www.w3.org/2000/svg", 'line');
+							el.setAttribute('x1', x1);
+							el.setAttribute('y1', y1);
+							el.setAttribute('x2', x2);
+							el.setAttribute('y2', y2);
+							el.setAttribute('style',style);
+							return el;
+						})());
+					};
+					var drawCircle=function(left, top, radius){
+						middleSvg.appendChild((function(){
+							var el=document.createElementNS("http://www.w3.org/2000/svg", 'circle');
+							el.setAttribute('cx', left);
+							el.setAttribute('cy',top);
+							el.setAttribute('r',radius);
+							el.setAttribute('style',style);
+							return el;
+						})());
+					};
+					var drawCubic=function(x1,y1,cx1,cy1,cx2,cy2,x2,y2){
+						middleSvg.appendChild((function(){
+							var el=document.createElementNS("http://www.w3.org/2000/svg", 'path');
+							el.setAttribute('d', 'M'+x1+' '+y1+' C '+cx1+' '+cy1+', '+cx2+' '+cy2+', '+x2+' '+y2);
+							el.setAttribute('style',style);
+							return el;
+						})());
+					};
+					var connect=function(r1,c1,r2,c2){
+						var r=20;
+						var d=function(i){return 50*i+25;};
+						var x1=d(c1),x2=d(c2),y1=d(r1),y2=d(r2);
+						var d=Math.sqrt(Math.pow(x1-x2, 2)+Math.pow(y1-y2, 2));
+						var angle=Math.PI/9;
+						var dx=(x2-x1)/d,dy=(y2-y1)/d;
+						var ex1=x1+r*(dx*Math.cos(angle)-dy*Math.sin(angle)), ey1=y1+r*(dy*Math.cos(angle)+dx*Math.sin(angle));
+						var cx1=x1+(r+(d-2*r)/4)*(dx*Math.cos(angle)-dy*Math.sin(angle)), cy1=y1+(r+(d-2*r)/4)*(dy*Math.cos(angle)+dx*Math.sin(angle));
+						var ex2=x2+r*(-dx*Math.cos(angle)-dy*Math.sin(angle)), ey2=y2+r*(-dy*Math.cos(angle)+dx*Math.sin(angle));
+						var cx2=x2+(r+(d-2*r)/4)*(-dx*Math.cos(angle)-dy*Math.sin(angle)), cy2=y2+(r+(d-2*r)/4)*(-dy*Math.cos(angle)+dx*Math.sin(angle));
+						drawCircle(x1,y1,r);
+						drawCircle(x2,y2,r);
+						drawCubic(ex1,ey1,cx1,cy1,cx2,cy2,ex2,ey2);
+					};
+					var clear=function(){
+						middleSvg.innerHTML="";
+					};
+					return {
+						drawSquare:drawSquare,
+						connect:connect,
+						clear:clear
+					};
+				})();
+				var highlighting,otherState=false,shading=false;
 				var self=this;
 				var allCells=function(f){
 					return self.cells.map(function(r){return r.map(f);})[0][0];
@@ -627,22 +693,26 @@
 				})();
 				var showTwinsInSets=function(){
 					console.log("showTwinsInSets");
-					allCells(function(c){c.shade('transparent');});
-					var p1,p2;
-					var twins=getTwinsInSets(sudoku.vakPositie, 9)().concat(getTwinsInSets(sudoku.rijPositie, 9)()).concat(getTwinsInSets(sudoku.kolomPositie, 9)());
-					if(otherState){twins=twins.concat(getTwinsInSets(sudoku.vak2Positie, 4)());}
-					for(var i=0;i<twins.length;i++){
-						for(var j=0;j<twins[i].length;j++){
-							p1=twins[i][j][1][0];
-							p2=twins[i][j][1][1];
-							self.cells[p1[0]][p1[1]].shade("rgba(85,85,187,0.1)");
-							self.cells[p2[0]][p2[1]].shade("rgba(85,85,187,0.1)");
+					if(shading){
+						middle.clear();
+						//allCells(function(c){c.shade('transparent');});
+						var p1,p2;
+						var twins=getTwinsInSets(sudoku.vakPositie, 9)().concat(getTwinsInSets(sudoku.rijPositie, 9)()).concat(getTwinsInSets(sudoku.kolomPositie, 9)());
+						if(otherState){twins=twins.concat(getTwinsInSets(sudoku.vak2Positie, 4)());}
+						for(var i=0;i<twins.length;i++){
+							for(var j=0;j<twins[i].length;j++){
+								p1=twins[i][j][1][0];
+								p2=twins[i][j][1][1];
+								middle.connect(p1[0],p1[1],p2[0],p2[1]);
+								//self.cells[p1[0]][p1[1]].shade("rgba(85,85,187,0.1)");
+								//self.cells[p2[0]][p2[1]].shade("rgba(85,85,187,0.1)");
+							}
 						}
 					}
 				};
 				var toggleShadingView=function(){
-					allCells(function(c){c.toggleShading();});
-					showTwinsInSets();
+					shading=!shading;
+					if(shading){showTwinsInSets()}else{middle.clear();}
 				};
 				var togglePossibilitiesView=function(){
 					allCells(function(c){c.togglePossibilitiesView();});
@@ -684,6 +754,7 @@
 					return {go:function(){going=true;go();},stop:stop}
 				})();
 				var r={
+					middle:middle,
 					toggleHighlighting:toggleHighlighting,
 					toggleShadingView:toggleShadingView,
 					makeRedRow: makeRedSet(sudoku.rijPositie),
@@ -711,6 +782,9 @@
 			[9,function(rowIndex, getToReturn){
 				var self=this;
 				var cells=function(){return self.cells;};
+				var background=function(row,column){
+					return self.backgroundCells[row][column];
+				};
 				var row=makeNode('<tr id="1" style="margin:0px;padding:0px;border-spacing:0px" offspring="$(tds)"></tr>',
 					function(tr){
 						return {
@@ -719,7 +793,7 @@
 						};
 					},
 					[9,function(columnIndex){
-						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><div id="5" style="position:absolute;left:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;top:'+(rowIndex==0?3:0)+'px;font-family:Arial;color:#999999;font-size:8px"></div></div></td>',
+						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent;border-radius:50%"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><div id="5" style="position:absolute;left:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;top:'+(rowIndex==0?3:0)+'px;font-family:Arial;color:#999999;font-size:8px"></div></div></td>',
 							function(td, div, sh, input, possNode){
 								var otherState=false;
 								var highlighting=false;
@@ -758,10 +832,10 @@
 									}
 								};
 								var makeRed=function(color){
-									div.style.backgroundColor=color?color:"#FF0000";
+									background(rowIndex,columnIndex).style.backgroundColor=color?color:"#FF0000";
 								};
 								var makeNotRed=function(){
-									div.style.backgroundColor=initialColor;
+									background(rowIndex,columnIndex).style.backgroundColor=initialColor;
 								};
 								var highlightImpossibles=function(){
 									var v=input.value;
@@ -878,9 +952,31 @@
 							cells:cell.cell,
 						};
 					}]);
+				var backgroundRow=makeNode('<tr id="1" style="margin:0px;padding:0px;border-spacing:0px" offspring="$(tds)"></tr>',
+					function(tr){
+						return {
+							tr:tr,
+							cells:this.cells
+						};
+					},
+					[9,function(){
+						var cell=makeNode('<td style="margin:0px;padding:0px;border-spacing:0px" id="1"><div id="2" style="width:100%;height:100%"></div></td>',
+							function(td, div){
+								return {
+									td:td,
+									cell:div
+								};
+							});
+						return {
+							tds:cell.td,
+							cells:cell.cell
+						};
+					}]);
 				return {
 					rows:row.tr,
+					backgroundRows: backgroundRow.tr,
 					cells:row.cells,
+					backgroundCells: backgroundRow.cells
 				};
 			}]
 			);
