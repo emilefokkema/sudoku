@@ -1013,7 +1013,15 @@
 						};
 					}
 					);
-				
+				var prompt=makeNode('<div id="1" style="width:450px;height:450px;position:absolute;left:0px;top:0px" align="center"><div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);width:400px;height:300px;border:1pt solid #000;background-color:#fff"><table style="width:100%;height:100%"><tr style="height:40%"><td><a id="3"></a></td></tr><tr style="height:30%"><td><input id="4" type="text" style="width:80%"/></td></tr><tr style="height:30%"><td><input id="2" type="button" value="Cancel" /><input id="5" type="button" value="OK" /></td></tr></table></div></div>',
+					function(win, cancelButton, questionText, input, okButton){
+						cancelButton.onclick=function(){node.removeChild(win);};
+						return function(question,answer){
+							node.appendChild(win);
+							questionText.innerHTML=question;
+							okButton.onclick=function(e){e.preventDefault();e.stopPropagation();node.removeChild(win);answer(input.value);};
+						};
+					});
 				var setText=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><textarea id="2" style="width:400px;height:400px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:10px;color:#000"></textarea></div>',
 					function(layover, input){
 						return function(text, color){
@@ -1026,7 +1034,7 @@
 							input.value+=text+"\n";
 							input.scrollTop=input.scrollHeight;
 							input.style.color=color?color:"#000";
-							node.onclick=function(){node.removeChild(layover);node.appendChild(controls);showing="controls";node.onclick=function(){};};
+							node.onclick=function(){console.log("removing text");node.removeChild(layover);node.appendChild(controls);showing="controls";node.onclick=function(){};};
 						};
 					});
 				
@@ -1039,7 +1047,7 @@
 							return makeNode(
 										buttonTemplate,
 										function(button){
-											button.onclick=function(e){e.cancelBubble=true;action();};
+											button.onclick=function(e){e.stopPropagation();action();};
 										},
 										{text:text}
 									);
@@ -1062,7 +1070,7 @@
 											};
 											if(initialChecked){turnOn();}
 											div.onclick=function(e){
-												e.cancelBubble=true;
+												e.stopPropagation();
 												if(initialChecked){
 													turnOff();
 												}else{
@@ -1083,6 +1091,19 @@
 									);
 						};
 						var buttons=[
+							['name',function(){prompt('what is your name?',
+								function(a){
+									a=a.replace(/[\D]/g, "");
+									var g=sudoku.versie(sudoku.leeg());
+									for(var i=0;i<a.length;i++){
+										g.zet(Math.floor(i/9),i%9,parseInt(a[i]));
+									}
+									console.log(g);
+									if(form.otherState()){form.toggleKind();}
+									form.setAll(g.getallen());
+								}
+								);
+							}],
 							['GO', function(){
 								setProgressBar(0);
 								form.stopFilling();
@@ -1217,7 +1238,7 @@
 				};
 				var hide=function(e){
 					e.preventDefault();
-					e.cancelBubble=true;
+					e.stopPropagation();
 					node.removeChild(controls);
 					node.removeChild(closeButton);
 					changeSizeTo(initialSize, function(){
