@@ -539,7 +539,7 @@
 		var form2=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><table style="position:absolute;left:0px;top:0px;width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(backgroundRows)"></table><svg xmlns="http://www.w3.org/2000/svg" id="2" style="position:absolute;left:0px;top:0px;width:100%;height:100%"></svg><table style="position:absolute;left:0px;top:0px;width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit" offspring="$(rows)"></table></div>',
 			function(node, middleSvg){
 				var middle=(function(){
-					var style='fill:transparent;stroke-width:1;stroke:rgba(0,0,0,0.5)';
+					var style='fill:transparent;stroke-width:1;stroke:#999999';
 					var drawSquare=function(left, top, side){
 						middleSvg.appendChild((function(){
 							var el=document.createElementNS("http://www.w3.org/2000/svg", 'rect');
@@ -747,6 +747,15 @@
 					}
 					showTwinsInSets();
 				};
+				var setAllFromString=function(a){
+					a=a.replace(/[\D]/g, "");
+					var g=sudoku.versie(sudoku.leeg());
+					for(var i=0;i<a.length&&i<81;i++){
+						g.zet(Math.floor(i/9),i%9,parseInt(a[i]));
+					}
+					if(otherState){toggleKind();}
+					setAll(g.getallen());
+				};
 				var filler=(function(){
 					var r=0;
 					var k=0;
@@ -781,6 +790,7 @@
 					togglePossibilitiesView:togglePossibilitiesView,
 					showTwinsInSets:showTwinsInSets,
 					setAll:setAll,
+					setAllFromString:setAllFromString,
 					otherState:function(){return otherState;}
 				};
 				console.log(r);
@@ -1013,7 +1023,7 @@
 						};
 					}
 					);
-				var prompt=makeNode('<div id="1" style="width:450px;height:450px;position:absolute;left:0px;top:0px" align="center"><div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);width:400px;height:300px;border:1pt solid #000;background-color:#fff"><table style="width:100%;height:100%"><tr style="height:40%"><td><a id="3"></a></td></tr><tr style="height:30%"><td><input id="4" type="text" style="width:80%"/></td></tr><tr style="height:30%"><td><input id="2" type="button" value="Cancel" /><input id="5" type="button" value="OK" /></td></tr></table></div></div>',
+				var prompt=makeNode('<div id="1" style="width:450px;height:450px;position:absolute;left:0px;top:0px" align="center"><div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);width:400px;height:300px;border:1pt solid #000;background-color:#fff"><table style="width:100%;height:100%"><tr style="height:40%"><td><a id="3" style="font-family:Verdana;font-size:12px"></a></td></tr><tr style="height:30%"><td><input id="4" type="text" style="width:80%"/></td></tr><tr style="height:30%"><td><input id="2" type="button" value="Cancel" /><input id="5" type="button" value="OK" /></td></tr></table></div></div>',
 					function(win, cancelButton, questionText, input, okButton){
 						cancelButton.onclick=function(){node.removeChild(win);};
 						return function(question,answer){
@@ -1037,7 +1047,63 @@
 							node.onclick=function(){console.log("removing text");node.removeChild(layover);node.appendChild(controls);showing="controls";node.onclick=function(){};};
 						};
 					});
-				
+				var historyPanel=makeNode('<div id="1" style="width:450px;height:450px;position:absolute;left:0px;top:0px"><div id="2" style="width:400px;height:400px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:#fff;border:1pt solid #000"><table style="width:100%;height:100%"><tr style="height:80%"><td><div id="4" style="width:100%;height:100%;border:1pt solid #aaa;overflow:scroll"></div></td></tr><tr style="height:20%"><td><input id="3" type="button" value="Cancel"/><input id="5" type="button" value="OK"/><input id="6" type="button" value="rename"/></td></tr></table></div></div>',
+					function(div, win, cancelButton, list, okButton, renameButton){
+						cancelButton.onclick=function(){node.removeChild(div);};
+						var show=function(){
+							node.appendChild(div);
+							var selected=-1;
+							var select;
+							list.innerHTML="";
+							var listItems=history.getStates().map(function(state, index){
+								var row=makeNode('<div id="1" style="width:100%;font-family:Verdana;font-size:15px">'+state.name+'</div>',
+									function(itemDiv){
+										list.appendChild(itemDiv);
+										itemDiv.onclick=function(){select(index);};
+										var setPresent=function(){
+											itemDiv.style.backgroundColor='#bbb';
+											itemDiv.style.color='#000';
+										};
+										var setPast=function(){
+											itemDiv.style.backgroundColor='#fff';
+											itemDiv.style.color='#000';
+										};
+										var setFuture=function(){
+											itemDiv.style.backgroundColor='#fff';
+											itemDiv.style.color='#555';
+										};
+										var rename=function(newName){
+											itemDiv.innerHTML=newName;
+										};
+										return {setPresent:setPresent,setPast:setPast,setFuture:setFuture,rename:rename};
+									});
+								return row;
+							});
+							select=function(index){
+								listItems.map(function(item,i){
+									if(i<index){item.setPast();}
+									if(i==index){item.setPresent();}
+									if(i>index){item.setFuture();}
+								});
+								selected=index;
+							};
+							okButton.onclick=function(){
+								if(selected!=-1){
+									history.setState(selected);
+								}
+								node.removeChild(div);
+							};
+							renameButton.onclick=function(){
+								if(selected!=-1){
+									prompt('new name:',function(a){
+										listItems[selected].rename(a);
+										history.renameState(selected,a);
+									})
+								}
+							};
+						};
+						return {show:show};
+					});
 				var controls=makeNode('<div style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%)"><table style="width:100%"><tr><td align="right" style="width:50%" offspring="$(buttons)"></td><td align="left" style="width:50%"><div style="border:1pt solid #000;width:150px">$(checkBoxes)</div></td></tr></table></div>',
 					null,
 					(function(){
@@ -1091,16 +1157,10 @@
 									);
 						};
 						var buttons=[
+							["history",function(){history.saveCurrentState();historyPanel.show();}],
 							['name',function(){prompt('what is your name?',
 								function(a){
-									a=a.replace(/[\D]/g, "");
-									var g=sudoku.versie(sudoku.leeg());
-									for(var i=0;i<a.length;i++){
-										g.zet(Math.floor(i/9),i%9,parseInt(a[i]));
-									}
-									console.log(g);
-									if(form.otherState()){form.toggleKind();}
-									form.setAll(g.getallen());
+									form.setAllFromString(a);
 								}
 								);
 							}],
@@ -1117,7 +1177,6 @@
 							}],
 							['Clear', function(){form.setAll(sudoku.leeg());}],
 							['Undo', function(){if(moves){moves.back();}}],
-							['Undo all', function(){if(moves){while(moves.back()){}}}],
 							['random',function(){
 								if(!form.otherState()){
 									sudoku.random(
@@ -1252,7 +1311,7 @@
 			}
 			);
 		b.appendChild(editor);
-		return {setAll:form.setAll,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,showTwinsInSets: form.showTwinsInSets,getTwinsInRows:form.getTwinsInRows, getTwinsInColumns: form.getTwinsInColumns, display:panel.setText};
+		return {setAll:form.setAll,setAllFromString:form.setAllFromString,otherState:form.otherState,toggleKind:form.toggleKind,startFilling:form.startFilling, stopFilling: form.stopFilling,showTwinsInSets: form.showTwinsInSets,getTwinsInRows:form.getTwinsInRows, getTwinsInColumns: form.getTwinsInColumns, display:panel.setText};
 	})();
 	var hash=(function(){
 		var update=function(getallenRij){
@@ -1317,6 +1376,36 @@
 			return false;
 		};
 		return {make:make,back:back}
+	})();
+	var history=(function(){
+		var states=[];
+		var addState=function(name, state){
+			states.push({name:name,state:state});
+		};
+		var saveCurrentState=function(name){
+			var currentState=sudoku.versie(sudoku.getallen()).getallenRij();
+			if(states.length==0||currentState!=states[states.length-1].state){
+				addState(name?name:states.length.toString(), currentState);
+			}
+		};
+		var getStates=function(){return states;};
+		var setState=function(i){
+			if(i<states.length){
+				editor.setAllFromString(states[i].state);
+				states=states.slice(0,i+1);
+			}
+		};
+		var renameState=function(i, newName){
+			if(i<states.length){
+				states[i].name=newName;
+			}
+		};
+		return {
+			saveCurrentState:saveCurrentState,
+			getStates:getStates,
+			setState:setState,
+			renameState:renameState
+		};
 	})();
 	if(!hash.process()){editor.setAll(sudoku.versie(sudoku.leeg()).getallen());hash.update(sudoku.getallenRij());}
 	window.sudoku=sudoku;
