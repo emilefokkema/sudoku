@@ -11,15 +11,18 @@
 (function(b, setHash, getHash){
 	var sheet=makeNode('<style id="1"></style>',
 		function(s){
+			var count=0;
 			document.head.appendChild(s);
-			return s.sheet;
+			return function(rule){
+				s.sheet.insertRule(rule, count++);
+			};
 		});
-	sheet.insertRule('.sudoku-text {font-family:Verdana;font-size:12px;font-weight: bold;background-color:#fff;}', 0);
-	sheet.insertRule('.sudoku-panel-button {cursor:pointer;width:100px;height:50px;position:absolute;background-color:#fff}', 1);
-	sheet.insertRule('.sudoku-panel-button:hover {background-color: #dddddd;}', 2);
-	sheet.insertRule('.sudoku-button {width:75px;height:30px;cursor:pointer;border:1pt solid #000;background-color:#fff;margin:5px;}', 3);
-	sheet.insertRule('.sudoku-button:hover {background-color: #dddddd;}', 4);
-	sheet.insertRule('.sudoku-switch {cursor:pointer;height:35px;width:100%;font-family:Verdana;font-size:12px;font-weight:bold;margin:0px;background-color:#fff}',5);
+	sheet('.sudoku-text {font-family:Verdana;font-size:12px;font-weight: bold;background-color:#fff;}');
+	sheet('.sudoku-panel-button {cursor:pointer;width:100px;height:50px;position:absolute;background-color:#fff}');
+	sheet('.sudoku-panel-button:hover {background-color: #dddddd;}');
+	sheet('.sudoku-button {width:75px;height:30px;cursor:pointer;border:1pt solid #000;background-color:#fff;margin:5px;}');
+	sheet('.sudoku-button:hover {background-color: #dddddd;}');
+	sheet('.sudoku-switch {cursor:pointer;width:150px;height:50px;position:absolute;background-color:#fff}');
 
 	var timedOutWhile=function(condition, whatToDo, whatToDoAfter){
 		var step=function(){
@@ -736,7 +739,7 @@
 				};
 				var toggleKind=function(){
 					otherState=allCells(function(c){return c.toggleOtherState();});
-					if(hash){hash.update();}
+					if(hash){hash.update(sudoku.getallenRij());}
 				};
 				var setAll=function(numbers){
 					resetPossibilities();
@@ -1003,10 +1006,14 @@
 			);
 
 		form=form2;
-		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0);border:3pt solid #000"></div>',function(node){
-				var showing="controls",initialSize=7;
+		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0)"></div>',function(node){
+				var showing="controls",initialSize=12;
 				node.style.width=(initialSize)+"px";
 				node.style.height=initialSize+"px";
+				var closeButton=makeNode('<div id="1" style="position:absolute;cursor:pointer;right:3px;top:3px;background-color:rgb(0,0,0);width:12px;height:12px"></div>',
+					function(node){
+						node.onclick=function(e){hide(e);};
+					});
 				var setProgressBar=makeNode('<div id="1" style="width:450px;height:450px;position:relative" align="left"><div id="2" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:#000;height:50px;width:50%"></div></div>',
 					function(node0, bar){
 						return function(p){
@@ -1107,11 +1114,11 @@
 						};
 						return {show:show};
 					});
-				var controls=makeNode('<div style="position:absolute;top:0px;left:0px;width:75%"><table style="width:75%"><tr><td style="width:50%" offspring="$(buttons)"></td><td style="width:50%"><div style="border:1pt solid #000;width:150px">$(checkBoxes)</div></td></tr></table></div>',
-					null,
+				var controls=makeNode('<div id="1" style="position:absolute;top:0px;left:0px;width:100%;height:100%">$(buttons)$(checkBoxes)</div>',
+					function(div){div.appendChild(closeButton);},
 					(function(){
 						var buttonTemplate='<div id="1" class="sudoku-text sudoku-panel-button" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div>';
-						var checkBoxTemplate='<div id="2" class="sudoku-switch"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td style="padding:5px">$(text)</td><td style="width:20px"><input style="border:3pt solid #000" type="checkbox" id="1"/></td></tr></table></div>';
+						var checkBoxTemplate='<div id="1" class="sudoku-text sudoku-switch"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td style="padding:5px">$(text)</td><td style="width:20px"></td></tr></table></div>';
 						var button=function(text, action, index){
 							return makeNode(
 										buttonTemplate,
@@ -1120,27 +1127,41 @@
 											button.appendChild(makeNode('<div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000">'));
 											button.appendChild(makeNode('<div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div>'));
 											button.appendChild(makeNode('<div style="position:absolute;left:0px;top:0px;width:3px;height:100%;background-color:#000">'));
-											button.style.top=(50*(index%9)-4)+'px';
-											button.style.left=(100*Math.floor(index/9)-4)+'px';
+											button.appendChild(makeNode('<div style="position:absolute;right:0px;top:0px;width:3px;height:100%;background-color:#000">'));
+											if(index==buttons.length-1){
+												button.appendChild(makeNode('<div style="position:absolute;left:0px;bottom:0px;width:100%;height:3px;background-color:#000">'));
+											}
+											button.style.top=(50*(index%9))+'px';
+											button.style.left=(100*Math.floor(index/9))+'px';
 											button.onclick=function(e){e.stopPropagation();action();};
 										},
 										{text:text}
 									);
 						};
-						var checkBox=function(text, action, initialChecked){
+						var checkBox=function(text, action, initialChecked, index){
 							return makeNode(
 										checkBoxTemplate,
-										function(checkbox, div){
+										function(div){
+											var rowIndex=8-index%9;
+											div.appendChild(makeNode('<div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000">'));
+											div.appendChild(makeNode('<div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div>'));
+											div.appendChild(makeNode('<div style="position:absolute;right:0px;top:0px;width:3px;height:100%;background-color:#000">'));
+											div.appendChild(makeNode('<div style="position:absolute;left:0px;top:0px;width:3px;height:100%;background-color:#000">'));
+											if(index==checkBoxes.length-1){
+												div.appendChild(makeNode('<div style="position:absolute;left:0px;top:0px;width:100%;height:3px;background-color:#000">'));
+											}
+											div.style.bottom=(50*(index%9))+'px';
+											div.style.right=(100*Math.floor(index/9))+'px';
 											var turnOn=function(){
 												div.style.backgroundColor='#ddd';
 												
-												checkbox.setAttribute('checked','true');
+												//checkbox.setAttribute('checked','true');
 												initialChecked=true;
 											};
 											var turnOff=function(){
 												div.style.backgroundColor='#fff';
 												
-												checkbox.removeAttribute('checked');
+												//checkbox.removeAttribute('checked');
 												initialChecked=false;
 											};
 											if(initialChecked){turnOn();}
@@ -1152,14 +1173,6 @@
 													turnOn();
 												}
 												action(initialChecked, turnOn, turnOff);
-											};
-											checkbox.onclick=function(e){
-												e.preventDefault();
-												if(checkbox.checked&&!initialChecked){
-													checkbox.removeAttribute('checked');
-												}else if(!checkbox.checked&&initialChecked){
-													checkbox.setAttribute('checked','true');
-												}
 											};
 										},
 										{text:text}
@@ -1223,7 +1236,7 @@
 									}
 									);
 							}],
-							['serialize',function(){setText(sudoku.versie(sudoku.getallen()).getallenRij());}]
+							['serialize',function(){setText(sudoku.getallenRij());}]
 						];
 						var checkBoxes=[
 							['andere', function(checked, turnOn, turnOff){
@@ -1238,7 +1251,7 @@
 								}else{
 									form.toggleKind();
 								}
-							}],
+							},getHash().match(/^1_/g)],
 							['mogelijkheden', function(){form.togglePossibilitiesView();}],
 							['autofill', (function(){
 								var filling=false;
@@ -1258,7 +1271,7 @@
 						];
 						return {
 							buttons: buttons.map(function(b,i){return button(b[0], b[1],i);}),
-							checkBoxes: checkBoxes.map(function(c){return checkBox(c[0],c[1],c[2]);})
+							checkBoxes: checkBoxes.map(function(c, i){return checkBox(c[0],c[1],c[2], i);})
 						};
 					})()
 					);
@@ -1292,15 +1305,11 @@
 						makeStep();
 					};
 				})(initialSize, node);
-				var closeButton=makeNode('<div id="1" style="position:absolute;cursor:pointer;right:4px;top:4px;background-color:rgb(0,0,0);width:12px;height:12px"></div>',
-					function(node){
-						node.onclick=function(e){hide(e);};
-					});
 				var show=function(){
 					node.style.backgroundColor="rgba(250,250,250,0.75)";
-					changeSizeTo(442, function(){
+					changeSizeTo(450, function(){
 						node.appendChild(controls);
-						node.appendChild(closeButton);
+						//node.appendChild(closeButton);
 						node.onclick=function(){};
 					});
 				};
@@ -1308,7 +1317,6 @@
 					e.preventDefault();
 					e.stopPropagation();
 					node.removeChild(controls);
-					node.removeChild(closeButton);
 					changeSizeTo(initialSize, function(){
 						node.style.backgroundColor="rgb(0,0,0)";
 						node.onclick=show;
@@ -1392,7 +1400,7 @@
 			states.push({name:name,state:state});
 		};
 		var saveCurrentState=function(name){
-			var currentState=sudoku.versie(sudoku.getallen()).getallenRij();
+			var currentState=sudoku.getallenRij();
 			if(states.length==0||currentState!=states[states.length-1].state){
 				addState(name?name:states.length.toString(), currentState);
 			}
