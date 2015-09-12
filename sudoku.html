@@ -13,23 +13,32 @@
 	var sheet=makeNode('<style id="1"></style>',
 		function(s){
 			var count=0;
+			var parts=function(rule){
+				rule=rule.match(/\{[^{}]*?\}/g)[0];
+				var m,p=[],rgx=/([^;:{]+?):([^;:]+?);/g;
+				while(m=rgx.exec(rule)){
+					p.push([m[1].trim(),m[2].trim()]);
+				}
+				return p;
+			};
 			document.head.appendChild(s);
 			return function(rule){
+				console.log(parts(rule))
 				s.sheet.insertRule(rule, count++);
 			};
 		});
 	sheet('.sudoku-text {font-family:Verdana;font-size:12px;font-weight: bold;background-color:#fff;}');
-	sheet('.sudoku-panel-button {cursor:pointer;width:100px;height:50px;position:absolute;background-color:#fff}');
-	sheet('.sudoku-panel-button:hover {background-color: #dddddd;}');
+	sheet('.sudoku-panel-button {cursor:pointer;width:100px;height:50px;position:absolute;background:linear-gradient(#fff,#eee);}');
+	sheet('.sudoku-panel-button:hover {background: linear-gradient(#eee,#ddd);}');
 	sheet('.sudoku-button {width:75px;height:30px;cursor:pointer;border:1pt solid #000;background-color:#fff;margin:5px;}');
 	sheet('.sudoku-button:hover {background-color: #dddddd;}');
-	sheet('.sudoku-switch {cursor:pointer;width:200px;height:50px;position:absolute;background-color:#fff}');
+	sheet('.sudoku-switch {cursor:pointer;width:200px;height:50px;position:absolute;background-color:#fff;}');
 
 	var timedOutWhile=function(condition, whatToDo, whatToDoAfter){
 		var step=function(){
 			condition(function(bool){
 				if(bool){
-					setTimeout(function(){whatToDo(step);}, 50);
+					setTimeout(function(){whatToDo(step);}, 10);
 				}else{
 					if(whatToDoAfter){whatToDoAfter();}
 				}
@@ -39,6 +48,7 @@
 	};
 	
 	var maakSudoku=function(){
+		var RIJ,KOLOM,VAK,VAK2;
 		var rijPositie=function(index,j){return [index, j];};
 		var kolomPositie=function(index, j){return [j, index];};
 		var vakPositie=(function(){
@@ -73,6 +83,76 @@
 				return -1;
 			}
 		};
+		(function(){
+			var verzameling=function(index,positie,n){
+				return {
+					index:index,
+					positie:positie,
+					n:n,
+					deelOp:function(grid){
+						var p=positie,p0,v0,v=[];
+						for(var i=0;i<n;i++){
+							v0=[];
+							for(var j=0;j<9;j++){
+								p0=p(i,j);
+								v0.push(grid[p0[0]][p0[1]]);
+							}
+							v.push(v0);
+						}
+						return v;
+					}
+				};
+			};
+			RIJ=verzameling(
+				function(r,k){return r;},
+				function(index,j){return [index,j];},
+				9
+				),
+			KOLOM=verzameling(
+				function(r,k){return k;},
+				function(index,j){return [j,index];},
+				9
+				),
+			VAK=verzameling(
+				function(r,k){
+					var vakrij=Math.floor(r/3);
+					var vakkolom=Math.floor(k/3);
+					return 3*vakrij+vakkolom;
+				},
+				(function(){
+					var pos=function(i){return [Math.floor(i/3),i%3];};
+					return function(index,j){
+						var vakPos=pos(index);
+						var jPos=pos(j);
+						return [
+							3*vakPos[0]+jPos[0],
+							3*vakPos[1]+jPos[1]
+						];
+					};
+				})(),
+				9
+				),
+			VAK2=verzameling(
+				function(r,k){
+					if(r%4!=0&&k%4!=0){
+						var switcher=function(t){if(t<4){return 0;}else{return 1;}};
+						return 2*switcher(r)+switcher(k);
+					}else{
+						return -1;
+					}
+				},
+				function(index,j){
+					var vakPos=[1+4*(Math.floor(index/2)),1+4*(index%2)];
+					var jPos=[Math.floor(j/3),j%3];
+					return [
+						vakPos[0]+jPos[0],
+						vakPos[1]+jPos[1]
+					];
+				},
+				4
+				)
+		})();
+
 		var volgendeCel=function(rij, kolom, hoever){
 			var r,k;
 			var volgende=function(){
@@ -182,14 +262,18 @@
 			var zet=function(rij, kolom, n){
 				g[rij][kolom]=n;
 			};
-			var checkVerzameling=function(positie){
+			var checkVerzameling=function(soort){
+				var positie=soort.positie;
+				var positie1=Array.apply(null, new Array(soort.n)).map(function(a,i){
+					return Array.apply(null,new Array(9)).map(function(a,j){return positie(i,j);});
+				});
 				return function(index, callbackFalse){
-					var pos,hier,gehad=[0,0,0,0,0,0,0,0,0];
+					var pos=positie1[index],pos0,hier,gehad=[0,0,0,0,0,0,0,0,0],callbackFalse=callbackFalse||function(){};
 					for(var j=0;j<9;j++){
-						pos=positie(index,j);
-						hier=g[pos[0]][pos[1]];
+						pos0=pos[j];
+						hier=g[pos0[0]][pos0[1]];
 						if(hier>0){
-							if(gehad[hier-1]>0){if(callbackFalse){callbackFalse();}return false;}else{
+							if(gehad[hier-1]>0){callbackFalse();return false;}else{
 								gehad[hier-1]++;
 							}
 						}
@@ -197,25 +281,10 @@
 					return true;
 				};
 			};
-			var verzamelingenMetGetal=function(positie, aantalVerzamelingen){
-				return function(n){
-					var pos, v=[];
-					for(var i=0;i<aantalVerzamelingen;i++){
-						for(var j=0;j<9;j++){
-							pos=positie(i,j);
-							if(g[pos[0]][pos[1]]==n){
-								v.push(i);
-								break;
-							}
-						}
-					}
-					return v;
-				};
-			};
-			var checkRij=checkVerzameling(rijPositie);
-			var checkKolom=checkVerzameling(kolomPositie);
-			var checkVak=checkVerzameling(vakPositie);
-			var checkVak2=checkVerzameling(vak2Positie);
+			var checkRij=checkVerzameling(RIJ);
+			var checkKolom=checkVerzameling(KOLOM);
+			var checkVak=checkVerzameling(VAK);
+			var checkVak2=checkVerzameling(VAK2);
 			var checkKolommen=function(){
 				for(var i=0;i<9;i++){if(!checkKolom(i)){return false;}}
 				return true;
@@ -246,10 +315,6 @@
 			var checkAlles=function(){
 				return check(1)&&check(4)&&check(7);
 			};
-			var rijenMetGetal=verzamelingenMetGetal(rijPositie, 9);
-			var kolommenMetGetal=verzamelingenMetGetal(kolomPositie, 9);
-			var vakkenMetGetal=verzamelingenMetGetal(vakPositie, 9);
-			var vakken2MetGetal=verzamelingenMetGetal(vak2Positie, 4);
 			var getallenRij=function(){
 				var arr1=[];
 				for(var i=0;i<9;i++){
@@ -267,10 +332,6 @@
 				checkVak2:checkVak2,
 				checkKolommen: checkKolommen,
 				checkVakken:checkVakken,
-				rijenMetGetal:rijenMetGetal,
-				kolommenMetGetal:kolommenMetGetal,
-				vakkenMetGetal:vakkenMetGetal,
-				vakken2MetGetal:vakken2MetGetal,
 				check:check,
 				checkAlles:checkAlles,
 				getallenRij:getallenRij
@@ -514,7 +575,11 @@
 			volgendeCel: volgendeCel,
 			vakIndex: vakIndex,
 			vak2Index: vak2Index,
-			random: random
+			random: random,
+			RIJ:RIJ,
+			KOLOM:KOLOM,
+			VAK:VAK,
+			VAK2:VAK2
 		};
 	};
 	var sudoku=maakSudoku();
@@ -597,25 +662,20 @@
 				var allCells=function(f){
 					return self.cells.map(function(r){return r.map(f);})[0][0];
 				};
-				var makeRedSet=function(posF){
-					var position=function(index){return function(j){return posF(index, j);};};
-					return function(i, color){
-						var p, pos=position(i);
-						for(var j=0;j<9;j++){
-							p=pos(j);
-							self.cells[p[0]][p[1]].makeRed(color);
-						}
+				var doToSet=function(kind, toDo){
+					var sets=kind.deelOp(self.cells);
+					return function(){
+						var args = Array.prototype.slice.call(arguments);
+						var index=args.splice(0,1)[0];
+						sets[index].map(function(c){toDo.apply(c,args);});
 					};
 				};
-				var eliminateFromSet=function(posF){
-					var position=function(index){return function(j){return posF(index, j);};};
-					return function(i, n){
-						var p, pos=position(i);
-						for(var j=0;j<9;j++){
-							p=pos(j);
-							self.cells[p[0]][p[1]].eliminate(n);
-						}
-					};
+				var makeRedSet=function(kind){
+					return doToSet(kind, function(color){this.makeRed(color);});
+				};
+				
+				var eliminateFromSet=function(kind){
+					return doToSet(kind, function(n){this.eliminate(n);});
 				};
 				var toggleHighlighting=function(){
 					allCells(function(c){c.toggleHighlighting();});
@@ -762,14 +822,14 @@
 					middle:middle,
 					toggleHighlighting:toggleHighlighting,
 					toggleShadingView:toggleShadingView,
-					makeRedRow: makeRedSet(sudoku.rijPositie),
-					makeRedColumn: makeRedSet(sudoku.kolomPositie),
-					makeRedSquare: makeRedSet(sudoku.vakPositie),
-					makeRedSquare2: makeRedSet(sudoku.vak2Positie),
-					eliminateFromRow: eliminateFromSet(sudoku.rijPositie),
-					eliminateFromColumn: eliminateFromSet(sudoku.kolomPositie),
-					eliminateFromSquare: eliminateFromSet(sudoku.vakPositie),
-					eliminateFromSquare2: eliminateFromSet(sudoku.vak2Positie),
+					makeRedRow: makeRedSet(sudoku.RIJ),
+					makeRedColumn: makeRedSet(sudoku.KOLOM),
+					makeRedSquare: makeRedSet(sudoku.VAK),
+					makeRedSquare2: makeRedSet(sudoku.VAK2),
+					eliminateFromRow: eliminateFromSet(sudoku.RIJ),
+					eliminateFromColumn: eliminateFromSet(sudoku.KOLOM),
+					eliminateFromSquare: eliminateFromSet(sudoku.VAK),
+					eliminateFromSquare2: eliminateFromSet(sudoku.VAK2),
 					startFilling: function(){filler.go();},
 					stopFilling: function(){filler.stop();},
 					makeNotRed:makeNotRed,
@@ -781,7 +841,6 @@
 					setAllFromString:setAllFromString,
 					otherState:function(){return otherState;}
 				};
-				console.log(r);
 				editor.appendChild(node);
 				return r;
 			},
@@ -804,8 +863,8 @@
 								var otherState=false;
 								var highlighting=false;
 								var shading=false;
-								var vakIndex=sudoku.vakIndex(rowIndex, columnIndex);
-								var vak2Index=sudoku.vak2Index(rowIndex, columnIndex);
+								var vakIndex=sudoku.VAK.index(rowIndex, columnIndex);
+								var vak2Index=sudoku.VAK2.index(rowIndex, columnIndex);
 								var initialColor="#fff";
 								var possibilities=(function(){
 									possNode.onclick=function(e){e.preventDefault();return false;};
@@ -1158,14 +1217,10 @@
 											var slider;
 											rightCell.appendChild((slider=checkBoxSlider()).node);
 											var turnOn=function(){
-												
-												
 												slider.check();
 												initialChecked=true;
 											};
 											var turnOff=function(){
-												
-												
 												slider.uncheck();
 												initialChecked=false;
 											};
