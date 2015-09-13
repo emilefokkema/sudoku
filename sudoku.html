@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 <title>Sudoku</title>
@@ -12,49 +13,19 @@
 (function(b, setHash, getHash,$){
 	var sheet=makeNode('<style id="1"></style>',
 		function(s){
-			var regesc=function(s){return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');};
 			var count=0;
-			var propertiesToExpand=[];
-			var valueBeginningsToExpand=["linear-gradient"];
-			var toAdd=["-webkit-","-o-","-moz-"];
-			var expandProperty=function(prop,val){
-				return toAdd.map(function(a){return [a+prop,val]});
-			};
-			var expandPropertyValue=function(prop,val){
-				return toAdd.map(function(a){return [prop,a+val]});
-			};
 			var name=function(rule){
 				return /^([^{]+?)\{/g.exec(rule)[1].trim();
 			};
 			var content=function(rule){
 				return /\{([^{}]*?)\}/g.exec(rule)[1];
 			};
-			var parts=function(ruleContent){
-				if(!ruleContent.match(/;$/)){ruleContent+=';'}
-				var all,prop,val,m,p=[],rgx=/([^;:{]+?):([^;:]+?);/g;
-				while(m=rgx.exec(ruleContent)){
-					prop=m[1].trim();
-					val=m[2].trim();
-					if(propertiesToExpand.indexOf(prop)!=-1){
-						expandProperty(prop,val).map(function(pair){p.push(pair);});
-					}else if(valueBeginningsToExpand.filter(function(b){return val.match(new RegExp("^"+regesc(b)));}).length>0){
-						expandPropertyValue(prop,val).map(function(pair){p.push(pair);});
-					}else{
-						p.push([prop,val]);
-					}
-				}
-				return p;
-			};
-			var expandContent=function(ruleContent){
-				return parts(ruleContent).map(function(p){return p[0]+":"+p[1];}).join(';')+';';
-			};
 			var expandRule=function(rule){
-				return name(rule)+"{"+expandContent(content(rule))+'}';
+				return name(rule)+"{"+makeNode.css(content(rule))+'}';
 			};
 			document.head.appendChild(s);
 			return function(rule){
 				var exr=expandRule(rule);
-				console.log(exr);
 				s.sheet.insertRule(exr, count++);
 			};
 		});
@@ -897,7 +868,7 @@
 						};
 					},
 					[9,function(columnIndex){
-						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent;border-radius:50%"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><input id="5" style="position:absolute;left:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;top:'+(rowIndex==0?3:0)+'px;font-family:Arial;color:#999999;font-size:8px;border:none;background-color:transparent" disabled /></div></td>',
+						var cell=makeNode('<td id="1" style="margin:0px;padding:0px;border-spacing:0px;height:50px"><div id="2" style="position:relative;width:100%;height:100%;" align="center"><div id="3" style="position:absolute;left:0px;top:0px;width:100%;height:100%;background-color:transparent;border-radius:50%"></div><input id="4" type="text" maxlength="1" style="text-align:center;border:0px;width:50%;font-size:20px;position:relative;top:50%;transform:translateY(-50%);background-color:transparent" /><div style="position:absolute;left:0px;top:0px;width:100%;height:'+(rowIndex==0?3:0)+'px;background-color:#000"></div><div style="position:absolute;right:0px;top:0px;width:'+(columnIndex==8?3:0)+'px;height:100%;background-color:#000"></div><div style="position:absolute;left:0px;bottom:0px;width:100%;height:'+((rowIndex==8||rowIndex%3==2)?3:1)+'px;background-color:#000"></div><div style="position:absolute;left:0px;top:0px;width:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;height:100%;background-color:#000"></div><input id="5" style="position:absolute;left:'+((columnIndex==0||columnIndex%3==0)?3:1)+'px;top:'+(rowIndex==0?3:0)+'px;font-family:Arial;color:#999999;font-size:8px;border:none;background-color:transparent" disabled /></div></td>',
 							function(td, div, sh, input, possNode){
 								var otherState=false;
 								var highlighting=false;
@@ -1065,7 +1036,7 @@
 						};
 					},
 					[9,function(){
-						var cell=makeNode('<td style="margin:0px;padding:0px;border-spacing:0px" id="1"><div id="2" style="width:100%;height:100%"></div></td>',
+						var cell=makeNode('<td style="margin:0px;padding:0px;border-spacing:0px;height:50px" id="1"><div id="2" style="width:100%;height:100%"></div></td>',
 							function(td, div){
 								return {
 									td:td,
@@ -1087,18 +1058,18 @@
 			);
 
 		form=form2;
-		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0)"></div>',function(node){
+		var panel=makeNode('<div id="1" align="center" style="position:absolute;left:0px;bottom:0px;background-color:rgb(0,0,0);transition-property:width,height;transition-duration:0.25s"></div>',function(node){
 				var showing="controls",initialSize=12;
 				node.style.width=(initialSize)+"px";
 				node.style.height=initialSize+"px";
 				var $node=$(node);
-				$node.css({"transition-property":"width,height","transition-duration":"0.25s"});
+				//$node.css({"transition-property":"width,height","transition-duration":"0.25s"});
 				var closeButton=makeNode('<div id="1" style="position:absolute;right:0px;top:0px;width:50px;height:50px" align="center" class="sudoku-button sudoku-text"><div style="position:relative;top:50%;transform:translateY(-50%)">x</div></div>',
 					function(node){
 						addBordersToNode(node,3,3,3,3);
 						node.onclick=function(e){hide(e);};
 					});
-				var setProgressBar=makeNode('<div id="1" style="width:450px;height:450px;position:relative" align="left"><div id="2" style="position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);background-color:#000;height:50px;width:50%"></div></div>',
+				var setProgressBar=makeNode('<div id="1" style="width:450px;height:450px;position:relative" align="left"><div id="2" style="position:relative;top:50%;transform:translateY(-50%);background-color:#000;height:50px;width:50%"></div></div>',
 					function(node0, bar){
 						return function(p){
 							if(showing=="controls"){
@@ -1127,7 +1098,7 @@
 							okButton.onclick=function(e){e.preventDefault();e.stopPropagation();node.removeChild(win);answer(input.value);};
 						};
 					});
-				var setText=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><textarea id="2" style="width:400px;height:400px;position:relative;top:50%;transform:translateY(-50%);-webkit-transform:translateY(-50%);font-family:Verdana;font-size:10px;color:#000"></textarea></div>',
+				var setText=makeNode('<div id="1" style="width:450px;height:450px;position:relative"><textarea id="2" style="width:400px;height:400px;position:relative;top:50%;transform:translateY(-50%);font-family:Verdana;font-size:10px;color:#000"></textarea></div>',
 					function(layover, input){
 						return function(text, color){
 							if(showing=="controls"){
@@ -1203,7 +1174,7 @@
 					function(div){div.appendChild(closeButton);},
 					(function(){
 						var buttonTemplate='<div id="1" class="sudoku-text sudoku-button sudoku-panel-button" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div>';
-						var checkBoxTemplate='<div id="1" class="sudoku-text sudoku-switch"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td style="padding:5px"><div style="width:100%;height:100%" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div></td><td id="2" style="width:50px;padding:0px"></td></tr></table></div>';
+						var checkBoxTemplate='<div id="1" class="sudoku-text sudoku-switch"><table style="width:100%;height:100%;margin:0px;padding:0px;border-spacing:0px;color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit"><tr><td style="padding:5px"><div style="width:100%;height:100%" align="center"><div style="position:relative;top:50%;transform:translateY(-50%)">$(text)</div></div></td><td id="2" style="width:50px;height:50px;padding:0px"></td></tr></table></div>';
 						var button=function(text, action, index){
 							return makeNode(
 										buttonTemplate,
@@ -1218,12 +1189,12 @@
 									);
 						};
 						var checkBoxSlider=function(){
-							return makeNode('<div id="1" style="width:100%;height:100%;background-color:#000;position:relative"><div id="2" style="position:absolute;left:0px;top:0px;width:50%;height:100%" class="sudoku-button"></div></div>',
+							return makeNode('<div id="1" style="width:100%;height:100%;background-color:#000;position:relative;transition-property:background-color;transition-duration:0.25s"><div id="2" style="position:absolute;left:0px;top:0px;width:50%;height:100%;transition-property:left;transition-duration:0.25s" class="sudoku-button"></div></div>',
 								function(div,slide){
 									var $slide=$(slide);
 									var $div=$(div);
-									$slide.css({"transition-property":"left","transition-duration":"0.4s"});
-									$div.css({"transition-property":"background-color","transition-duration":"0.4s"});
+									//$slide.css({"transition-property":"left","transition-duration":"0.4s"});
+									//$div.css({"transition-property":"background-color","transition-duration":"0.4s"});
 									addBordersToNode(slide,0,1,1,1);
 									var check=function(){
 										$slide.css({"left":"50%"});
