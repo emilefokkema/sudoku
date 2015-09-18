@@ -1,4 +1,4 @@
-(function(window,document){
+(function(window,document,eval){
 	var maak=function(tagName){
 		var node=document.createElement(tagName);
 		node.html=function(s){
@@ -137,8 +137,6 @@
 		};
 	})();
 
-	console.log(expandCssRuleContent('transform:translateY(-50%);background: linear-gradient(#f6f6f6,#f0f0f0);'));
-
 	var appendFromThingsToNode=function(node, ids, things){
 		var toAppend;
 		try{
@@ -199,7 +197,178 @@
 		}else{
 			return baseNode;
 		}
-	}
+	};
+
+	var convertMakeNodeScript=(function(){
+		//below: (open/single tag|close tag|comment block){1,}|double-quoted string|single-quoted string
+		var HtmlOpenOrSingle="\\s*<[^\\s\\/!=>]+[^>]*?>\\s*";
+		var HtmlClose="\\s*</[^\\s>]+>\\s*";
+		var HtmlComment="\\s*<!--.*?-->\\s*";
+		var HtmlBlockRegex="("+HtmlOpenOrSingle+"|"+HtmlClose+"|"+HtmlComment+"){1,}";
+		console.log(HtmlBlockRegex);
+		var QuotedRegEx="\"(\\\\\")?([^\"]*\\\\\")*([^\"]*)?\"|'(\\\\')?([^']*\\\\')*([^']*)?'";
+		var dOpen=function(htmlBlock){
+			var d=0;
+			var match,regex=new RegExp(HtmlOpenOrSingle+"|"+HtmlClose,"g");
+			while(match=regex.exec(htmlBlock)){
+				if(match[0].match(new RegExp(HtmlOpenOrSingle))){
+					if(!match[0].match(/\/>$/g)){
+						d+=1;
+					}
+				}else{
+					d-=1;
+				}
+			}
+			return d;
+		};
+		var concatenateBlocksByType=function(blocks, makeNodeBlock){
+			var remove=function(b){
+				blocks.splice(blocks.indexOf(b),1);
+				makeNodeBlock.splice(makeNodeBlock.indexOf(b),1);
+			};
+			var pair;
+			var findBlockWithSimilarSuccessor=function(){
+				for(var i=0;i<makeNodeBlock.length-1;i++){
+					if(makeNodeBlock[i].type==makeNodeBlock[i+1].type){
+						return [makeNodeBlock[i],makeNodeBlock[i+1]];
+					}
+				}
+			};
+			while(pair=findBlockWithSimilarSuccessor()){
+				pair[0].string+=pair[1].string;
+				remove(pair[1]);
+			}
+		};
+		var quoteHtml=function(htmlBlock){
+			return "\""+htmlBlock.replace(/"/g,"\\\"")+"\"";
+		};
+		var unquote=function(quoted){
+			if(quoted.match(/^'.*'$/g)){
+				return quoted.substr(1,quoted.length-2).replace(/\\'/,'\'');
+			}else{
+				return quoted.substr(1,quoted.length-2).replace(/\\"/,'"');
+			}
+		};
+		return function(script, returnIntermediateResult){
+			script=script.replace(/\n/g,'');
+			var string,type,match,blocks=[];
+			var regex=new RegExp(HtmlBlockRegex+"|"+QuotedRegEx,"g");
+			while(match=regex.exec(script)){
+				string=match[0];
+				type=string.match(new RegExp("^"+HtmlBlockRegex+"$","g"))?"html":"quote";
+				if(type==='html'){
+					blocks.push({string:string,index:match.index,type:type});
+				}
+			}
+			var nextIndex,blocks1=[];
+			if(blocks.length>0){
+				if(blocks[0].index>0){
+					blocks1=[{string:script.substr(0,blocks[0].index),type:'script'}];
+				}
+				blocks.map(function(b,i){
+					blocks1.push(b);
+					nextIndex=(i<blocks.length-1?blocks[i+1].index:script.length);
+					if(nextIndex-b.index-b.string.length>0){
+						blocks1.push({string:script.substr(b.index+b.string.length,nextIndex-b.index-b.string.length),type:'script'});
+					}
+				});
+			}else{
+				blocks1=[{string:script,type:'script'}];
+			}
+			var open=0;
+			blocks1.map(function(b){
+				if(b.type==='html'){
+					b.string=b.string.replace(/>\s*/g,'>').replace(/\s*</g,'<').replace(new RegExp(HtmlComment,"g"),'');
+					b.dOpen=dOpen(b.string);
+					open+=b.dOpen;
+					b.open=open;
+				}
+			});
+			var makeNodeBlocks=[];
+			var currentMakeNodeBlock=[];
+			open=0;
+			var hasBeenOne=false;
+			blocks1.map(function(b){
+				if(b.type==='html'){
+					open=b.open;
+					if(currentMakeNodeBlock.length==0){
+						if(open!=0){
+							currentMakeNodeBlock=[b];
+							hasBeenOne=open==1;
+						}else{
+							makeNodeBlocks.push([b]);
+						}
+					}else{
+						currentMakeNodeBlock.push(b);
+						if(open==0){
+							makeNodeBlocks.push(currentMakeNodeBlock);
+							currentMakeNodeBlock=[];
+						}else{
+							if(hasBeenOne){b.type='makeNodeScript'}
+							if(open==1){hasBeenOne=true;}
+							
+						}
+					}
+				}else{
+					if(currentMakeNodeBlock.length!=0){
+						currentMakeNodeBlock.push(b);
+						if(open>1&&!hasBeenOne){
+							b.type='html';
+						}else{
+							if(open==1){
+								if(b.string.match(new RegExp("^"+QuotedRegEx+"$","g"))){
+									b.type='html';
+									b.string=unquote(b.string);
+								}else{
+									b.type='makeNodeScript';
+								}
+							}else{
+								b.type='makeNodeScript';
+							}
+							
+						}
+					}
+				}
+			});
+			if(returnIntermediateResult){returnIntermediateResult(blocks1)}
+			makeNodeBlocks.map(function(makeNodeBlock){
+				concatenateBlocksByType(blocks1, makeNodeBlock);
+			});
+			makeNodeBlocks.map(function(makeNodeBlock){
+				if(makeNodeBlock.length==3){
+					makeNodeBlock[0].string+=makeNodeBlock[2].string;
+					makeNodeBlock[2].string="";
+					makeNodeBlock[0].string=quoteHtml(makeNodeBlock[0].string);
+					makeNodeBlock[0].string=" makeNode("+makeNodeBlock[0].string+","+convertMakeNodeScript(makeNodeBlock[1].string)+")";
+					makeNodeBlock[1].string="";
+				}else{
+					makeNodeBlock[0].string=" makeNode("+quoteHtml(makeNodeBlock[0].string)+")";
+				}
+			});
+			var result='';
+			blocks1.map(function(b){result+=b.string;});
+			return result;
+
+		};
+	})();
+	
 	makeNode.css=expandCssRuleContent;
+	makeNode.convert=convertMakeNodeScript;
 	window.makeNode=makeNode;
-})(window,document);
+	window.addEventListener('load',function(){
+		var makeNodeScripts=(function(list){
+			var s=[];
+			for(var i=0;i<list.length;i++){
+				if(list[i].getAttribute('type')==="makeNode"){
+					s.push(list[i].innerHTML||list[i].innerText);
+				}
+			}
+			return s;
+		})(document.querySelectorAll('script'));
+		makeNodeScripts.map(function(s){
+			if(s){
+				eval(convertMakeNodeScript(s));
+			}
+		});
+	});
+})(window,document,window.eval);

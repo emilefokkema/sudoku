@@ -1464,8 +1464,6 @@
 		};
 	})();
 	if(!hash.process()){editor.setAll(sudoku.versie(sudoku.leeg()).getallen());hash.update(sudoku.getallenRij());}
-	window.sudoku=sudoku;
-	window.editor=editor;
 })(document.body, function(h){window.location.hash=h;}, function(){return window.location.hash.substr(1);}, jQuery);
 </script>
 </html>
