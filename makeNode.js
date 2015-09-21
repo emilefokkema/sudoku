@@ -200,12 +200,10 @@
 	};
 
 	var convertMakeNodeScript=(function(){
-		//below: (open/single tag|close tag|comment block){1,}|double-quoted string|single-quoted string
 		var HtmlOpenOrSingle="\\s*<[^\\s\\/!=>]+[^>]*?>\\s*";
 		var HtmlClose="\\s*</[^\\s>]+>\\s*";
 		var HtmlComment="\\s*<!--.*?-->\\s*";
 		var HtmlBlockRegex="("+HtmlOpenOrSingle+"|"+HtmlClose+"|"+HtmlComment+"){1,}";
-		console.log(HtmlBlockRegex);
 		var QuotedRegEx="\"(\\\\\")?([^\"]*\\\\\")*([^\"]*)?\"|'(\\\\')?([^']*\\\\')*([^']*)?'";
 		var dOpen=function(htmlBlock){
 			var d=0;
@@ -240,7 +238,35 @@
 			}
 		};
 		var quoteHtml=function(htmlBlock){
-			return "\""+htmlBlock.replace(/"/g,"\\\"")+"\"";
+			var quote=function(s){return "\""+s.replace(/"/g,'\\"')+"\"";};
+			if(htmlBlock.match(/[\{\}]/g)){
+				var indices=[],level=0;
+				var match,rgx=new RegExp("[\{\}]","g");
+				while(match=rgx.exec(htmlBlock)){
+					if(match[0]==='{'){
+						if(level===0){indices.push(match.index);}
+						level++;
+					}else{
+						level--;
+						if(level===0){indices.push(match.index);}
+					}
+				}
+				var s="",currentIndex=-1;
+				indices.map(function(index,i){
+					if(i%2===0){
+						s+=quote(htmlBlock.substring(currentIndex+1, index));
+					}else{
+						s+="+("+htmlBlock.substring(currentIndex+1, index)+")+";
+					}
+					currentIndex=index;
+				});
+				s+=quote(htmlBlock.substring(indices[indices.length-1]+1,htmlBlock.length));
+				return s;
+				return quote(htmlBlock);
+			}else{
+				return quote(htmlBlock);
+			}
+			//return quote(htmlBlock);
 		};
 		var unquote=function(quoted){
 			if(quoted.match(/^'.*'$/g)){
@@ -249,8 +275,26 @@
 				return quoted.substr(1,quoted.length-2).replace(/\\"/,'"');
 			}
 		};
+		var divideByBlockBoundary=function(string, blocks, typeBackground){
+			var nextIndex,blocks1=[];
+			if(blocks.length>0){
+				if(blocks[0].index>0){
+					blocks1=[{string:string.substr(0,blocks[0].index),type:typeBackground}];
+				}
+				blocks.map(function(b,i){
+					blocks1.push(b);
+					nextIndex=(i<blocks.length-1?blocks[i+1].index:string.length);
+					if(nextIndex-b.index-b.string.length>0){
+						blocks1.push({string:string.substr(b.index+b.string.length,nextIndex-b.index-b.string.length),type:typeBackground});
+					}
+				});
+			}else{
+				blocks1=[{string:string,type:typeBackground}];
+			}
+			return blocks1;
+		};
 		return function(script, returnIntermediateResult){
-			script=script.replace(/\n/g,'');
+			script=script.replace(/\s*\/\/.*/g,'').replace(/\n/g,'');
 			var string,type,match,blocks=[];
 			var regex=new RegExp(HtmlBlockRegex+"|"+QuotedRegEx,"g");
 			while(match=regex.exec(script)){
@@ -260,21 +304,7 @@
 					blocks.push({string:string,index:match.index,type:type});
 				}
 			}
-			var nextIndex,blocks1=[];
-			if(blocks.length>0){
-				if(blocks[0].index>0){
-					blocks1=[{string:script.substr(0,blocks[0].index),type:'script'}];
-				}
-				blocks.map(function(b,i){
-					blocks1.push(b);
-					nextIndex=(i<blocks.length-1?blocks[i+1].index:script.length);
-					if(nextIndex-b.index-b.string.length>0){
-						blocks1.push({string:script.substr(b.index+b.string.length,nextIndex-b.index-b.string.length),type:'script'});
-					}
-				});
-			}else{
-				blocks1=[{string:script,type:'script'}];
-			}
+			var blocks1=divideByBlockBoundary(script, blocks, 'script');
 			var open=0;
 			blocks1.map(function(b){
 				if(b.type==='html'){
