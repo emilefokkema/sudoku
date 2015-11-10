@@ -262,7 +262,7 @@
 				});
 				s+=quote(htmlBlock.substring(indices[indices.length-1]+1,htmlBlock.length));
 				return s;
-				return quote(htmlBlock);
+				//return quote(htmlBlock);
 			}else{
 				return quote(htmlBlock);
 			}

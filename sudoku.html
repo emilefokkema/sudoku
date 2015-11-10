@@ -720,11 +720,21 @@
 						}
 						return true;
 					};
+					var position=function(row,column){
+						return {
+							row:function(){return row;},
+							column:function(){return column;},
+							equals:function(p){return p.row()==row && p.column()==column;}
+						};
+					};
 					var twin=function(n1,n2,p1,p2){
 						return {
 							positions:function(){return [p1,p2];},
 							numbers: function(){return [n1,n2];},
-							equals:function(t){return arrayEquals(this.numbers(), t.numbers());}
+							equals:function(t){
+								var otherPositions = t.positions();
+								return p1.equals(otherPositions[0]) && p2.equals(otherPositions[1]);
+							}
 						};
 					};
 					var twinSet=function(){
@@ -737,12 +747,67 @@
 							}
 							return false;
 						};
-						return {
-							add:function(t){
-								if(!has(t)){s.push(t);}
-							},
-							all:function(){return s;}
+						var add=function(t){
+							if(!has(t)){s.push(t);}
 						};
+						return {
+							add:add,
+							addAll: function(set){
+								var all=set.all();
+								all.map(function(t){
+									add(t);
+								});
+							},
+							all:function(){return s;},
+							any:function(){return s.length>0;}
+						};
+					};
+					return function(kind){
+						var possibilities,posF,poss,poss1,poss2,waarZit,twins,allTwins=twinSet(),getallen=sudoku.getallen();
+						for(var k=0;k<kind.n;k++){
+							twins=twinSet();
+							waarZit=[[],[],[],[],[],[],[],[],[]];
+							possibilities=[];
+							posF=function(index){
+								var p=kind.positie(k,index);
+								return position(p[0],p[1]);
+							};
+							kind.doorloop(self.cells, k).met(function(cell, row, column, index){
+								poss=cell.getPossibilities();
+								possibilities.push(poss);
+								if(!getallen[row][column]){
+									for(var j=0;j<poss.length;j++){
+										waarZit[poss[j]-1].push(index);
+									}
+								}
+							});
+							//see if there are two numbers that only occur in the same two places
+							for(var i=0;i<9;i++){
+								for(var j=i+1;j<9;j++){
+									if(waarZit[i].length==2&&arrayEquals(waarZit[i], waarZit[j])){
+										twins.add(twin(
+											i+1,
+											j+1,
+											posF(waarZit[i][0]),
+											posF(waarZit[i][1])
+										));
+									}
+								}
+							}
+							//see if there are two places that have the same 2 possibilities
+							for(var i=0;i<9;i++){
+								for(var j=i+1;j<9;j++){
+									poss1=possibilities[i];
+									poss2=possibilities[j];
+									if(poss1&&poss1.length==2&&arrayEquals(poss1,poss2)){
+										twins.add(twin(poss1[0],poss1[1],posF(i),posF(j)));
+									}
+								}
+							}
+
+							allTwins.addAll(twins);
+						}
+						return allTwins;
 					};
 				})();
 				var getTwinsInSets=(function(){
@@ -816,7 +881,6 @@
 					console.log("showTwinsInSets");
 					if(shading){
 						middle.clear();
-						//allCells(function(c){c.shade('transparent');});
 						var p1,p2;
 						var twins=getTwinsInSets(sudoku.vakPositie, 9)().concat(getTwinsInSets(sudoku.rijPositie, 9)()).concat(getTwinsInSets(sudoku.kolomPositie, 9)());
 						if(otherState){twins=twins.concat(getTwinsInSets(sudoku.vak2Positie, 4)());}
@@ -825,8 +889,6 @@
 								p1=twins[i][j][1][0];
 								p2=twins[i][j][1][1];
 								middle.connect(p1[0],p1[1],p2[0],p2[1]);
-								//self.cells[p1[0]][p1[1]].shade("rgba(85,85,187,0.1)");
-								//self.cells[p2[0]][p2[1]].shade("rgba(85,85,187,0.1)");
 							}
 						}
 					}
