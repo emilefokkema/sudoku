@@ -7,6 +7,17 @@
 		};
 		return node;
 	};
+	var getBaseNode=(function(){
+		if(document.createElement('template').content){
+			return function(html){
+				return maak('template').html(html).content.childNodes[0];;
+			};
+		}else{
+			return function(html){
+				return maak('div').html(html).childNodes[0];
+			};
+		}
+	})();
 	var regesc=function(s){return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');};
 	var getAllNodes=function(node){
 		var r=[];
@@ -160,7 +171,7 @@
 	}
 
 	var makeNode=function(html){
-		var baseNode=maak('template').html(html).content.childNodes[0];
+		var baseNode=getBaseNode(html);
 		if(arguments.length>1){
 			var f=arguments[1];
 			var nodesToPass=[];
