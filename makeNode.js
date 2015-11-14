@@ -21,7 +21,7 @@
 	var regesc=function(s){return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');};
 	var getAllNodes=function(node){
 		var r=[];
-		var res0,nodeIterator=document.createNodeIterator(node, NodeFilter.SHOW_ELEMENT);
+		var res0,nodeIterator=document.createNodeIterator(node, NodeFilter.SHOW_ELEMENT, null, false);
 		while(res0=nodeIterator.nextNode()){
 			r.push(res0);
 		}
