@@ -168,7 +168,7 @@
 				}
 			}
 		});
-	}
+	};
 
 	var makeNode=function(html){
 		var baseNode=getBaseNode(html);
