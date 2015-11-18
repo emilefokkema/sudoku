@@ -170,12 +170,27 @@
 		});
 	};
 
+	var getNumberedNode=function(node){
+		var result,idN,idString,match,wrap=false;
+		if(match=new RegExp("^(\\d+)\\$?$","g").exec(idString=node.getAttribute('id'))){
+			node.removeAttribute('id');
+			wrap = idString.indexOf("$")!=-1;
+			result = {n:parseInt(match[1]),node:node};
+			if(wrap && jQuery){
+				result.node = jQuery(result.node);
+			}
+			return result;
+		}else{
+			return null;
+		}
+	};
+
 	var makeNode=function(html){
 		var baseNode=getBaseNode(html);
 		if(arguments.length>1){
 			var f=arguments[1];
 			var nodesToPass=[];
-			var toAppend,match,id,style,idN,node,allNodes=getAllNodes(baseNode);
+			var numberedNode,toAppend,match,id,style,idN,node,allNodes=getAllNodes(baseNode);
 			var toReturn;
 			var getToReturn=function(){return toReturn;};
 			var offspringId,offspringIds;
@@ -188,12 +203,11 @@
 			}
 			for(var i=0;i<allNodes.length;i++){
 				node=allNodes[i];
-				id=node.getAttribute('id');
+				numberedNode = getNumberedNode(node);
 				style=node.getAttribute('style');
 				if(style){node.setAttribute('style',expandCssRuleContent(style));}
-				if(id&&!isNaN(idN=parseInt(id))){
-					nodesToPass.push({n:idN,node:node});
-					node.removeAttribute('id');
+				if(numberedNode){
+					nodesToPass.push(numberedNode);
 				}
 				if(things&&(offspringIds=getOffspringIdentifiers(node))){
 					appendFromThingsToNode(node, offspringIds, things);
