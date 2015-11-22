@@ -319,90 +319,101 @@
 			return blocks1;
 		};
 		return function(script, returnIntermediateResult){
-			script=script.replace(/\s*\/\/.*/g,'').replace(/\n/g,'');
-			var string,type,match,blocks=[];
-			var regex=new RegExp(HtmlBlockRegex+"|"+QuotedRegEx,"g");
-			while(match=regex.exec(script)){
-				string=match[0];
-				type=string.match(new RegExp("^"+HtmlBlockRegex+"$","g"))?"html":"quote";
-				if(type==='html'){
-					blocks.push({string:string,index:match.index,type:type});
+			try{
+				script=script.replace(/\s*\/\/.*/g,'').replace(/\n/g,'');
+				var string,type,match,blocks=[];
+				var regex=new RegExp(HtmlBlockRegex+"|"+QuotedRegEx,"g");
+				while(match=regex.exec(script)){
+					string=match[0];
+					type=string.match(new RegExp("^"+HtmlBlockRegex+"$","g"))?"html":"quote";
+					if(type==='html'){
+						blocks.push({string:string,index:match.index,type:type});
+					}
 				}
-			}
-			var blocks1=divideByBlockBoundary(script, blocks, 'script');
-			var open=0;
-			blocks1.map(function(b){
-				if(b.type==='html'){
-					b.string=b.string.replace(/>\s*/g,'>').replace(/\s*</g,'<').replace(new RegExp(HtmlComment,"g"),'');
-					b.dOpen=dOpen(b.string);
-					open+=b.dOpen;
-					b.open=open;
+				var blocks1=divideByBlockBoundary(script, blocks, 'script');
+				var open=0;
+				blocks1.map(function(b){
+					if(b.type==='html'){
+						b.string=b.string.replace(/>\s*/g,'>').replace(/\s*</g,'<').replace(new RegExp(HtmlComment,"g"),'');
+						b.dOpen=dOpen(b.string);
+						open+=b.dOpen;
+						b.open=open;
+					}
+				});
+				if(open!=0){
+					throw new TypeError;
 				}
-			});
-			var makeNodeBlocks=[];
-			var currentMakeNodeBlock=[];
-			open=0;
-			var hasBeenOne=false;
-			blocks1.map(function(b){
-				if(b.type==='html'){
-					open=b.open;
-					if(currentMakeNodeBlock.length==0){
-						if(open!=0){
-							currentMakeNodeBlock=[b];
-							hasBeenOne=open==1;
+				var makeNodeBlocks=[];
+				var currentMakeNodeBlock=[];
+				open=0;
+				var hasBeenOne=false;
+				blocks1.map(function(b){
+					if(b.type==='html'){
+						open=b.open;
+						if(currentMakeNodeBlock.length==0){
+							if(open!=0){
+								currentMakeNodeBlock=[b];
+								hasBeenOne=open==1;
+							}else{
+								makeNodeBlocks.push([b]);
+							}
 						}else{
-							makeNodeBlocks.push([b]);
+							currentMakeNodeBlock.push(b);
+							if(open==0){
+								makeNodeBlocks.push(currentMakeNodeBlock);
+								currentMakeNodeBlock=[];
+							}else{
+								if(hasBeenOne){b.type='makeNodeScript'}
+								if(open==1){hasBeenOne=true;}
+								
+							}
 						}
 					}else{
-						currentMakeNodeBlock.push(b);
-						if(open==0){
-							makeNodeBlocks.push(currentMakeNodeBlock);
-							currentMakeNodeBlock=[];
-						}else{
-							if(hasBeenOne){b.type='makeNodeScript'}
-							if(open==1){hasBeenOne=true;}
-							
-						}
-					}
-				}else{
-					if(currentMakeNodeBlock.length!=0){
-						currentMakeNodeBlock.push(b);
-						if(open>1&&!hasBeenOne){
-							b.type='html';
-						}else{
-							if(open==1){
-								if(b.string.match(new RegExp("^"+QuotedRegEx+"$","g"))){
-									b.type='html';
-									b.string=unquote(b.string);
+						if(currentMakeNodeBlock.length!=0){
+							currentMakeNodeBlock.push(b);
+							if(open>1&&!hasBeenOne){
+								b.type='html';
+							}else{
+								if(open==1){
+									if(b.string.match(new RegExp("^"+QuotedRegEx+"$","g"))){
+										b.type='html';
+										b.string=unquote(b.string);
+									}else{
+										b.type='makeNodeScript';
+									}
 								}else{
 									b.type='makeNodeScript';
 								}
-							}else{
-								b.type='makeNodeScript';
+								
 							}
-							
 						}
 					}
+				});
+				if(returnIntermediateResult){returnIntermediateResult(blocks1)}
+				makeNodeBlocks.map(function(makeNodeBlock){
+					concatenateBlocksByType(blocks1, makeNodeBlock);
+				});
+				makeNodeBlocks.map(function(makeNodeBlock){
+					if(makeNodeBlock.length==3){
+						makeNodeBlock[0].string+=makeNodeBlock[2].string;
+						makeNodeBlock[2].string="";
+						makeNodeBlock[0].string=quoteHtml(makeNodeBlock[0].string);
+						makeNodeBlock[0].string=" makeNode("+makeNodeBlock[0].string+","+convertMakeNodeScript(makeNodeBlock[1].string)+")";
+						makeNodeBlock[1].string="";
+					}else{
+						makeNodeBlock[0].string=" makeNode("+quoteHtml(makeNodeBlock[0].string)+")";
+					}
+				});
+				var result='';
+				blocks1.map(function(b){result+=b.string;});
+				return result;
+			}
+			catch(e){
+				if(console&&console.error){
+					console.error("MakeNode script conversion: some html was not closed properly.");
 				}
-			});
-			if(returnIntermediateResult){returnIntermediateResult(blocks1)}
-			makeNodeBlocks.map(function(makeNodeBlock){
-				concatenateBlocksByType(blocks1, makeNodeBlock);
-			});
-			makeNodeBlocks.map(function(makeNodeBlock){
-				if(makeNodeBlock.length==3){
-					makeNodeBlock[0].string+=makeNodeBlock[2].string;
-					makeNodeBlock[2].string="";
-					makeNodeBlock[0].string=quoteHtml(makeNodeBlock[0].string);
-					makeNodeBlock[0].string=" makeNode("+makeNodeBlock[0].string+","+convertMakeNodeScript(makeNodeBlock[1].string)+")";
-					makeNodeBlock[1].string="";
-				}else{
-					makeNodeBlock[0].string=" makeNode("+quoteHtml(makeNodeBlock[0].string)+")";
-				}
-			});
-			var result='';
-			blocks1.map(function(b){result+=b.string;});
-			return result;
+			}
+			
 
 		};
 	})();
