@@ -319,8 +319,8 @@
 			return blocks1;
 		};
 		return function(script, returnIntermediateResult){
-			try{
-				script=script.replace(/\s*\/\/.*/g,'').replace(/\n/g,'');
+			try{ 
+				script=script.replace(/[\n\r]+/g,' ');
 				var string,type,match,blocks=[];
 				var regex=new RegExp(HtmlBlockRegex+"|"+QuotedRegEx,"g");
 				while(match=regex.exec(script)){
