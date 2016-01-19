@@ -19,7 +19,7 @@
             };
             var nothingBeforeExtend=(function(){
                 var functionBody=function(f){
-                    return new RegExp("^function\\s*?\\([^)]*?\\){([\\w\\W]*)}$","g").exec(f.toString())[1];
+                    return new RegExp("^function\\s*?\\([^)]*?\\)\\s*?{([\\w\\W]*)}$","g").exec(f.toString())[1];
                 };
                 var addBlockToBody=function(body){
                     var where=body.indexOf("this.extend");
