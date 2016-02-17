@@ -292,6 +292,11 @@
 							res = false;
 						}
 					});
+					other.follow(function(s){
+						if(!ret.find(function(t){return t.from.equals(s.from) && t.to.equals(s.to);})){
+							res = false;
+						}
+					});
 					return res;
 				},
 				containsPoint:function(p){
@@ -528,11 +533,13 @@
 				return intersections.filter(function(i){return i.toBeSwitched;});
 			};
 			return function(s1,s2){
+				var s1Original = s1;
+				var s2Original = s2;
 				s1 = s1.clone();
 				s2 = s2.clone();
 				var intersections = getSwitchableIntersections(s1, s2);
 				if(intersections.length==0){
-					return [s1,s2];
+					return [s1Original,s2Original];
 				}
 				var resultingPaths = pathSet();
 				var addPoints = function(g){
@@ -566,18 +573,32 @@
 			};
 		})();
 
-		var combineMany = function(sides){
+		var combineMany = function(sides, doneCombining){
+			doneCombining = doneCombining || pathSet();
+			console.log(sides.length);
+			var result = pathSet();
 			if(sides.length == 1){
-				return sides;
+				result.addMany(sides.filter(function(u){return !doneCombining.contains(u);}));
 			}
 			else if(sides.length == 2){
-				return combine(sides[0], sides[1]);
+				result.addMany(combine(sides[0], sides[1]).filter(function(u){return !doneCombining.contains(u);}));
 			}else{
-				var doneCombining = pathSet();
-				var toBeCombined = pathSet();
-
-
-
+				doneCombining.addMany(sides);
+				result = pathSet();
+				sides.map(function(s,i){
+					sides.map(function(t,j){
+						if(j > i){
+							result.addMany(combine(s,t).filter(function(u){return !doneCombining.contains(u);}));
+						}
+					})
+				});
+			}
+			if(result.paths.length > 0){
+				doneCombining.addMany(result.paths);
+				var a=0;
+				return combineMany(result.paths, doneCombining);
+			}else{
+				return doneCombining.paths;
 			}
 		};
 		
@@ -647,11 +668,19 @@
 			};
 		})();
 
-		var rectangle = function(x,y,width,height){
-			var sides = [sideBuilder(point(x,y)).to(point(x, y+height)).to(point(x+width,y+height)).to(point(x+width,y)).to(point(x,y)).close()];
-			return contour(sides);
+		var rectangleSide = function(x,y,width,height){
+			return sideBuilder(point(x,y)).to(point(x, y+height)).to(point(x+width,y+height)).to(point(x+width,y)).to(point(x,y)).close();
 		};
 
+		var rectangle = function(x,y,width,height){
+			var sides = [rectangleSide(x,y,width,height)];
+			return contour(sides);
+		};
+		console.log(combineMany([
+			rectangleSide(0,0,10,10),
+			rectangleSide(7,7,10,10),
+			rectangleSide(14,14,10,10)
+			]));
 
 		return {
 			rectangle:rectangle,
