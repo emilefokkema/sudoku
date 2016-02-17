@@ -421,7 +421,7 @@
 	makeNode.css=expandCssRuleContent;
 	makeNode.convert=convertMakeNodeScript;
 	window.makeNode=makeNode;
-	window.addEventListener('load',function(){
+	(window.addEventListener ? window.addEventListener : window.attachEvent)('load',function(){
 		var makeNodeScripts=(function(list){
 			var s=[];
 			for(var i=0;i<list.length;i++){
