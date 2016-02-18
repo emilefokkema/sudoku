@@ -421,7 +421,7 @@
 	makeNode.css=expandCssRuleContent;
 	makeNode.convert=convertMakeNodeScript;
 	window.makeNode=makeNode;
-	(window.addEventListener ? window.addEventListener : window.attachEvent)('load',function(){
+	var onLoadListener = function(){
 		var makeNodeScripts=(function(list){
 			var s=[];
 			for(var i=0;i<list.length;i++){
@@ -436,5 +436,10 @@
 				eval(convertMakeNodeScript(s));
 			}
 		});
-	});
+	};
+	if(window.addEventListener){
+		window.addEventListener('load', onLoadListener);
+	}else{
+		window.attachEvent('onload', onLoadListener);
+	}
 })(window,document,window.eval);
