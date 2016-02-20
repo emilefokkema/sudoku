@@ -745,6 +745,22 @@
 			a = a.clean();
 			this.assert(a.area()==100,"area changed after adding points and cleaning");
 		});
+		test(function(){
+			var a = rectangleSide(0,0,10,10);
+			var b = rectangleSide(0,0,10,5).reverse();
+			var c = contour(combine(a,b)).sides;
+			this.assert(c.length == 1, "expected 1 path");
+			this.assert(c[0].length() == 4, "expected 4 sides");
+			this.assert(c[0].area() == 50, "expected area 50");
+		});
+		test(function(){
+			var a = rectangleSide(0,0,10,10);
+			var b = rectangleSide(0,0,8,5).reverse();
+			var c = contour(combine(a,b)).sides;
+			this.assert(c.length == 1, "expected 1 path");
+			this.assert(c[0].length() == 6, "expected 6 sides");
+			this.assert(c[0].area() == 60, "expected area 60");
+		});
 		console.log(combineMany([
 			rectangleSide(0,0,10,10),
 			rectangleSide(7,7,10,10),
