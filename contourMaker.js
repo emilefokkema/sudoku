@@ -380,6 +380,11 @@
 					});
 					return res.prev(last);
 				},
+				length:function(){
+					var n=0;
+					follow(function(){n++;})
+					return n;
+				},
 				isSelfIntersecting:function(){
 					var res = false;
 					follow(function(s, stop1){
@@ -439,6 +444,7 @@
 		var pathSet = function(){
 			var paths = [];
 			var contains = function(s){
+				s = s.clone().clean();
 				return paths.some(function(t){
 					return t.isSameAs(s) || t.overlapsWith(s);
 				});
@@ -477,9 +483,7 @@
 				return toSearch.find(function(s){return s.from.equals(p);});
 			};
 
-			var combinePairs = function(halfIntersections){
-				
-			};
+			
 			var intersectionProfile = function(alreadyPresent){
 				alreadyPresent = alreadyPresent || [];
 				var branches = {
@@ -567,13 +571,8 @@
 						toBeSwitched: toBeSwitched,
 						point: p,
 						one: s,
-						two: t,
-						fromSplit: !fromOne.sameDirectionAs(fromTwo),
-						toSplit: !toOne.sameDirectionAs(toTwo),
-						fromOne:fromOne,
-						toOne:toOne,
-						fromTwo:fromTwo,
-						toTwo:toTwo
+						two: t
+						
 					};
 				};
 			})();
@@ -592,7 +591,6 @@
 						intersections = intersections.concat(newIntersections);
 					});
 				});
-				combinePairs(intersections.filter(function(i){return !i.toBeSwitched;}));
 				return intersections.filter(function(i){return i.toBeSwitched;});
 			};
 			return function(s1,s2){
@@ -636,6 +634,8 @@
 				return resultingPaths.paths;
 			};
 		})();
+
+		window.combine=combine;
 
 		var combineMany = function(sides, doneCombining){
 			doneCombining = doneCombining || pathSet();
