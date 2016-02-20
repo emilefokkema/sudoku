@@ -1,5 +1,17 @@
 ;(function(){
 	window.contourMaker = (function(){
+		var test = (function(){
+			return function(t){
+				t.apply({
+					assert:function(bool, message){
+						if(!bool && console.error){
+							console.error(message);
+						}
+					}
+				},[]);
+			};
+		})();
+		
 		Array.prototype.groupBy = (function(){
 			var group = function(key,firstMember){
 				var members = [firstMember];
@@ -92,7 +104,7 @@
 		};
 
 		window.point = point;
-
+		var isTheOne = function(p){return p.x>7 && p.x<7.05;};
 		var intersectSegments = function(p1,p2,q1,q2){
 			var x1 = p2.minus(p1);
 			var x2 = q2.minus(q1);
@@ -126,7 +138,7 @@
 			}
 			
 		};
-		
+		console.log(intersectSegments(point(0,10),point(10,10),point(7,7),point(7,17)));
 		var side = function(p1,p2){
 			var ret,prev,next;
 			var follow = function(callback){
@@ -368,6 +380,19 @@
 					});
 					return res.prev(last);
 				},
+				isSelfIntersecting:function(){
+					var res = false;
+					follow(function(s, stop1){
+						follow(function(t, stop2){
+							if(s!=t && s.intersectWith(t).length > 0 && s.next() != t && t.next() != s){
+								res = true;
+								stop2();
+								stop1();
+							}
+						});
+					});
+					return res;
+				},
 				lastPointBefore:function(p){
 					var found = this.find(function(s){
 						return s.sideContainsPoint(p) && !s.from.equals(p);
@@ -419,6 +444,8 @@
 				});
 			};
 			var add = function(s){
+				s = s.clean();
+				if(!s){return;}
 				if(!contains(s)){
 					paths.push(s);
 				}
@@ -668,6 +695,7 @@
 				});
 			};
 			return function(sides){
+				sides = sides.filter(function(s){return !s.isSelfIntersecting();});
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				return {
 					rot:function(alpha){
@@ -712,10 +740,16 @@
 			var sides = [rectangleSide(x,y,width,height)];
 			return contour(sides);
 		};
+		test(function(){
+			var a = rectangleSide(0,0,10,10).addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
+			a = a.clean();
+			this.assert(a.area()==100,"area changed after adding points and cleaning");
+		});
 		console.log(combineMany([
 			rectangleSide(0,0,10,10),
 			rectangleSide(7,7,10,10),
-			rectangleSide(14,14,10,10)
+			rectangleSide(14,14,10,10),
+			rectangleSide(21,21,10,10)
 			]));
 
 		return {
