@@ -137,6 +137,15 @@
 					had.push(s);
 				}
 			};
+			var filter = function(cond){
+				var toKeep = [];
+				follow(function(s){
+					if(cond.apply(null,[s])){
+						toKeep.push(s);
+					}
+				});
+				return toKeep;
+			};
 			var change = function(newPoint){
 				var builder = sideBuilder(newPoint(ret.from));
 				follow(function(s){
@@ -144,6 +153,8 @@
 				});
 				return builder.close();
 			};
+			var hasZeroLength = function(s){return s.to.equals(s.from);};
+			var isNotStraightContinuation = function(s){return s.to.minus(s.from).cross(s.prev().to.minus(s.prev().from)) != 0;};
 			ret= {
 				from:p1,
 				to:p2,
@@ -168,22 +179,33 @@
 					return s;
 				},
 				addPoint:function(p){
-					var newSide = side(this.from, p).next(side(p,this.to)).next(next);
-					prev.next(newSide.prev().prev());
-					return newSide;
+					if(p.equals(this.from)){
+
+						return next;
+					}else if(p.equals(this.to)){
+						return next.next();
+					}else{
+						var newSide = side(this.from, p).next(side(p,this.to)).next(next);
+						prev.next(newSide.prev().prev());
+						return newSide;
+					}
+					
 				},
+				filter:filter,
 				eliminate:function(){
 					prev.next(next);
 				},
+				extend:function(){
+					var newNext = next.find(isNotStraightContinuation);
+					if(newNext != next){
+						newNext = prev.next(side(this.from, newNext.from)).next(newNext);
+					}
+					return newNext;
+				},
 				clean:function(){
-					var toKeep = this.find(function(s){return !s.to.equals(s.from);});
-					var toEliminate = [];
-					follow(function(s){
-						if(s.to.equals(s.from)){
-							toEliminate.push(s);
-						}
-					});
-					toEliminate.map(function(s){s.eliminate();});
+					var toKeep = this.find(function(s){return !hasZeroLength(s);});
+					filter(hasZeroLength).map(function(s){s.eliminate();});
+					toKeep = toKeep.filter(isNotStraightContinuation).map(function(s){return s.extend();})[0];
 					return toKeep;
 				},
 				addPoints:function(arr){
@@ -246,11 +268,25 @@
 					});
 					return res;
 				},
+				box:function(){
+					var minx=null,maxx=null,miny=null,maxy=null;
+					var compare = function(cand, cond, curr){
+						return curr == null ? cand : (cond(cand,curr) ? cand : curr);
+					};
+					follow(function(s){
+						minx = compare(s.from.x, function(cand,curr){return cand <= curr;}, minx);
+						maxx = compare(s.from.x, function(cand,curr){return cand >= curr;}, maxx);
+						miny = compare(s.from.y, function(cand,curr){return cand <= curr;}, miny);
+						maxy = compare(s.from.y, function(cand,curr){return cand >= curr;}, maxy);
+					});
+					return ""+minx+" <= x <= "+maxx+", "+miny+" <= y <= "+maxy;
+				},
 				find:function(condition){
 					var res = null;
-					follow(function(s){
+					follow(function(s, stop){
 						if(condition(s)){
 							res = s;
+							stop();
 						}
 					});
 					return res;
@@ -537,6 +573,9 @@
 				var s2Original = s2;
 				s1 = s1.clone();
 				s2 = s2.clone();
+				if(s1.area() == 0 || s2.area() == 0){
+					return [s1Original,s2Original];
+				}
 				var intersections = getSwitchableIntersections(s1, s2);
 				if(intersections.length==0){
 					return [s1Original,s2Original];
@@ -548,8 +587,6 @@
 				intersections.groupBy(function(i){return i.one;}).map(addPoints);
 				intersections.groupBy(function(i){return i.two;}).map(addPoints);
 				
-				s1 = s1.clean();
-				s2 = s2.clean();
 				var pairsToSwitch = intersections.map(function(i){
 					var fromOne = sideFrom(i.point, s1);
 					var fromTwo = sideFrom(i.point, s2);
@@ -575,7 +612,6 @@
 
 		var combineMany = function(sides, doneCombining){
 			doneCombining = doneCombining || pathSet();
-			console.log(sides.length);
 			var result = pathSet();
 			if(sides.length == 1){
 				result.addMany(sides.filter(function(u){return !doneCombining.contains(u);}));
