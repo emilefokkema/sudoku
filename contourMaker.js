@@ -398,6 +398,19 @@
 					});
 					return res;
 				},
+				intersects:function(other){
+					var res = false;
+					follow(function(s,stop1){
+						other.follow(function(t,stop2){
+							if(s.intersectWith(t).length > 0){
+								res = true;
+								stop2();
+								stop1();
+							}
+						});
+					});
+					return res;
+				},
 				lastPointBefore:function(p){
 					var found = this.find(function(s){
 						return s.sideContainsPoint(p) && !s.from.equals(p);
@@ -636,34 +649,52 @@
 		})();
 
 		window.combine=combine;
-
-		var combineMany = function(sides, doneCombining){
-			doneCombining = doneCombining || pathSet();
-			var result = pathSet();
-			if(sides.length == 1){
-				result.addMany(sides.filter(function(u){return !doneCombining.contains(u);}));
-			}
-			else if(sides.length == 2){
-				result.addMany(combine(sides[0], sides[1]).filter(function(u){return !doneCombining.contains(u);}));
-			}else{
-				doneCombining.addMany(sides);
-				result = pathSet();
-				sides.map(function(s,i){
-					sides.map(function(t,j){
-						if(j > i){
-							result.addMany(combine(s,t).filter(function(u){return !doneCombining.contains(u);}));
+		
+		var combineMany = (function(){
+			var path = function(side, h){
+				return {
+					side:side,
+					history:h
+				};
+			};
+			var history = function(indices){
+				var isDisjointWith = function(other){
+					return indices.some(function(i){return other.indices.indexOf(i) == -1;}) && other.indices.some(function(i){return indices.indexOf(i) == -1});
+				};
+				var combine = function(other){
+					return history(indices.concat(other.indices.filter(function(i){return indices.indexOf(i) == -1;})));
+				};
+				return {
+					indices:indices,
+					isDisjointWith:isDisjointWith,
+					combine:combine
+				};
+			};
+			var combination = function(path1, path2){
+				var newSides = combine(path1.side, path2.side);
+				var newHistory = path1.history.combine(path2.history);
+				return newSides.map(function(s){return path(s, newHistory);});
+			};
+			var findIntersectingPairWithDisjointHistories = function(allPaths){
+				for(var i=0;i<allPaths.length-1;i++){
+					for(var j=i+1;j<allPaths.length;j++){
+						if(allPaths[i].history.isDisjointWith(allPaths[j].history) && allPaths[i].side.intersects(allPaths[j].side)){
+							return [allPaths[i], allPaths[j]]
 						}
-					})
-				});
-			}
-			if(result.paths.length > 0){
-				doneCombining.addMany(result.paths);
-				var a=0;
-				return combineMany(result.paths, doneCombining);
-			}else{
-				return doneCombining.paths;
-			}
-		};
+					}
+				}
+				return null;
+			};
+			return function(sides){
+				var newPair,allPaths = sides.map(function(s,i){return path(s, history([i]));});
+				while(newPair = findIntersectingPairWithDisjointHistories(allPaths)){
+					allPaths = allPaths.filter(function(p){return p!=newPair[0] && p!=newPair[1];}).concat(combination(newPair[0],newPair[1]));
+				}
+				var res = pathSet().addMany(allPaths.map(function(p){return p.side;})).paths;
+				return res;
+			};
+		})();
+
 		
 
 		var contour = (function(){
@@ -695,7 +726,7 @@
 				});
 			};
 			return function(sides){
-				sides = sides.filter(function(s){return !s.isSelfIntersecting();});
+				//sides = sides.filter(function(s){return !s.isSelfIntersecting();});
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				return {
 					rot:function(alpha){
@@ -761,6 +792,7 @@
 			this.assert(c[0].length() == 6, "expected 6 sides");
 			this.assert(c[0].area() == 60, "expected area 60");
 		});
+
 		console.log(combineMany([
 			rectangleSide(0,0,10,10),
 			rectangleSide(7,7,10,10),
