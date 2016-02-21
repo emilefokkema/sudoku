@@ -1,12 +1,21 @@
 ;(function(){
 	window.contourMaker = (function(){
 		var test = (function(){
-			return function(t){
+			return function(name,t){
 				t.apply({
 					assert:function(bool, message){
 						if(!bool && console.error){
-							console.error(message);
+							console.error("["+name+"] "+message);
 						}
+					},
+					expect:function(actual){
+						return {
+							toBe:function(expected, message){
+								if(actual != expected && console.error){
+									console.error("["+name+"] "+message+" (expected "+expected+" but saw "+actual+")");
+								}
+							}
+						};
 					}
 				},[]);
 			};
@@ -227,6 +236,15 @@
 						currentPart = currentPart.addPoint(p).prev();
 					});
 				},
+				intersectWithVertical:function(x){
+					var box = this.box();
+					var segment = side(point(x,box.miny - 1),point(x, box.maxy + 1));
+					var intersections = [];
+					follow(function(s){
+						intersections = intersections.concat(s.intersectWith(segment).map(function(p){return {side:s,point:p};}));
+					});
+					return intersections;
+				},
 				close:function(){
 					var beginning = this;
 					while(beginning.prev()){
@@ -291,7 +309,7 @@
 						miny = compare(s.from.y, function(cand,curr){return cand <= curr;}, miny);
 						maxy = compare(s.from.y, function(cand,curr){return cand >= curr;}, maxy);
 					});
-					return ""+minx+" <= x <= "+maxx+", "+miny+" <= y <= "+maxy;
+					return {minx:minx,miny:miny,maxx:maxx,maxy:maxy};
 				},
 				find:function(condition){
 					var res = null;
@@ -699,7 +717,18 @@
 
 		var contour = (function(){
 			var group = function(outerSide, holes){
-
+				var getHolelessPaths = function(){
+					if(holes.length == 0){
+						return [outerSide];
+					}else{
+						return [outerSide];
+					}
+				};
+				return {
+					outerSide:outerSide,
+					holes:holes,
+					getHolelessPaths:getHolelessPaths
+				};
 			};
 			var goesAround = function(s1,s2){
 				return !s2.find(function(s){
@@ -720,14 +749,34 @@
 					return rightAround;
 				});
 			};
+			var findHolesForOuterSide = function(outer, allSides){
+				return allSides.filter(function(s){
+					return s.area() < 0 && isFirstOutsideOf(outer, s, allSides);
+				});
+			};
 			var isHole = function(s, allSides){
 				return s.area() < 0 && allSides.some(function(ss){
 					return ss!=s && isFirstOutsideOf(ss, s, allSides) && ss.area() > 0;
 				});
 			};
+			var goAlongPath = function(beginPath, pathStep, endPath){
+				return function(s){
+					var index = 0;
+					s.follow(function(ss){
+						if(index == 0){
+							beginPath.apply(null,[ss]);
+						}
+						pathStep.apply(null,[ss]);
+						index++;
+					});
+					endPath.apply(null);
+				};
+			};
 			return function(sides){
-				//sides = sides.filter(function(s){return !s.isSelfIntersecting();});
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
+				var groups = sides
+					.filter(function(s){return isOuterSide(s,sides);})
+					.map(function(outer){return group(outer, findHolesForOuterSide(outer, sides));});
 				return {
 					rot:function(alpha){
 						return contour(sides.map(function(s){return s.rot(alpha);}))
@@ -745,18 +794,14 @@
 						return contour(combineMany(sides.concat(cntr.sides.map(function(s){return s.reverse();}))));
 					},
 					goAlongPaths:function(beginPath, pathStep, endPath){
-						var index;
-						sides.map(function(s){
-							index = 0;
-							s.follow(function(ss){
-								if(index == 0){
-									beginPath.apply(null,[ss]);
-								}
-								pathStep.apply(null,[ss]);
-								index++;
-							});
-							endPath.apply(null);
+						sides.map(goAlongPath(beginPath, pathStep, endPath));
+					},
+					goAlongHolelessPaths:function(beginPath, pathStep, endPath){
+						var all=[];
+						groups.map(function(g){
+							all = all.concat(g.getHolelessPaths());
 						});
+						all.map(goAlongPath(beginPath, pathStep, endPath));
 					},
 					sides:sides
 				};
@@ -771,34 +816,38 @@
 			var sides = [rectangleSide(x,y,width,height)];
 			return contour(sides);
 		};
-		test(function(){
+		test("clean",function(){
 			var a = rectangleSide(0,0,10,10).addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
 			a = a.clean();
-			this.assert(a.area()==100,"area changed after adding points and cleaning");
+			this.expect(a.area()).toBe(100,"area changed after adding points and cleaning");
 		});
-		test(function(){
+		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
 			var b = rectangleSide(0,0,10,5).reverse();
 			var c = contour(combine(a,b)).sides;
-			this.assert(c.length == 1, "expected 1 path");
-			this.assert(c[0].length() == 4, "expected 4 sides");
-			this.assert(c[0].area() == 50, "expected area 50");
+			this.expect(c.length).toBe(1, "expected 1 path");
+			this.expect(c[0].length()).toBe(4, "expected 4 sides");
+			this.expect(c[0].area()).toBe(50, "expected area 50");
 		});
-		test(function(){
+		test("negative combine 2",function(){
 			var a = rectangleSide(0,0,10,10);
 			var b = rectangleSide(0,0,8,5).reverse();
 			var c = contour(combine(a,b)).sides;
-			this.assert(c.length == 1, "expected 1 path");
-			this.assert(c[0].length() == 6, "expected 6 sides");
-			this.assert(c[0].area() == 60, "expected area 60");
+			this.expect(c.length).toBe(1, "expected 1 path");
+			this.expect(c[0].length()).toBe(6, "expected 6 sides");
+			this.expect(c[0].area()).toBe(60, "expected area 60");
 		});
-
-		console.log(combineMany([
-			rectangleSide(0,0,10,10),
-			rectangleSide(7,7,10,10),
-			rectangleSide(14,14,10,10),
-			rectangleSide(21,21,10,10)
-			]));
+		test("combineMany",function(){
+			var c = combineMany([
+				rectangleSide(0,0,10,10),
+				rectangleSide(7,7,10,10),
+				rectangleSide(14,14,10,10),
+				rectangleSide(21,21,10,10)
+			]);
+			var areas = c.map(function(s){return s.area();});
+			this.expect(c.length).toBe(4, "expected 4 resulting sides");
+			this.assert(areas.indexOf(373) != -1, "expected an area of 373");
+		});
 
 		return {
 			rectangle:rectangle,
