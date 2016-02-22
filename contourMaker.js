@@ -12,7 +12,7 @@
 						return {
 							toBe:function(expected, message){
 								if(actual != expected && console.error){
-									console.error("["+name+"] "+message+" (expected "+expected+" but saw "+actual+")");
+									console.error("["+name+"] "+(message||"")+" (expected "+expected+" but saw "+actual+")");
 								}
 							}
 						};
@@ -50,6 +50,13 @@
 				return groups.map(function(g){return {key:g.key,members:g.members};});
 			};
 		})();
+		Array.prototype.mapMany = function(getArray){
+			var res = [];
+			this.map(function(el,i){
+				res = res.concat(getArray.apply(null,[el,i]));
+			});
+			return res;
+		};
 		var point = function(x,y){
 			return {
 				minus:function(p){return point(x-p.x,y-p.y);},
@@ -343,9 +350,6 @@
 							}else{
 								dangle = -Math.PI - dangle;
 							}
-						}
-						if(isNaN(angle) || isNaN(dangle)){
-							console.log("wow")
 						}
 						angle += dangle;
 					});
@@ -721,6 +725,11 @@
 					if(holes.length == 0){
 						return [outerSide];
 					}else{
+						var box,intersections,paths = pathSet();
+						holes.map(function(hole){
+							box = hole.box();
+							intersections = hole.intersectWithVertical((box.minx + box.maxx) / 2);
+						});
 						return [outerSide];
 					}
 				};
@@ -797,11 +806,11 @@
 						sides.map(goAlongPath(beginPath, pathStep, endPath));
 					},
 					goAlongHolelessPaths:function(beginPath, pathStep, endPath){
-						var all=[];
-						groups.map(function(g){
-							all = all.concat(g.getHolelessPaths());
-						});
-						all.map(goAlongPath(beginPath, pathStep, endPath));
+						
+						groups.mapMany(function(g){return g.getHolelessPaths();}).map(goAlongPath(beginPath, pathStep, endPath));
+					},
+					getHolelessPaths:function(){
+						return groups.mapMany(function(g){return g.getHolelessPaths();});
 					},
 					sides:sides
 				};
@@ -847,6 +856,11 @@
 			var areas = c.map(function(s){return s.area();});
 			this.expect(c.length).toBe(4, "expected 4 resulting sides");
 			this.assert(areas.indexOf(373) != -1, "expected an area of 373");
+		});
+		test("holelessPaths",function(){
+			var c = rectangle(0,0,10,10).combineNegative(rectangle(2,2,6,6));
+			var holeless = c.getHolelessPaths();
+			this.expect(holeless.length).toBe(2);
 		});
 
 		return {
