@@ -725,12 +725,29 @@
 					if(holes.length == 0){
 						return [outerSide];
 					}else{
-						var box,intersections,paths = pathSet();
-						holes.map(function(hole){
+						var downFrom,downTo,upFrom,upTo,i,box,intersections,
+							affectedSides=[],
+							outerSideCopy = outerSide.clone(),
+							holesCopy = holes.map(function(h){return h.clone();});
+
+						holesCopy.map(function(hole){
 							box = hole.box();
-							intersections = hole.intersectWithVertical((box.minx + box.maxx) / 2);
+							intersections = hole.intersectWithVertical((box.minx + box.maxx) / 2)
+								.concat(outerSideCopy.intersectWithVertical((box.minx + box.maxx) / 2))
+								.sort(function(a,b){return a.point.y - b.point.y;});
+							
+							for(i=0;i<intersections.length;i+=2){
+								downTo = intersections[i].side.addPoint(intersections[i].point).prev();
+								downFrom = downTo.prev();
+								upTo = intersections[i+1].side.addPoint(intersections[i+1].point).prev();
+								upFrom = upTo.prev();
+								affectedSides.push(downFrom.next(side(downFrom.to, upTo.from)).next(upTo));
+								affectedSides.push(upFrom.next(side(upFrom.to, downTo.from)).next(downTo));		
+							}
 						});
-						return [outerSide];
+
+						return pathSet().addMany(affectedSides).paths;
+
 					}
 				};
 				return {
