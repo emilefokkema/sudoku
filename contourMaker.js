@@ -879,7 +879,11 @@
 			var holeless = c.getHolelessPaths();
 			this.expect(holeless.length).toBe(2);
 		});
-
+		test("holelessPaths2",function(){
+			var c = rectangle(0,0,20,10).combineNegative(rectangle(2,2,6,6)).combineNegative(rectangle(12,2,6,6));
+			var holeless = c.getHolelessPaths();
+			this.expect(holeless.length).toBe(3);
+		});
 		return {
 			rectangle:rectangle,
 			point:point,
