@@ -328,6 +328,9 @@
 					});
 					return res;
 				},
+				sideFrom:function(p){
+					return this.find(function(s){return s.from.equals(p);});
+				},
 				area:function(){
 					var a = 0;
 					follow(function(s){
@@ -725,21 +728,37 @@
 					if(holes.length == 0){
 						return [outerSide];
 					}else{
-						var downFrom,downTo,upFrom,upTo,i,box,intersections,
+						var intersectionSet,x,downFrom,downTo,upFrom,upTo,i,box,intersections,
 							affectedSides=[],
 							outerSideCopy = outerSide.clone(),
 							holesCopy = holes.map(function(h){return h.clone();});
 
-						holesCopy.map(function(hole){
+						intersectionSet = holesCopy.map(function(hole){
 							box = hole.box();
-							intersections = hole.intersectWithVertical((box.minx + box.maxx) / 2)
-								.concat(outerSideCopy.intersectWithVertical((box.minx + box.maxx) / 2))
+							x=(box.minx + box.maxx) / 2;
+							return outerSideCopy.intersectWithVertical(x)
+								.concat(holesCopy.mapMany(function(hole1){
+									return hole1.intersectWithVertical(x);
+								}))
 								.sort(function(a,b){return a.point.y - b.point.y;});
-							
+						});
+
+						intersectionSet.mapMany(function(intersections){return intersections;})
+							.groupBy(function(i){return i.side;})
+							.map(function(g){
+								g.key.addPoints(g.members.map(function(m){return m.point;}));
+							});
+
+						intersectionSet.mapMany(function(intersections){return intersections;})
+							.map(function(i){
+								i.side = i.side.sideFrom(i.point);
+							});
+
+						intersectionSet.map(function(intersections){
 							for(i=0;i<intersections.length;i+=2){
-								downTo = intersections[i].side.addPoint(intersections[i].point).prev();
+								downTo = intersections[i].side;
 								downFrom = downTo.prev();
-								upTo = intersections[i+1].side.addPoint(intersections[i+1].point).prev();
+								upTo = intersections[i+1].side;
 								upFrom = upTo.prev();
 								affectedSides.push(downFrom.next(side(downFrom.to, upTo.from)).next(upTo));
 								affectedSides.push(upFrom.next(side(upFrom.to, downTo.from)).next(downTo));		
