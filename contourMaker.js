@@ -31,6 +31,26 @@
 				};
 			};
 			return function(keyF, keyEquals){
+				if(arguments.length == 1 && arguments[0].length == 2){
+					return (function(self,eq){
+						var i,j,match,groups = [];
+						for(i=0;i<self.length;i++){
+							match = false;
+							for(j=0;j<groups.length&&!match;j++){
+								match = groups[j].some(function(e){
+									return eq(e,self[i]);
+								});
+								if(match){
+									groups[j].push(self[i]);
+								}
+							}
+							if(!match){
+								groups.push([self[i]]);
+							}
+						}
+						return groups;
+					})(this, arguments[0]);
+				}
 				keyEquals = keyEquals || function(a,b){return a==b;};
 				var newKey,thisKey,groups = [];
 				for(var i=0;i<this.length;i++){
@@ -50,6 +70,7 @@
 				return groups.map(function(g){return {key:g.key,members:g.members};});
 			};
 		})();
+		
 		Array.prototype.mapMany = function(getArray){
 			var res = [];
 			this.map(function(el,i){
@@ -769,10 +790,14 @@
 
 					}
 				};
+				var area = function(){
+					return outerSide.area() + holes.map(function(h){return h.area();}).reduce(function(a,b){return a+b;});
+				};
 				return {
 					outerSide:outerSide,
 					holes:holes,
-					getHolelessPaths:getHolelessPaths
+					getHolelessPaths:getHolelessPaths,
+					area:area
 				};
 			};
 			var goesAround = function(s1,s2){
@@ -817,6 +842,25 @@
 					endPath.apply(null);
 				};
 			};
+			var canvasFunctions = {
+				beginPath : function(ctx){
+					return function(firstSide){
+						ctx.beginPath();
+						ctx.moveTo(firstSide.from.x, firstSide.from.y);
+					};
+				},
+				pathStep: function(ctx){
+					return function(nextSide){
+						ctx.lineTo(nextSide.to.x, nextSide.to.y);
+					};
+				},
+				endPath : function(ctx, pathCompleteCallback){
+					return function(){
+						ctx.closePath();
+						pathCompleteCallback && pathCompleteCallback.call(null,[]);
+					};
+				}
+			};
 			return function(sides){
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				var groups = sides
@@ -847,6 +891,23 @@
 					},
 					getHolelessPaths:function(){
 						return groups.mapMany(function(g){return g.getHolelessPaths();});
+					},
+					area:function(){
+						return groups.map(function(g){return g.area();}).reduce(function(a,b){return a+b;});
+					},
+					makePaths:function(canvasRenderingContext, pathCompleteCallback){
+						this.goAlongPaths(
+							canvasFunctions.beginPath(canvasRenderingContext),
+							canvasFunctions.pathStep(canvasRenderingContext),
+							canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+							);
+					},
+					makeHolelessPaths:function(canvasRenderingContext, pathCompleteCallback){
+						this.goAlongHolelessPaths(
+							canvasFunctions.beginPath(canvasRenderingContext),
+							canvasFunctions.pathStep(canvasRenderingContext),
+							canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+							);
 					},
 					sides:sides
 				};
@@ -896,12 +957,24 @@
 		test("holelessPaths",function(){
 			var c = rectangle(0,0,10,10).combineNegative(rectangle(2,2,6,6));
 			var holeless = c.getHolelessPaths();
+
+			this.expect(c.area()).toBe(64);
 			this.expect(holeless.length).toBe(2);
+			this.expect(holeless
+					.map(function(h){return h.area();})
+					.reduce(function(a,b){return a+b;})
+				).toBe(64);
 		});
 		test("holelessPaths2",function(){
 			var c = rectangle(0,0,20,10).combineNegative(rectangle(2,2,6,6)).combineNegative(rectangle(12,2,6,6));
 			var holeless = c.getHolelessPaths();
+
+			this.expect(c.area()).toBe(128);
 			this.expect(holeless.length).toBe(3);
+			this.expect(holeless
+					.map(function(h){return h.area();})
+					.reduce(function(a,b){return a+b;})
+				).toBe(128);
 		});
 		return {
 			rectangle:rectangle,
