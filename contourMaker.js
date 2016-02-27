@@ -831,15 +831,15 @@
 			};
 			var goAlongPath = function(beginPath, pathStep, endPath){
 				return function(s){
-					var index = 0;
+					var soFar,index = 0;
 					s.follow(function(ss){
 						if(index == 0){
-							beginPath.apply(null,[ss]);
+							soFar = beginPath.apply(null,[ss]);
 						}
-						pathStep.apply(null,[ss]);
+						soFar = pathStep.apply(null,[ss,soFar]);
 						index++;
 					});
-					endPath.apply(null);
+					return endPath.apply(null,[soFar]);
 				};
 			};
 			var canvasFunctions = {
@@ -883,11 +883,11 @@
 						return contour(combineMany(sides.concat(cntr.sides.map(function(s){return s.reverse();}))));
 					},
 					goAlongPaths:function(beginPath, pathStep, endPath){
-						sides.map(goAlongPath(beginPath, pathStep, endPath));
+						return sides.map(goAlongPath(beginPath, pathStep, endPath));
 					},
 					goAlongHolelessPaths:function(beginPath, pathStep, endPath){
 						
-						groups.mapMany(function(g){return g.getHolelessPaths();}).map(goAlongPath(beginPath, pathStep, endPath));
+						return groups.mapMany(function(g){return g.getHolelessPaths();}).map(goAlongPath(beginPath, pathStep, endPath));
 					},
 					getHolelessPaths:function(){
 						return groups.mapMany(function(g){return g.getHolelessPaths();});
