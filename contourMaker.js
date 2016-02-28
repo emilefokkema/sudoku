@@ -36,26 +36,36 @@
 					add:function(o){members.push(o);}
 				};
 			};
+			var findMemberForGroup = function(current, candidates, eq){
+				var result;
+				for(var i=0;i<candidates.length;i++){
+					if(
+						current.indexOf(candidates[i]) == -1 && 
+						(
+							current.some(function(c){return eq(c,candidates[i]);}) ||
+							current.length == 0
+						)
+					){
+						return candidates[i];
+					}
+				}
+			};
 			return function(keyF, keyEquals){
 				if(arguments.length == 1 && arguments[0].length == 2){
 					return (function(self,eq){
-						var i,j,match,groups = [];
-						for(i=0;i<self.length;i++){
-							match = false;
-							for(j=0;j<groups.length&&!match;j++){
-								match = groups[j].some(function(e){
-									return eq(e,self[i]);
-								});
-								if(match){
-									groups[j].push(self[i]);
-								}
+						var match,groups = [[]];
+						while(self.length > 0){
+							match = findMemberForGroup(groups[groups.length - 1], self, eq);
+							if(match){
+								groups[groups.length - 1].push(match);
+							}else{
+								match = self[0];
+								groups.push([match]);
 							}
-							if(!match){
-								groups.push([self[i]]);
-							}
+							self.splice(self.indexOf(match),1);
 						}
 						return groups;
-					})(this, arguments[0]);
+					})(this.map(function(x){return x;}), arguments[0]);
 				}
 				keyEquals = keyEquals || function(a,b){return a==b;};
 				var newKey,thisKey,groups = [];
@@ -277,9 +287,10 @@
 					follow(function(s){
 						intersections = intersections.concat(s.intersectWith(segment).map(function(p){return {side:s,point:p};}));
 					});
-					return intersections
+					var result = intersections.length > 0 ? intersections
 						.groupBy(function(a,b){return a.point.equals(b.point);})
-						.map(function(g){return g[0];});
+						.map(function(g){return g[0];}) : intersections;
+					return result;
 
 				},
 				close:function(){
@@ -334,6 +345,24 @@
 						}
 					});
 					return res;
+				},
+				angleRoundingEnd:function(r){
+					var x = this.to.minus(this.from);
+					var angle = x.angleLeftFrom(prev.from.minus(this.from));
+					if(angle > Math.PI){
+						angle = 2*Math.PI - angle;
+					}
+					var d = r/Math.tan(angle/2);
+					return this.from.plus(x.scale(d/x.mod()));
+				},
+				angleRoundingBegin:function(r){
+					var x = this.from.minus(this.to);
+					var angle = x.angleLeftFrom(next.to.minus(this.to));
+					if(angle > Math.PI){
+						angle = 2*Math.PI - angle;
+					}
+					var d = r/Math.tan(angle/2);
+					return this.to.plus(x.scale(d/x.mod()));
 				},
 				box:function(){
 					var minx=null,maxx=null,miny=null,maxy=null;
@@ -852,6 +881,13 @@
 				};
 			};
 			var canvasFunctions = {
+				angleRoundingBeginPath: function(ctx,r){
+					return function(firstSide){
+						ctx.beginPath();
+						var p = firstSide.angleRoundingEnd(r);
+						ctx.moveTo(p.x,p.y);
+					};
+				},
 				beginPath : function(ctx){
 					return function(firstSide){
 						ctx.beginPath();
@@ -863,6 +899,12 @@
 						ctx.lineTo(nextSide.to.x, nextSide.to.y);
 					};
 				},
+				angleRoundingPathStep:function(ctx,r){
+					return function(nextSide){
+						var nextnext = nextSide.next();
+						ctx.arcTo(nextSide.to.x, nextSide.to.y, nextnext.to.x, nextnext.to.y,r);
+					};
+				},
 				endPath : function(ctx, pathCompleteCallback){
 					return function(){
 						ctx.closePath();
@@ -871,14 +913,27 @@
 				}
 			};
 			var svgFunctions = {
+				angleRoundingBeginPath:function(r){
+					return function(firstSide){
+						var p = firstSide.angleRoundingEnd(r);
+						return "M"+p.x+" "+p.y;
+					};
+				},
 				beginPath: function(firstSide){
 					return "M"+firstSide.from.x+" "+firstSide.from.y;
 				},
 				pathStep: function(nextSide, soFar){
 					return soFar+" L "+nextSide.to.x+" "+nextSide.to.y;
 				},
+				angleRoundingPathStep:function(r){
+					return function(nextSide, soFar){
+						var p1 = nextSide.angleRoundingBegin(r);
+						var p2 = nextSide.next().angleRoundingEnd(r);
+						return soFar+" L "+p1.x+" "+p1.y+" Q "+nextSide.to.x+" "+nextSide.to.y+" "+p2.x+" "+p2.y;
+					};
+				},
 				endPath: function(soFar){
-					return soFar;
+					return soFar+" Z";
 				}
 			};
 			return function(sides){
@@ -915,33 +970,69 @@
 					area:function(){
 						return groups.map(function(g){return g.area();}).reduce(function(a,b){return a+b;});
 					},
-					makeCanvasPaths:function(canvasRenderingContext, pathCompleteCallback){
-						return this.goAlongPaths(
-							canvasFunctions.beginPath(canvasRenderingContext),
-							canvasFunctions.pathStep(canvasRenderingContext),
-							canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
-							);
+					makeCanvasPaths:function(canvasRenderingContext, pathCompleteCallback, roundingRadius){
+						if(roundingRadius){
+							return this.goAlongPaths(
+								canvasFunctions.angleRoundingBeginPath(canvasRenderingContext,roundingRadius),
+								canvasFunctions.angleRoundingPathStep(canvasRenderingContext, roundingRadius),
+								canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+								);
+						}else{
+							return this.goAlongPaths(
+								canvasFunctions.beginPath(canvasRenderingContext),
+								canvasFunctions.pathStep(canvasRenderingContext),
+								canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+								);
+						}
+						
 					},
-					makeSvgPaths:function(){
-						return this.goAlongPaths(
-							svgFunctions.beginPath,
-							svgFunctions.pathStep,
-							svgFunctions.endPath
-							);
+					makeSvgPaths:function(roundingRadius){
+						if(roundingRadius){
+							return this.goAlongPaths(
+								svgFunctions.angleRoundingBeginPath(roundingRadius),
+								svgFunctions.angleRoundingPathStep(roundingRadius),
+								svgFunctions.endPath
+								);
+						}else{
+							return this.goAlongPaths(
+								svgFunctions.beginPath,
+								svgFunctions.pathStep,
+								svgFunctions.endPath
+								);
+						}
+						
 					},
-					makeHolelessCanvasPaths:function(canvasRenderingContext, pathCompleteCallback){
-						return this.goAlongHolelessPaths(
-							canvasFunctions.beginPath(canvasRenderingContext),
-							canvasFunctions.pathStep(canvasRenderingContext),
-							canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
-							);
+					makeHolelessCanvasPaths:function(canvasRenderingContext, pathCompleteCallback, roundingRadius){
+						if(roundingRadius){
+							return this.goAlongHolelessPaths(
+								canvasFunctions.angleRoundingBeginPath(canvasRenderingContext, roundingRadius),
+								canvasFunctions.angleRoundingPathStep(canvasRenderingContext, roundingRadius),
+								canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+								);
+						}else{
+							return this.goAlongHolelessPaths(
+								canvasFunctions.beginPath(canvasRenderingContext),
+								canvasFunctions.pathStep(canvasRenderingContext),
+								canvasFunctions.endPath(canvasRenderingContext, pathCompleteCallback)
+								);
+						}
+						
 					},
-					makeHolelessSvgPaths: function(){
-						return this.goAlongHolelessPaths(
-							svgFunctions.beginPath,
-							svgFunctions.pathStep,
-							svgFunctions.endPath
-							);
+					makeHolelessSvgPaths: function(roundingRadius){
+						if(roundingRadius){
+							return this.goAlongHolelessPaths(
+								svgFunctions.angleRoundingBeginPath(roundingRadius),
+								svgFunctions.angleRoundingPathStep(roundingRadius),
+								svgFunctions.endPath
+								);
+						}else{
+							return this.goAlongHolelessPaths(
+								svgFunctions.beginPath,
+								svgFunctions.pathStep,
+								svgFunctions.endPath
+								);
+						}
+						
 					},
 					sides:sides
 				};
