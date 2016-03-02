@@ -643,7 +643,7 @@
 					};
 				};
 				
-				return function(p, s, t){
+				var f = function(p, s, t){
 					var fromOne, toOne, fromTwo, toTwo;
 					if(isPureIntersection(p,s,t)){
 						return simpleIntersection(p, s, t);
@@ -672,7 +672,15 @@
 						
 					};
 				};
+				f.withSelf = function(p, s, t){
+
+				};
+				return f;
 			})();
+
+			var getSwitchableSelfIntersections = function(s){
+
+			};
 
 			var getSwitchableIntersections = function(s1, s2){
 				var newIntersections,intersections = [];
@@ -690,7 +698,33 @@
 				});
 				return intersections.filter(function(i){return i.toBeSwitched;});
 			};
-			return function(s1,s2){
+
+			var switchPairs = function(pairsToSwitch){
+				pairsToSwitch.map(function(p){
+					p.fromOnePrev.next(p.fromTwo);
+					p.fromTwoPrev.next(p.fromOne);
+				});
+				var resultingPaths = pathSet();
+				pairsToSwitch.map(function(p){
+					resultingPaths.add(p.fromOne);
+					resultingPaths.add(p.fromTwo);
+				});
+				
+				return resultingPaths.paths;
+			};
+
+			var addPointsForIntersections = (function(){
+				var addPoints = function(g){
+					g.key.addPoints(g.members.map(function(m){return m.point;}));
+				};
+				return function(intersections){
+					intersections.groupBy(function(i){return i.one;}).map(addPoints);
+					intersections.groupBy(function(i){return i.two;}).map(addPoints);
+				};
+			})();
+
+
+			var r = function(s1,s2){
 				var s1Original = s1;
 				var s2Original = s2;
 				s1 = s1.clone();
@@ -702,12 +736,7 @@
 				if(intersections.length==0){
 					return [s1Original,s2Original];
 				}
-				var resultingPaths = pathSet();
-				var addPoints = function(g){
-					g.key.addPoints(g.members.map(function(m){return m.point;}));
-				};
-				intersections.groupBy(function(i){return i.one;}).map(addPoints);
-				intersections.groupBy(function(i){return i.two;}).map(addPoints);
+				addPointsForIntersections(intersections);
 				
 				var pairsToSwitch = intersections.map(function(i){
 					var fromOne = sideFrom(i.point, s1);
@@ -719,17 +748,16 @@
 						fromTwoPrev:fromTwo.prev()
 					};
 				});
-				pairsToSwitch.map(function(p){
-					p.fromOnePrev.next(p.fromTwo);
-					p.fromTwoPrev.next(p.fromOne);
-				});
-				pairsToSwitch.map(function(p){
-					resultingPaths.add(p.fromOne);
-					resultingPaths.add(p.fromTwo);
-				});
-				
-				return resultingPaths.paths;
+				return switchPairs(pairsToSwitch);
 			};
+			r.withItself = function(s){
+				if(!s.isSelfIntersecting() || s.area() == 0){
+					return [s];
+				}
+				s = s.clone();
+
+			};
+			return r;
 		})();
 
 		window.combine=combine;
