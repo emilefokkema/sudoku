@@ -462,7 +462,7 @@
 						}
 						
 					});
-					return res.prev(last).find(function(s){return s.to.equals(from);});
+					return res.prev(last).next();
 				},
 				length:function(){
 					var n=0;
