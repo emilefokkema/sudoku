@@ -451,7 +451,7 @@
 					return this.from.equals(p) || this.to.equals(p) || (this.from.minus(p).cross(this.to.minus(p)) == 0 && p.isBetween(this.from, this.to));
 				},
 				reverse:function(){
-					var last,snext,res;
+					var last,snext,res,from = this.from,to = this.to;
 					follow(function(s){
 						snext = s.next();
 						if(!res){
@@ -462,7 +462,7 @@
 						}
 						
 					});
-					return res.prev(last);
+					return res.prev(last).find(function(s){return s.to.equals(from);});
 				},
 				length:function(){
 					var n=0;
@@ -496,27 +496,15 @@
 					return res;
 				},
 				lastPointBefore:function(p){
-					var found = this.find(function(s){
-						return s.sideContainsPoint(p) && !s.from.equals(p);
-					});
-					if(found == null){
-						found = this.findSmallest(function(s){
-							return s.from.equals(p) ? 100 : p.distanceFromSegment(s.from, s.to);
-						});
-					}
-					return found.from;
+					return this.reverse().firstPointAfter(p);
 				},
 				firstPointAfter:function(p){
 					var found = this.find(function(s){
-						return s.sideContainsPoint(p) && !s.to.equals(p);
+						return !s.to.equals(p);
 					});
-					if(found == null){
-						found = this.findSmallest(function(s){
-							return s.to.equals(p) ? 100 : p.distanceFromSegment(s.from, s.to);
-						});
-					}
 					return found.to;
 				}
+
 			};
 			return ret;
 		};
@@ -673,6 +661,10 @@
 					};
 				};
 				f.withSelf = function(p, s, t){
+					var fromOne, toOne, fromTwo, toTwo;
+					if(isPureIntersection(p,s,t)){
+						return simpleIntersection(p, s, t);
+					}
 
 				};
 				return f;
@@ -1079,6 +1071,14 @@
 			var a = rectangleSide(0,0,10,10).addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
 			a = a.clean();
 			this.expect(a.area()).toBe(100,"area changed after adding points and cleaning");
+		});
+		test("firstAfterLastBefore",function(){
+			var s = rectangleSide(0,0,10,10).find(function(s){return s.to.equals(point(0,0));});
+
+			this.assert(s.firstPointAfter(point(0,0)).equals(point(0,10)));
+			this.assert(s.firstPointAfter(point(5,0)).equals(point(0,0)));
+			this.assert(s.lastPointBefore(point(0,0)).equals(point(10,0)));
+			this.assert(s.lastPointBefore(point(5,0)).equals(point(10,0)));
 		});
 		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
