@@ -568,6 +568,10 @@
 				return toSearch.find(function(s){return s.from.equals(p);});
 			};
 
+			var sidesFrom = function(p, toSearch){
+				return toSearch.filter(function(s){return s.from.equals(p);});
+			};
+
 			
 			var intersectionProfile = function(alreadyPresent){
 				alreadyPresent = alreadyPresent || [];
@@ -660,18 +664,27 @@
 						
 					};
 				};
-				f.withSelf = function(p, s, t){
-					var fromOne, toOne, fromTwo, toTwo;
-					if(isPureIntersection(p,s,t)){
-						return simpleIntersection(p, s, t);
-					}
-
-				};
+				
 				return f;
 			})();
 
 			var getSwitchableSelfIntersections = function(s){
-
+				var newIntersections, intersections = [];
+				s.follow(function(s){
+					s.follow(function(t){
+						if(s!=t && s.next() != t && t.next() != s){
+							newIntersections = s.intersectWith(t).map(function(p){
+								return intersection(p, s, t);
+							}).filter(function(i){
+								return !intersections.some(function(j){
+									return i.point.equals(j.point);
+								});
+							});
+							intersections = intersections.concat(newIntersections);
+						}
+					});
+				});
+				return intersections.filter(function(i){return i.toBeSwitched;});
 			};
 
 			var getSwitchableIntersections = function(s1, s2){
@@ -743,11 +756,30 @@
 				return switchPairs(pairsToSwitch);
 			};
 			r.withItself = function(s){
-				if(!s.isSelfIntersecting() || s.area() == 0){
-					return [s];
+				var sOriginal = s;
+				if(!s.isSelfIntersecting()){
+					return [sOriginal];
 				}
 				s = s.clone();
+				var intersections = getSwitchableSelfIntersections(s);
+				if(intersections.length == 0){
+					return [sOriginal];
+				}
+				addPointsForIntersections(intersections);
 
+				var pairsToSwitch = intersections.map(function(i){
+					var froms = sidesFrom(i.point, s);
+					var fromOne = froms[0];
+					var fromTwo = froms[1];
+					return {
+						fromOne:fromOne,
+						fromTwo:fromTwo,
+						fromOnePrev:fromOne.prev(),
+						fromTwoPrev:fromTwo.prev()
+					};
+				});
+
+				return switchPairs(pairsToSwitch);
 			};
 			return r;
 		})();
@@ -1079,6 +1111,12 @@
 			this.assert(s.firstPointAfter(point(5,0)).equals(point(0,0)));
 			this.assert(s.lastPointBefore(point(0,0)).equals(point(10,0)));
 			this.assert(s.lastPointBefore(point(5,0)).equals(point(10,0)));
+		});
+		test("intersectWithSelfTest1", function(){
+			var s = sideBuilder(point(0,0)).to(point(0,10)).to(point(10,10)).to(point(20,10)).to(point(20,20)).to(point(10,20)).to(point(10,0)).to(point(0,0)).close();
+			var res = combine.withItself(s);
+
+			this.expect(res.length).toBe(2);
 		});
 		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
