@@ -94,6 +94,11 @@
 			});
 			return res;
 		};
+
+		var sign = {
+			NEGATIVE:-1,
+			POSITIVE:1
+		};
 		var point = function(x,y){
 			return {
 				minus:function(p){return point(x-p.x,y-p.y);},
@@ -106,6 +111,9 @@
 				rot:function(alpha){return point(x*Math.cos(alpha)-y*Math.sin(alpha), y*Math.cos(alpha)+x*Math.sin(alpha));},
 				projectOn:function(p){
 					return p.scale(this.dot(p)/p.mod());
+				},
+				unit:function(){
+					return this.scale(1/this.mod());
 				},
 				angleLeftFromXAxis:function(){
 					if(x==0){
@@ -191,7 +199,19 @@
 			}
 			
 		};
+
+		var intersectLines = function(p1,p2,q1,q2){
+			var x1 = p2.minus(p1);
+			var x2 = q2.minus(q1);
+			var cross = x2.cross(x1);
+			if(cross == 0){
+				return null;
+			}
+			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
+			return p1.plus(p2.minus(p1).scale(st.x));
+		};
 		console.log(intersectSegments(point(0,10),point(10,10),point(7,7),point(7,17)));
+		
 		var side = function(p1,p2){
 			var ret,prev,next;
 			var follow = function(callback){
@@ -260,6 +280,36 @@
 				eliminate:function(){
 					prev.next(next);
 				},
+				expand:(function(){
+					var makeLine = function(s, d){
+						var out = s.to.minus(s.from).rot(Math.PI/2).unit().scale(d);
+						return {
+							p1: s.from.plus(out),
+							p2: s.to.plus(out),
+							equals:function(l){
+								return l.p1.equals(this.p1) && l.p2.equals(this.p2);
+							}
+						};
+					};
+					return function(d){
+						var line,nextLine,firstLine,builder,points=[],self=this;
+						follow(function(s){
+							if(points.length == 0){
+								firstLine = makeLine(s,d);
+								line = firstLine;
+							}else{
+								line = nextLine;
+							}
+							nextLine = makeLine(s.next(), d);
+							points.push(intersectLines(line.p1, line.p2, nextLine.p1, nextLine.p2));
+						});
+						builder = sideBuilder(points[0]);
+						for(var i=1;i<points.length;i++){
+							builder = builder.to(points[i]);
+						}
+						return combine.withItself(builder.to(points[0]).close()).filter(function(s){return s.sign() == self.sign();})[0];
+					};
+				})(),
 				extend:function(){
 					var newNext = next.find(isNotStraightContinuation);
 					if(newNext != next){
@@ -396,6 +446,9 @@
 						a += (s.to.x - s.from.x)*(s.from.y + s.to.y)/2
 					});
 					return a;
+				},
+				sign:function(){
+					return this.area() >= 0 ? sign.POSITIVE : sign.NEGATIVE;
 				},
 				goesAround:function(p){
 					if(this.containsPoint(p)){
@@ -1022,6 +1075,9 @@
 					area:function(){
 						return groups.map(function(g){return g.area();}).reduce(function(a,b){return a+b;});
 					},
+					expand:function(d){
+						return contour(combineMany(sides.map(function(s){return s.expand(d);})));
+					},
 					makeCanvasPaths:function(canvasRenderingContext, pathCompleteCallback, roundingRadius){
 						if(roundingRadius){
 							return this.goAlongPaths(
@@ -1117,6 +1173,28 @@
 			var res = combine.withItself(s);
 
 			this.expect(res.length).toBe(2);
+		});
+		test("intersectWithSelfTest2",function(){
+			var s = rectangleSide(0,0,10,10);
+			var res = combine.withItself(s);
+
+			this.expect(res.length).toBe(1);
+		});
+		test("expandTest1",function(){
+			var s = rectangleSide(0,0,10,10);
+			var sExp = s.expand(2);
+			this.expect(sExp.area()).toBe(14*14);
+		});
+		test("expandTest2",function(){
+			var s = rectangleSide(0,0,10,10);
+			var sExp = s.expand(-2);
+			this.expect(sExp.area()).toBe(6*6);
+		});
+		test("expandTest3",function(){
+			var c = rectangle(0,0,10,10).combineNegative(rectangle(1,1,8,8));
+			var cExp = c.expand(1);
+
+			this.expect(cExp.area()).toBe(12*12 - 6*6);
 		});
 		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
