@@ -17,6 +17,11 @@
                 }
                 
             };
+            var aliasFunction = function(getFunction){
+                return function(){
+                    return getFunction().apply(null,arguments);
+                };
+            };
             var nothingBeforeExtend=(function(){
                 var functionBody=function(f){
                     return new RegExp("^function\\s*?\\([^)]*?\\)\\s*?{([\\w\\W]*)}$","g").exec(f.toString())[1];
@@ -60,7 +65,7 @@
                 };
             };
             var wrap=function(constructor){
-			
+            
                 var followConstructorByPath=function(cons,args){
                     var base, extension;
                     var self=this;
@@ -97,11 +102,27 @@
                     });
                     return baseFunction;
                 };
-			
+            
                 return addPathFollowers(pathFollower([]), [], constructor);
-			
+            
 
             };
-            return wrap;
+            return function(constructor){
+                var currentWrap;
+                var f = makeRealConstructorOf(aliasFunction(function(){return currentWrap;}));
+                var useConstructor = function(c){
+                    currentWrap = wrap(c);
+                    for(var e in currentWrap){
+                        if(currentWrap.hasOwnProperty(e)){
+                            f[e] = currentWrap[e];
+                        }
+                    }
+                };
+                useConstructor(constructor);
+                f.extend = function(name, newConstructor){
+
+                };
+                return f;
+            };
         })();
 })();
