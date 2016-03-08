@@ -108,7 +108,15 @@
 				matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
 				mod:function(){return Math.sqrt(Math.pow(x,2)+Math.pow(y,2));},
 				dot:function(p){return x*p.x+y*p.y;},
-				rot:function(alpha){return point(x*Math.cos(alpha)-y*Math.sin(alpha), y*Math.cos(alpha)+x*Math.sin(alpha));},
+				rot:function(){
+					if(arguments.length == 1){
+						var alpha = arguments[0];
+						return point(x*Math.cos(alpha)-y*Math.sin(alpha), y*Math.cos(alpha)+x*Math.sin(alpha));
+					}else{
+						var tr = point(arguments[1], arguments[2]);
+						return this.minus(tr).rot(arguments[0]).plus(tr);
+					}
+				},
 				projectOn:function(p){
 					return p.scale(this.dot(p)/p.mod());
 				},
@@ -362,8 +370,9 @@
 				scale:function(r){
 					return change(function(p){return p.scale(r);});
 				},
-				rot:function(alpha){
-					return change(function(p){return p.rot(alpha);});
+				rot:function(){
+					var args = arguments;
+					return change(function(p){return p.rot.apply(p, args);});
 				},
 				clone:function(){
 					return change(function(p){return p;});
@@ -887,10 +896,16 @@
 		
 
 		var contour = (function(){
+			var holelessPathSet = function(sides, cutoffPoints){
+				return {
+					sides:sides,
+					cutoffPoints:cutoffPoints
+				};
+			};
 			var group = function(outerSide, holes){
 				var getHolelessPaths = function(){
 					if(holes.length == 0){
-						return [outerSide];
+						return holelessPathSet([outerSide],[]);
 					}else{
 						var intersectionSet,x,downFrom,downTo,upFrom,upTo,i,box,intersections,
 							affectedSides=[],
@@ -929,7 +944,10 @@
 							}
 						});
 
-						return pathSet().addMany(affectedSides).paths;
+						return holelessPathSet(
+							pathSet().addMany(affectedSides).paths,
+							intersectionSet.mapMany(function(intersections){return intersections.map(function(i){return i.point;});})
+							);
 
 					}
 				};
@@ -973,23 +991,23 @@
 				});
 			};
 			var goAlongPath = function(beginPath, pathStep, endPath){
-				return function(s){
+				return function(s, context){
 					var soFar,index = 0;
 					s.follow(function(ss){
 						if(index == 0){
-							soFar = beginPath.apply(null,[ss]);
+							soFar = beginPath.apply(null,[ss, context]);
 						}
-						soFar = pathStep.apply(null,[ss,soFar]);
+						soFar = pathStep.apply(null,[ss,soFar, context]);
 						index++;
 					});
-					return endPath.apply(null,[soFar]);
+					return endPath.apply(null,[soFar, context]);
 				};
 			};
 			var canvasFunctions = {
 				angleRoundingBeginPath: function(ctx,r){
-					return function(firstSide){
+					return function(firstSide, isCutoffPoint){
 						ctx.beginPath();
-						var p = firstSide.angleRoundingEnd(r);
+						var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
 						ctx.moveTo(p.x,p.y);
 					};
 				},
@@ -1005,9 +1023,13 @@
 					};
 				},
 				angleRoundingPathStep:function(ctx,r){
-					return function(nextSide){
-						var nextnext = nextSide.next();
-						ctx.arcTo(nextSide.to.x, nextSide.to.y, nextnext.to.x, nextnext.to.y,r);
+					return function(nextSide, soFar, isCutoffPoint){
+						if(isCutoffPoint(nextSide.to)){
+							ctx.lineTo(nextSide.to.x, nextSide.to.y);
+						}else{
+							var nextnext = nextSide.next();
+							ctx.arcTo(nextSide.to.x, nextSide.to.y, nextnext.to.x, nextnext.to.y,r);
+						}
 					};
 				},
 				endPath : function(ctx, pathCompleteCallback){
@@ -1019,8 +1041,11 @@
 			};
 			var svgFunctions = {
 				angleRoundingBeginPath:function(r){
-					return function(firstSide){
-						var p = firstSide.angleRoundingEnd(r);
+					return function(firstSide, isCutoffPoint){
+						if(typeof isCutoffPoint !=="function"){
+							console.log("whoa");
+						}
+						var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
 						return "M"+p.x+" "+p.y;
 					};
 				},
@@ -1031,10 +1056,14 @@
 					return soFar+" L "+nextSide.to.x+" "+nextSide.to.y;
 				},
 				angleRoundingPathStep:function(r){
-					return function(nextSide, soFar){
-						var p1 = nextSide.angleRoundingBegin(r);
-						var p2 = nextSide.next().angleRoundingEnd(r);
-						return soFar+" L "+p1.x+" "+p1.y+" Q "+nextSide.to.x+" "+nextSide.to.y+" "+p2.x+" "+p2.y;
+					return function(nextSide, soFar, isCutoffPoint){
+						if(isCutoffPoint(nextSide.to)){
+							return soFar + " L "+nextSide.to.x+" "+nextSide.to.y;
+						}else{
+							var p1 = nextSide.angleRoundingBegin(r);
+							var p2 = nextSide.next().angleRoundingEnd(r);
+							return soFar+" L "+p1.x+" "+p1.y+" Q "+nextSide.to.x+" "+nextSide.to.y+" "+p2.x+" "+p2.y;
+						}
 					};
 				},
 				endPath: function(soFar){
@@ -1047,8 +1076,9 @@
 					.filter(function(s){return isOuterSide(s,sides);})
 					.map(function(outer){return group(outer, findHolesForOuterSide(outer, sides));});
 				return {
-					rot:function(alpha){
-						return contour(sides.map(function(s){return s.rot(alpha);}))
+					rot:function(){
+						var args = arguments;
+						return contour(sides.map(function(s){return s.rot.apply(s, args);}))
 					},
 					translate:function(x,y){
 						return contour(sides.map(function(s){return s.translate(x,y);}));
@@ -1063,14 +1093,27 @@
 						return contour(combineMany(sides.concat(cntr.sides.map(function(s){return s.reverse();}))));
 					},
 					goAlongPaths:function(beginPath, pathStep, endPath){
-						return sides.map(goAlongPath(beginPath, pathStep, endPath));
+						var mapResult = [];
+						var mapper = goAlongPath(beginPath, pathStep, endPath);
+						for(var i=0;i<sides.length;i++){
+							mapResult.push(mapper.apply(null,[sides[i], function(){return false;}]));
+						}
+						return mapResult;
 					},
 					goAlongHolelessPaths:function(beginPath, pathStep, endPath){
-						
-						return groups.mapMany(function(g){return g.getHolelessPaths();}).map(goAlongPath(beginPath, pathStep, endPath));
+						var holelessPaths = groups.map(function(g){return g.getHolelessPaths();});
+						var mapper = goAlongPath(beginPath, pathStep, endPath);
+						return holelessPaths.mapMany(function(hps){
+							var mapResult = [];
+							var isCutoffPoint = function(p){return hps.cutoffPoints.some(function(pp){return pp.equals(p);});};
+							for(var i=0; i<hps.sides.length;i++){
+								mapResult.push(mapper.apply(null,[hps.sides[i], isCutoffPoint]));
+							}
+							return mapResult;
+						});
 					},
 					getHolelessPaths:function(){
-						return groups.mapMany(function(g){return g.getHolelessPaths();});
+						return groups.mapMany(function(g){return g.getHolelessPaths().sides;});
 					},
 					area:function(){
 						return groups.map(function(g){return g.area();}).reduce(function(a,b){return a+b;});
