@@ -902,19 +902,30 @@
 					cutoffPoints:cutoffPoints
 				};
 			};
+			var getMiddles = function(intervals){
+				return intervals
+					.groupBy(function(a,b){return b[0]<=a[1]&&b[1]>=a[0];})
+					.map(function(parts){
+						var boundaries = parts.reduce(function(a,b){return a.concat(b);}).sort(function(a,b){return a - b;});
+						return (boundaries[0] + boundaries[boundaries.length-1]) / 2;
+					});
+
+			};
 			var group = function(outerSide, holes){
 				var getHolelessPaths = function(){
 					if(holes.length == 0){
 						return holelessPathSet([outerSide],[]);
 					}else{
-						var intersectionSet,x,downFrom,downTo,upFrom,upTo,i,box,intersections,
+						var intersectionSet,x,downFrom,downTo,upFrom,upTo,i,box,intersections,verticals,
 							affectedSides=[],
 							outerSideCopy = outerSide.clone(),
 							holesCopy = holes.map(function(h){return h.clone();});
 
-						intersectionSet = holesCopy.map(function(hole){
+						verticals = getMiddles(holesCopy.map(function(hole){
 							box = hole.box();
-							x=(box.minx + box.maxx) / 2;
+							return [box.minx, box.maxx];
+						}));
+						intersectionSet = verticals.map(function(x){
 							return outerSideCopy.intersectWithVertical(x)
 								.concat(holesCopy.mapMany(function(hole1){
 									return hole1.intersectWithVertical(x);
@@ -1287,6 +1298,17 @@
 					.map(function(h){return h.area();})
 					.reduce(function(a,b){return a+b;})
 				).toBe(128);
+		});
+		test("holelessPaths3",function(){
+			var c = rectangle(0,0,20,10).combineNegative(rectangle(2,2,6,6)).combineNegative(rectangle(12,2,6,6)).rot(Math.PI/2);
+			var holeless = c.getHolelessPaths();
+
+			this.expect(c.area()).toBe(128, "initial area");
+			this.expect(holeless.length).toBe(2);
+			this.expect(holeless
+					.map(function(h){return h.area();})
+					.reduce(function(a,b){return a+b;})
+				).toBe(128, "area of sum of holeless paths");
 		});
 		test("holelessPaths3",function(){
 			var c = rectangle(0,0,20,20).combineNegative(rectangle(5,5,10,10)).rot(Math.PI/4);
