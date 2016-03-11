@@ -44,15 +44,13 @@
 
 			this.extend('mammal',function(feet){
 				name = 'mammal';
-				makeName = (function(mn){
-					return function(){
-						return mn() + ' with '+feet+' feet';
-					};
-				})(makeName);
+				makeName = this.override(makeName, function(){
+					return this()+ ' with '+feet+' feet';
+				});
 				this.expose({
 					name:makeName()
 				});
-				
+
 				this.extend('lion',function(){
 					name = 'lion';
 					this.expose({

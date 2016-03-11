@@ -71,6 +71,11 @@
                     var self=this;
                     var extensionName = this.path.length?this.path[0]:null;
                     cons.apply({
+                        override:function(baseF, newF){
+                            return function(){
+                                return newF.apply(baseF, arguments);
+                            };
+                        },
                         expose:function(b){base=b;},
                         extend:function(name,e){
                             if(name===extensionName){
