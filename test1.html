@@ -1,0 +1,76 @@
+<html>
+<body></body>
+<script src="makeModule.js"></script>
+<script>
+;(function(){
+	var test = (function(){
+		return function(name,t){
+			try{
+				t.apply({
+					assert:function(bool, message){
+						if(!bool && console.error){
+							console.error("["+name+"] "+message);
+						}
+					},
+					expect:function(actual){
+						return {
+							toBe:function(expected, message){
+								if(actual != expected && console.error){
+									console.error("["+name+"] "+(message||"")+" (expected "+expected+" but saw "+actual+")");
+								}
+							}
+						};
+					}
+				},[]);
+			}
+			catch(e){
+				console.error("["+name+"] "+e.message);
+			}
+			
+		};
+	})();
+
+	test("makeModuleTest1",function(){
+		var animal = makeModule(function(color){
+			var name = 'animal';
+			var makeName = function(){
+				return 'a '+color+' '+name;
+			};
+			var move = function(){return 'ok';};
+			this.expose({
+				name:makeName(),
+				move:move
+			});
+
+			this.extend('mammal',function(feet){
+				name = 'mammal';
+				makeName = (function(mn){
+					return function(){
+						return mn() + ' with '+feet+' feet';
+					};
+				})(makeName);
+				this.expose({
+					name:makeName()
+				});
+				
+				this.extend('lion',function(){
+					name = 'lion';
+					this.expose({
+						name: makeName()
+					});
+				});
+			});
+		});
+
+		var a1 = animal('green');
+		var a2 = animal.mammal('green', 4);
+		var a3 = animal.mammal.lion('green', 4);
+
+		this.expect(a1.name).toBe('a green animal');
+		this.expect(a2.name).toBe('a green mammal with 4 feet');
+		this.expect(a3.name).toBe('a green lion with 4 feet');
+		this.expect(a3.move()).toBe('ok');
+	});
+})()
+</script>
+</html>
