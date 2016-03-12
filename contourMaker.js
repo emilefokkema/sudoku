@@ -218,7 +218,6 @@
 			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
 			return p1.plus(p2.minus(p1).scale(st.x));
 		};
-		console.log(intersectSegments(point(0,10),point(10,10),point(7,7),point(7,17)));
 		
 		var side = function(p1,p2){
 			var ret,prev,next;
@@ -343,7 +342,7 @@
 					var segment = side(point(x,box.miny - 1),point(x, box.maxy + 1));
 					var intersections = [];
 					follow(function(s){
-						intersections = intersections.concat(s.intersectWith(segment).map(function(p){return {side:s,point:p};}));
+						intersections = intersections.concat(s.intersectWith(segment).map(function(p){return {side:s,point:p,vertical:segment};}));
 					});
 					var result = intersections.length > 0 ? intersections
 						.groupBy(function(a,b){return a.point.equals(b.point);})
@@ -446,6 +445,9 @@
 					});
 					return res;
 				},
+				findLast:function(){
+					return this.find(function(s){return !s.next();})
+				},
 				sideFrom:function(p){
 					return this.find(function(s){return s.from.equals(p);});
 				},
@@ -512,19 +514,19 @@
 				sideContainsPoint:function(p){
 					return this.from.equals(p) || this.to.equals(p) || (this.from.minus(p).cross(this.to.minus(p)) == 0 && p.isBetween(this.from, this.to));
 				},
-				reverse:function(){
+				reverse:function(){ //TODO: reverse an unclosed side. needed for 936
 					var last,snext,res,from = this.from,to = this.to;
 					follow(function(s){
-						snext = s.next();
+						//snext = s.next();
 						if(!res){
-							last = side(snext.to, snext.from);
+							last = side(s.to, s.from);
 							res = last;
 						}else{
-							res = res.prev(side(snext.to, snext.from));
+							res = res.prev(side(s.to, s.from));
 						}
 						
 					});
-					return res.prev(last).next();
+					return res.prev(last);
 				},
 				length:function(){
 					var n=0;
@@ -624,6 +626,100 @@
 				contains:contains
 			};
 		};
+		var intersectionProfile = function(alreadyPresent){
+			alreadyPresent = alreadyPresent || [];
+			var branches = {
+				oneIn : 0,
+				oneOut :1,
+				twoIn: 2,
+				twoOut :3
+			};
+			var r = {};
+			if(alreadyPresent.length == 4){
+				r.isSeparable = function(){
+					return (alreadyPresent.indexOf(branches.oneIn) + alreadyPresent.indexOf(branches.twoOut)) % 2 ==1;
+				};
+			}
+			for(var p in branches){
+				if(branches.hasOwnProperty(p)){
+					if(alreadyPresent.indexOf(branches[p]) == -1){
+						r[p] = (function(pp){
+							return function(){
+								return intersectionProfile(alreadyPresent.concat([branches[pp]]));
+							};
+						})(p);
+					}
+				}
+			}
+			return r;
+		};
+		var intersection = (function(){
+			
+			var isSeparable = function(fromOne, toOne, fromTwo, toTwo){
+				if(fromOne.sameDirectionAs(fromTwo) || toOne.sameDirectionAs(toTwo)){
+					return false;
+				}
+				var inACircle = [fromOne, toOne, fromTwo, toTwo].sort(function(a,b){return a.angleLeftFromXAxis() - b.angleLeftFromXAxis();});
+				var profile = intersectionProfile();
+				inACircle.map(function(p){
+					if(p == fromOne){
+						profile = profile.oneIn();
+					}else if(p == toOne){
+						profile = profile.oneOut();
+					}else if(p == fromTwo){
+						profile = profile.twoIn();
+					}else if(p == toTwo){
+						profile = profile.twoOut();
+					}
+				});
+				
+				return profile.isSeparable();
+			};
+			var isPureIntersection = function(p, s, t){
+				return p.isStrictlyBetween(s.from, s.to) && p.isStrictlyBetween(t.from, t.to);
+			};
+
+			var simpleIntersection = function(p, s, t){
+				return {
+					toBeSwitched: true,
+					point:p,
+					one:s,
+					two:t
+				};
+			};
+			
+			var f = function(p, s, t){
+				var fromOne, toOne, fromTwo, toTwo;
+				if(isPureIntersection(p,s,t)){
+					return simpleIntersection(p, s, t);
+				};
+				fromOne = s.lastPointBefore(p).minus(p);
+				toOne = s.firstPointAfter(p).minus(p);
+				fromTwo = t.lastPointBefore(p).minus(p);
+				toTwo = t.firstPointAfter(p).minus(p);
+				if(isSeparable(fromOne, toOne, fromTwo, toTwo)){
+					return simpleIntersection(p, s, t);
+				}
+				var fromSplit = !fromOne.sameDirectionAs(fromTwo);
+				var toSplit = !toOne.sameDirectionAs(toTwo);
+				var toBeSwitched = false;
+				if(fromSplit && !toSplit){
+					toBeSwitched = fromTwo.angleLeftFrom(toTwo) > fromOne.angleLeftFrom(toTwo);
+				}
+				if(toSplit && !fromSplit){
+					toBeSwitched = toTwo.angleLeftFrom(fromTwo) < toOne.angleLeftFrom(fromTwo);
+				}
+				return {
+					toBeSwitched: toBeSwitched,
+					point: p,
+					one: s,
+					two: t
+					
+				};
+			};
+			
+			return f;
+		})();
 		
 		var combine = (function(){
 			var sideFrom = function(p, toSearch){
@@ -635,100 +731,7 @@
 			};
 
 			
-			var intersectionProfile = function(alreadyPresent){
-				alreadyPresent = alreadyPresent || [];
-				var branches = {
-					oneIn : 0,
-					oneOut :1,
-					twoIn: 2,
-					twoOut :3
-				};
-				var r = {};
-				if(alreadyPresent.length == 4){
-					r.isSeparable = function(){
-						return (alreadyPresent.indexOf(branches.oneIn) + alreadyPresent.indexOf(branches.twoOut)) % 2 ==1;
-					};
-				}
-				for(var p in branches){
-					if(branches.hasOwnProperty(p)){
-						if(alreadyPresent.indexOf(branches[p]) == -1){
-							r[p] = (function(pp){
-								return function(){
-									return intersectionProfile(alreadyPresent.concat([branches[pp]]));
-								};
-							})(p);
-						}
-					}
-				}
-				return r;
-			};
-			var intersection = (function(){
-				
-				var isSeparable = function(fromOne, toOne, fromTwo, toTwo){
-					if(fromOne.sameDirectionAs(fromTwo) || toOne.sameDirectionAs(toTwo)){
-						return false;
-					}
-					var inACircle = [fromOne, toOne, fromTwo, toTwo].sort(function(a,b){return a.angleLeftFromXAxis() - b.angleLeftFromXAxis();});
-					var profile = intersectionProfile();
-					inACircle.map(function(p){
-						if(p == fromOne){
-							profile = profile.oneIn();
-						}else if(p == toOne){
-							profile = profile.oneOut();
-						}else if(p == fromTwo){
-							profile = profile.twoIn();
-						}else if(p == toTwo){
-							profile = profile.twoOut();
-						}
-					});
-					
-					return profile.isSeparable();
-				};
-				var isPureIntersection = function(p, s, t){
-					return p.isStrictlyBetween(s.from, s.to) && p.isStrictlyBetween(t.from, t.to);
-				};
-
-				var simpleIntersection = function(p, s, t){
-					return {
-						toBeSwitched: true,
-						point:p,
-						one:s,
-						two:t
-					};
-				};
-				
-				var f = function(p, s, t){
-					var fromOne, toOne, fromTwo, toTwo;
-					if(isPureIntersection(p,s,t)){
-						return simpleIntersection(p, s, t);
-					};
-					fromOne = s.lastPointBefore(p).minus(p);
-					toOne = s.firstPointAfter(p).minus(p);
-					fromTwo = t.lastPointBefore(p).minus(p);
-					toTwo = t.firstPointAfter(p).minus(p);
-					if(isSeparable(fromOne, toOne, fromTwo, toTwo)){
-						return simpleIntersection(p, s, t);
-					}
-					var fromSplit = !fromOne.sameDirectionAs(fromTwo);
-					var toSplit = !toOne.sameDirectionAs(toTwo);
-					var toBeSwitched = false;
-					if(fromSplit && !toSplit){
-						toBeSwitched = fromTwo.angleLeftFrom(toTwo) > fromOne.angleLeftFrom(toTwo);
-					}
-					if(toSplit && !fromSplit){
-						toBeSwitched = toTwo.angleLeftFrom(fromTwo) < toOne.angleLeftFrom(fromTwo);
-					}
-					return {
-						toBeSwitched: toBeSwitched,
-						point: p,
-						one: s,
-						two: t
-						
-					};
-				};
-				
-				return f;
-			})();
+			
 
 			var getSwitchableSelfIntersections = function(s){
 				var newIntersections, intersections = [];
@@ -930,7 +933,8 @@
 								.concat(holesCopy.mapMany(function(hole1){
 									return hole1.intersectWithVertical(x);
 								}))
-								.sort(function(a,b){return a.point.y - b.point.y;});
+								.sort(function(a,b){return a.point.y - b.point.y;})
+								.filter(function(i){return intersection(i.point, i.side, i.vertical).toBeSwitched;});
 						});
 
 						intersectionSet.mapMany(function(intersections){return intersections;})
@@ -1209,10 +1213,18 @@
 			var sides = [rectangleSide(x,y,width,height)];
 			return contour(sides);
 		};
+		test("intersectionTest1", function(){
+			var p = intersectSegments(point(0,10),point(10,10),point(7,7),point(7,17));
+			this.expect(p[0].x).toBe(7);
+			this.expect(p[0].y).toBe(10);
+		});
 		test("clean",function(){
 			var a = rectangleSide(0,0,10,10).addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
 			a = a.clean();
 			this.expect(a.area()).toBe(100,"area changed after adding points and cleaning");
+		});
+		test("reverseTest1",function(){
+			var a =side(point(0,0), point(1,0)).reverse();
 		});
 		test("firstAfterLastBefore",function(){
 			var s = rectangleSide(0,0,10,10).find(function(s){return s.to.equals(point(0,0));});
@@ -1310,7 +1322,14 @@
 					.reduce(function(a,b){return a+b;})
 				).toBe(128, "area of sum of holeless paths");
 		});
-		test("holelessPaths3",function(){
+		test("holelessPaths5",function(){
+			var contour2 = rectangle(10,10,10,10).combine(rectangle(7,7,6,6));
+			var contour1 = contour2.combineNegative(rectangle(8,8,4,4));
+
+			var holeless = contour1.getHolelessPaths();
+			this.expect(holeless.length).toBe(2);
+		});
+		test("holelessPaths4",function(){
 			var c = rectangle(0,0,20,20).combineNegative(rectangle(5,5,10,10)).rot(Math.PI/4);
 			var holeless = c.getHolelessPaths();
 
