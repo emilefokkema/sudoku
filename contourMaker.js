@@ -445,9 +445,6 @@
 					});
 					return res;
 				},
-				findLast:function(){
-					return this.find(function(s){return !s.next();})
-				},
 				sideFrom:function(p){
 					return this.find(function(s){return s.from.equals(p);});
 				},
@@ -514,17 +511,15 @@
 				sideContainsPoint:function(p){
 					return this.from.equals(p) || this.to.equals(p) || (this.from.minus(p).cross(this.to.minus(p)) == 0 && p.isBetween(this.from, this.to));
 				},
-				reverse:function(){ //TODO: reverse an unclosed side. needed for 936
+				reverse:function(){
 					var last,snext,res,from = this.from,to = this.to;
 					follow(function(s){
-						//snext = s.next();
 						if(!res){
 							last = side(s.to, s.from);
 							res = last;
 						}else{
 							res = res.prev(side(s.to, s.from));
 						}
-						
 					});
 					return res.prev(last);
 				},
@@ -973,7 +968,10 @@
 					outerSide:outerSide,
 					holes:holes,
 					getHolelessPaths:getHolelessPaths,
-					area:area
+					area:area,
+					box:function(){
+						return outerSide.box();
+					}
 				};
 			};
 			var goesAround = function(s1,s2){
@@ -1132,6 +1130,9 @@
 					},
 					area:function(){
 						return groups.map(function(g){return g.area();}).reduce(function(a,b){return a+b;});
+					},
+					boxes:function(){
+						return groups.map(function(g){return g.box();});
 					},
 					expand:function(d){
 						return contour(combineMany(sides.map(function(s){return s.expand(d);})));
