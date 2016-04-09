@@ -1,0 +1,94 @@
+<html>
+<body>
+<script src="makeNode.js"></script>
+<script type="makeNode">
+(function(){
+	var episode = function(title){
+		return <div><input type="checkbox" />'{title}'</div>;
+	};
+	var series = function(remove){
+		return <div id="1" style="width:200px;display:inline;margin:10px"><div id="2" style="background-color:#ddd"></div>
+				function(outer, inner){
+					remove = (function(old){
+						return function(){
+							outer.removeChild(inner);
+							var width = parseInt(outer.style.width.match(/\d+/)[0]);
+							var decreaseWidth = function(){
+								if(width > 10){
+									width -= 10;
+									outer.style.width = width + "px";
+									setTimeout(decreaseWidth, 10);
+								}else{
+									old();
+								}
+							};
+							decreaseWidth();
+						};
+					})(remove);
+					var title = <div id="1" style="position:relative">
+								<input type="text" id="2"/>
+								<span id="3" style="display:none"></span>
+								<input type="button" id="4" value="x" style="position:absolute;right:0px;top:0px" />
+								function(outer, input, text, removeButton){
+									input.addEventListener('blur',function(){
+										text.innerHTML = input.value;
+										input.style.display = "none";
+										text.style.display = "initial";
+									});
+									removeButton.onclick = remove;
+								}
+								</div>;
+					inner.appendChild(title);
+					var episodeList = <div id="1">
+										<div><input type="button" value="-" id="4"/></div>
+										<div id="2"></div>
+										<div><input type="button" value="+" id="3"/></div>
+										function(outer, list, addButton, subtractButton){
+											var counter;
+											var episodeList = Array.apply(null, new Array(12)).map(function(x,i){return episode("Episode "+(counter = i+1));});
+											episodeList.map(function(e){list.appendChild(e);});
+											var addOne = function(){
+												var newOne = episode("Episode "+(++counter));
+												episodeList.push(newOne);
+												list.appendChild(newOne);
+											};
+											var removeOne = function(){
+												if(episodeList.length > 0){
+													list.removeChild(episodeList[0]);
+													episodeList.splice(0,1);
+												}
+											};
+											addButton.onclick = addOne;
+											subtractButton.onclick = removeOne;
+										}
+										</div>;
+					inner.appendChild(episodeList);
+				}
+				</div>;
+	};
+	var container = <div style="display:inline-flex" id="1">
+						<div id="2" style="display:inline-flex"></div>
+						<div><input type="button" value="+" id="3"/></div>
+						function(outer, list, addButton){
+							var seriesList = [];
+							var remove = function(which){
+								list.removeChild(which);
+								seriesList.splice(seriesList.indexOf(which),1);
+							};
+							var addOne = function(){
+								var newOne;
+								newOne = series(function(){remove(newOne);});
+								seriesList.push(newOne);
+								list.appendChild(newOne);
+							};
+							
+							addButton.onclick = addOne;
+							addOne();
+							document.body.appendChild(outer);
+						}
+					</div>;
+})();
+</script>
+</body>
+
+</html>

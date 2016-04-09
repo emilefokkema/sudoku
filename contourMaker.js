@@ -218,6 +218,18 @@
 			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
 			return p1.plus(p2.minus(p1).scale(st.x));
 		};
+
+		var box = function(minx, maxx, miny, maxy){
+			return {
+				minx:minx,
+				maxx:maxx,
+				miny:miny,
+				maxy:maxy,
+				plus:function(b){
+					return box(Math.min(minx, b.minx), Math.max(maxx, b.maxx), Math.min(miny, b.miny), Math.max(maxy, b.maxy));
+				}
+			};
+		};
 		
 		var side = function(p1,p2){
 			var ret,prev,next;
@@ -433,7 +445,7 @@
 						miny = compare(s.from.y, function(cand,curr){return cand <= curr;}, miny);
 						maxy = compare(s.from.y, function(cand,curr){return cand >= curr;}, maxy);
 					});
-					return {minx:minx,miny:miny,maxx:maxx,maxy:maxy};
+					return box(minx, maxx, miny, maxy);
 				},
 				find:function(condition){
 					var res = null;
@@ -1133,6 +1145,9 @@
 					},
 					boxes:function(){
 						return groups.map(function(g){return g.box();});
+					},
+					box:function(){
+						return this.boxes().reduce(function(a,b){return a.plus(b);});
 					},
 					expand:function(d){
 						return contour(combineMany(sides.map(function(s){return s.expand(d);})));
