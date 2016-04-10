@@ -1,0 +1,22 @@
+<html>
+	<body>
+		<div style="height:200px" data-contour="parent">
+			<span>Whatever</span>
+		</div>
+	</body>
+	<script src="contourMaker.js"></script>
+	<script>
+	(function(){
+		var parents = (function(iterator){
+			var next, result = [];
+			while(next = iterator.iterateNext()){
+				result.push(next);
+			}
+			return result;
+		})(document.evaluate(".*[@data-contour='parent']", null, XPathResult.ANY_TYPE, null));
+		parents.map(function(p){
+			p.setAttribute("style", "background-color:#f00");
+		});
+	})();
+	</script>
+</html>
