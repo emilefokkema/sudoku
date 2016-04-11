@@ -58,64 +58,69 @@ Array.prototype.groupBy = (function(){
 	};
 })();
 
-
-window.makeTrees = (function(){
-	var node = function(n){
-		return {
-			parent: null,
-			node:n,
-			children: []
-		};
-	};
-
-	var appendTo = function(n1, n2){
-		n1.children.push(n2);
-		n2.parent = n1;
-	};
-
-	var findHighest = function(nodes, isParentOf){
-		if(nodes.length == 1){
-			return nodes[0];
-		}
-		var highest = nodes.filter(function(n){
-			var foundParent = nodes.filter(function(nn){return nn!=n && isParentOf(nn, n);});
-			return foundParent.length == 0;
-		});
-		if(highest.length == 0){
-			throw new Error("a tree structure cannot contain circles!");
-		}
-		if(highest.length > 1){
-			throw new Error("a node cannot have more than one parent!");
-		}
-		return highest[0];
-	};
-
-	var makeTree = function(nodes, isParentOf){
-		if(nodes.length == 1){
-			return nodes[0];
-		}
-		var highest = findHighest(nodes, isParentOf);
-		var subTrees = mt(nodes.filter(function(n){return n!=highest;}), isParentOf);
-		subTrees.map(function(s){appendTo(highest, s);});
-		return highest;
-	};
-
-	var mt = function(nodes, isParentOf){
-		var groupedNodes = nodes.groupBy(function(x,y){return isParentOf(x,y) || isParentOf(y, x);});
-		return groupedNodes.map(function(g){return makeTree(g, isParentOf);});
-	};
-
-	return function(nodes, isParentOf){
-		isParentOf = (function(orig){
-			return function(n1,n2){
-				return orig(n1.node, n2.node);
+(function(){
+	var makeTrees = (function(){
+		var node = function(n){
+			return {
+				parent: null,
+				node:n,
+				children: []
 			};
-		})(isParentOf);
-		nodes = nodes.map(function(n){return node(n);});
-		return mt(nodes, isParentOf);
+		};
 
-	};
+		var appendTo = function(n1, n2){
+			n1.children.push(n2);
+			n2.parent = n1;
+		};
+
+		var findHighest = function(nodes, isParentOf){
+			if(nodes.length == 1){
+				return nodes[0];
+			}
+			var highest = nodes.filter(function(n){
+				var foundParent = nodes.filter(function(nn){return nn!=n && isParentOf(nn, n);});
+				return foundParent.length == 0;
+			});
+			if(highest.length == 0){
+				throw new Error("a tree structure cannot contain circles!");
+			}
+			if(highest.length > 1){
+				throw new Error("a node cannot have more than one parent!");
+			}
+			return highest[0];
+		};
+
+		var makeTree = function(nodes, isParentOf){
+			if(nodes.length == 1){
+				return nodes[0];
+			}
+			var highest = findHighest(nodes, isParentOf);
+			var subTrees = mt(nodes.filter(function(n){return n!=highest;}), isParentOf);
+			subTrees.map(function(s){appendTo(highest, s);});
+			return highest;
+		};
+
+		var mt = function(nodes, isParentOf){
+			var groupedNodes = nodes.groupBy(function(x,y){return isParentOf(x,y) || isParentOf(y, x);});
+			return groupedNodes.map(function(g){return makeTree(g, isParentOf);});
+		};
+
+		return function(nodes, isParentOf){
+			isParentOf = (function(orig){
+				return function(n1,n2){
+					return orig(n1.node, n2.node);
+				};
+			})(isParentOf);
+			nodes = nodes.map(function(n){return node(n);});
+			return mt(nodes, isParentOf);
+
+		};
+	})();
+	window.makeTrees = makeTrees;
 })();
+
+
+
 
 console.log(makeTrees(["a", "aa", "b"], function(a, b){return b.startsWith(a);}));
 console.log(makeTrees(["a", "aa", "ab","abc","aac", "b"], function(a, b){return b.startsWith(a);}));
