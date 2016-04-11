@@ -116,12 +116,12 @@ Array.prototype.groupBy = (function(){
 
 		};
 	})();
-	window.makeTrees = makeTrees;
+	var allNodes = function(node){
+
+	};
+	window.structureHelpers = {
+		makeTrees: makeTrees,
+		allNodes: allNodes
+	};
 })();
-
-
-
-
-console.log(makeTrees(["a", "aa", "b"], function(a, b){return b.startsWith(a);}));
-console.log(makeTrees(["a", "aa", "ab","abc","aac", "b"], function(a, b){return b.startsWith(a);}));
 
