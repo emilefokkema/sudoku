@@ -62,6 +62,7 @@ Array.prototype.groupBy = (function(){
 window.makeTrees = (function(){
 	var node = function(n){
 		return {
+			parent: null,
 			node:n,
 			children: []
 		};
@@ -69,6 +70,7 @@ window.makeTrees = (function(){
 
 	var appendTo = function(n1, n2){
 		n1.children.push(n2);
+		n2.parent = n1;
 	};
 
 	var findHighest = function(nodes, isParentOf){
@@ -117,6 +119,4 @@ window.makeTrees = (function(){
 
 console.log(makeTrees(["a", "aa", "b"], function(a, b){return b.startsWith(a);}));
 console.log(makeTrees(["a", "aa", "ab","abc","aac", "b"], function(a, b){return b.startsWith(a);}));
-
-
 
