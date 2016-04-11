@@ -61,15 +61,14 @@ Array.prototype.groupBy = (function(){
 
 window.makeTrees = (function(){
 	var node = function(n){
-		var children = [];
-		var append = function(n_){
-			children.push(n_);
-		};
 		return {
 			node:n,
-			append: append,
-			children: children
+			children: []
 		};
+	};
+
+	var appendTo = function(n1, n2){
+		n1.children.push(n2);
 	};
 
 	var findHighest = function(nodes, isParentOf){
@@ -94,9 +93,14 @@ window.makeTrees = (function(){
 			return nodes[0];
 		}
 		var highest = findHighest(nodes, isParentOf);
-		var subTrees = makeTrees(nodes.filter(function(n){return n!=highest;}), isParentOf);
-		subTrees.map(function(s){highest.append(s);});
+		var subTrees = mt(nodes.filter(function(n){return n!=highest;}), isParentOf);
+		subTrees.map(function(s){appendTo(highest, s);});
 		return highest;
+	};
+
+	var mt = function(nodes, isParentOf){
+		var groupedNodes = nodes.groupBy(function(x,y){return isParentOf(x,y) || isParentOf(y, x);});
+		return groupedNodes.map(function(g){return makeTree(g, isParentOf);});
 	};
 
 	return function(nodes, isParentOf){
@@ -105,8 +109,8 @@ window.makeTrees = (function(){
 				return orig(n1.node, n2.node);
 			};
 		})(isParentOf);
-		var groupedNodes = nodes.map(function(n){return node(n);}).groupBy(function(x,y){return isParentOf(x,y) || isParentOf(y, x);});
-		return groupedNodes.map(function(g){return makeTree(g, isParentOf);});
+		nodes = nodes.map(function(n){return node(n);});
+		return mt(nodes, isParentOf);
 
 	};
 })();
