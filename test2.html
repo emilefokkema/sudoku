@@ -1,23 +1,30 @@
 <html>
 	<body>
 		<div style="height:200px" data-contour="parent">
-			<span>Whatever</span>
+			<span data-contour="child">Whatever</span>
 		</div>
 	</body>
 	<script src="structureHelpers.js"></script>
 	<script src="contourMaker.js"></script>
 	<script>
 	(function(){
-		var parents = (function(iterator){
+		var xPath = ".//*[@data-contour='parent' or @data-contour='child']";
+		var toArray = function(iterator){
 			var next, result = [];
 			while(next = iterator.iterateNext()){
 				result.push(next);
 			}
 			return result;
-		})(document.evaluate(".//*[@data-contour='parent']", document, null, XPathResult.ANY_TYPE, null));
-		parents.map(function(p){
-			p.style.backgroundColor = '#f00';
-		});
+		};
+		var contourChildrenOf = function(node){
+			return toArray( document.evaluate(xPath, node, null, XPathResult.ANY_TYPE, null) );
+		};
+		var all = contourChildrenOf(document);
+		var isParentOf = function(n1, n2){
+			var children = contourChildrenOf(n1);
+			return children.indexOf(n2) != -1;
+		};
+		var trees = makeTrees(all, isParentOf);
 	})();
 	</script>
 </html>
