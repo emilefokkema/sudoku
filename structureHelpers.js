@@ -117,7 +117,11 @@ Array.prototype.groupBy = (function(){
 		};
 	})();
 	var allNodes = function(node){
-
+		var result = [node];
+		if(node.children.length > 0){
+			result = result.concat(node.children.map(function(c){return allNodes(c);}).reduce(function(a,b){return a.concat(b);}));
+		}
+		return result;
 	};
 	window.structureHelpers = {
 		makeTrees: makeTrees,

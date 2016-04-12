@@ -1,8 +1,11 @@
 <html>
 	<body>
 		<div style="height:200px" data-contour="parent">
-			<div>
+			<div data-contour="child">
 				<span data-contour="child">Whatever</span>
+			</div>
+			<div data-contour="parent">
+				<span data-contour="child">Whatever else</span>
 			</div>
 			
 		</div>
@@ -22,13 +25,31 @@
 		var contourChildrenOf = function(node){
 			return toArray( document.evaluate(xPath, node, null, XPathResult.ANY_TYPE, null) );
 		};
+		var concatenate = function(a,b){return a.concat(b);};
 		var all = contourChildrenOf(document);
 		var isParentOf = function(n1, n2){
 			var children = contourChildrenOf(n1);
 			return children.indexOf(n2) != -1;
 		};
-		var trees = str.makeTrees(all, isParentOf);
-		console.log(trees);
+		var allAsNodes = str.makeTrees(all, isParentOf)
+			.map(function(n){return str.allNodes(n);})
+			.reduce(concatenate);
+
+		var parents = allAsNodes.filter(function(n){return n.node.getAttribute('data-contour') == "parent";});
+		parents.map(function(p){
+			var children;
+			if(p.parent && (children = p.parent.children)){
+				children.splice(children.indexOf(p),1);
+				p.parent = null;
+			}
+		});
+		var sets = parents.map(function(p){
+			return {
+				parent: p.node,
+				children: p.children.map(function(c){return str.allNodes(c);}).reduce(concatenate).map(function(c){return c.node;})
+			};
+		});
+		console.log(sets);
 	})(window.structureHelpers);
 	</script>
 </html>
