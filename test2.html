@@ -1,10 +1,15 @@
 <html>
+<head>
+<style>
+div.parent {margin:10px;}
+</style>
+</head>
 	<body>
-		<div style="height:200px" data-contour="parent a">
-			<div data-contour="child a">
-				<span data-contour="child b">Whatever</span>
+		<div class="parent" style="height:200px" data-contour="parent a">
+			<div>
+				<span data-contour="child b" style="margin:-5px;padding:5px">Whatever</span>
 			</div>
-			<div data-contour="parent b">
+			<div class="parent" data-contour="parent b" style="height:100px;">
 				<span data-contour="child a">Whatever else</span>
 			</div>
 			
@@ -26,34 +31,57 @@
 			return toArray( document.evaluate(xPath, node, null, XPathResult.ANY_TYPE, null) );
 		};
 		var concatenate = function(a,b){return a.concat(b);};
-		var all = contourChildrenOf(document);
-		var isParentOf = function(n1, n2){
-			var children = contourChildrenOf(n1);
-			return children.indexOf(n2) != -1;
-		};
-		var allAsNodes = str.makeTrees(all, isParentOf)
-			.map(function(n){return str.allNodes(n);})
-			.reduce(concatenate);
 
-		var parents = allAsNodes.filter(function(n){return n.node.getAttribute('data-contour') == "parent";});
-		parents.map(function(p){
-			var children;
-			if(p.parent && (children = p.parent.children)){
-				children.splice(children.indexOf(p),1);
-				p.parent = null;
-			}
-		});
-		var sets = parents.map(function(p){
-			return {
-				parent: p.node,
-				children: p.children.map(function(c){return str.allNodes(c);}).reduce(concatenate).map(function(c){return c.node;})
-			};
-		});
-		sets.map(function(set){
-			set.parent.style.border = '1pt solid #f00';
-			set.children.map(function(child){
-				child.style.border = '1pt solid #ff0';
+		var contourNameOf = function(node){
+			return node.getAttribute('data-contour').match(/^(?:parent|child)\s(.*)$/)[1];
+		};
+
+		var draw = function(instructions){
+			
+			var parents = str.makeTrees(
+				contourChildrenOf(document),
+				function(n1, n2){
+					return contourChildrenOf(n1).indexOf(n2) != -1;
+				})
+				.map(function(n){return str.allNodes(n);})
+				.reduce(concatenate)
+				.filter(function(n){return n.node.getAttribute('data-contour').indexOf("parent") != -1;});
+			
+			parents.map(function(p){
+				var children;
+				if(p.parent && (children = p.parent.children)){
+					children.splice(children.indexOf(p),1);
+					p.parent = null;
+				}
 			});
+			var sets = parents.map(function(p){
+				return {
+					parent: p.node,
+					children: p.children.map(function(c){return str.allNodes(c);}).reduce(concatenate).map(function(c){return c.node;})
+				};
+			});
+			
+			sets.map(function(set){
+				var children, parentName = contourNameOf(set.parent);
+				if(instructions[parentName]){
+					children = {};
+					set.children.map(function(child){
+						children[contourNameOf(child)] = child;
+					});
+					instructions[parentName].apply(null, [set.parent, children]);
+				}
+			});
+		
+		};
+		draw({
+			"a": function(parent, children){
+				console.log(parent);
+				console.log(children);
+			},
+			"b": function(parent, children){
+				console.log(parent);
+				console.log(children);
+			}
 		});
 	})(window.structureHelpers);
 	</script>
