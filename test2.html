@@ -9,9 +9,7 @@ div.parent {margin:10px;}
 			<div>
 				<span data-contour="child b" style="margin:-5px;padding:5px">Whatever</span>
 			</div>
-			<div class="parent" data-contour="parent b" style="height:100px;">
-				<span data-contour="child a">Whatever else</span>
-			</div>
+			
 			
 		</div>
 	</body>
@@ -68,19 +66,22 @@ div.parent {margin:10px;}
 					set.children.map(function(child){
 						children[contourNameOf(child)] = child;
 					});
-					instructions[parentName].apply(null, [set.parent, children]);
+					instructions[parentName].apply({
+						getRectangle: (function(){
+							var parentRect = set.parent.getBoundingClientRect();
+							return function(node){
+								var clientRect = node.getBoundingClientRect();
+								return contourMaker.rectangle(clientRect.left - parentRect.left, clientRect.top - parentRect.top, clientRect.width, clientRect.height);
+							};
+						})()
+					}, [set.parent, children]);
 				}
 			});
 		
 		};
 		draw({
 			"a": function(parent, children){
-				console.log(parent);
-				console.log(children);
-			},
-			"b": function(parent, children){
-				console.log(parent);
-				console.log(children);
+				console.log(this.getRectangle(children.b));
 			}
 		});
 	})(window.structureHelpers);
