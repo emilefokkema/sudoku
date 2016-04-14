@@ -34,6 +34,10 @@ div.parent {margin:10px;}
 			return node.getAttribute('data-contour').match(/^(?:parent|child)\s(.*)$/)[1];
 		};
 
+		var getSvgBackgroundString = function(width, height, contourInfo){
+
+		};
+
 		var draw = function(instructions){
 			
 			var parents = str.makeTrees(
@@ -66,22 +70,29 @@ div.parent {margin:10px;}
 					set.children.map(function(child){
 						children[contourNameOf(child)] = child;
 					});
-					instructions[parentName].apply({
+					var parentRect = set.parent.getBoundingClientRect();
+					var contourInfo = instructions[parentName].apply({
 						getRectangle: (function(){
-							var parentRect = set.parent.getBoundingClientRect();
 							return function(node){
 								var clientRect = node.getBoundingClientRect();
 								return contourMaker.rectangle(clientRect.left - parentRect.left, clientRect.top - parentRect.top, clientRect.width, clientRect.height);
 							};
 						})()
 					}, [set.parent, children]);
+					set.parent.style.backgroundImage = "url("+getSvgBackgroundString(parentRect.width, parentRect.height, contourInfo)+")";
+					set.parent.style.backgroundRepeat = "no-repeat";
 				}
 			});
 		
 		};
 		draw({
 			"a": function(parent, children){
-				console.log(this.getRectangle(children.b));
+				return [
+					{
+						color: "#000",
+						contour: this.getRectangle(parent).expand(-5).combineNegative(this.getRectangle(children.b).expand(5))
+					}
+				];
 			}
 		});
 	})(window.structureHelpers);
