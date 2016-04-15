@@ -7,7 +7,14 @@ div.parent {margin:10px;}
 	<body>
 		<div class="parent" style="height:200px" data-contour="parent a">
 			<div>
-				<span data-contour="child b" style="margin:-5px;padding:5px">Whatever</span>
+				<span data-contour="child b" style="margin:-5px;padding:5px;font-family:Verdana;font-size:20px">Whatever</span>
+			</div>
+			
+			
+		</div>
+		<div class="parent" style="height:200px" data-contour="parent b">
+			<div style="margin:10px;">
+				<span data-contour="child b" style="margin:5px;padding:5px;font-family:Verdana;font-size:20px;position:relative;top:10px">Whatever else</span>
 			</div>
 			
 			
@@ -35,7 +42,22 @@ div.parent {margin:10px;}
 		};
 
 		var getSvgBackgroundString = function(width, height, contourInfo){
-
+			var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+			svg.setAttribute('width',width);
+			svg.setAttribute('height', height);
+			svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
+			contourInfo.map(function(info){
+				var svgPaths = info.contour.makeSvgPaths(4);
+				svgPaths.map(function(pathString){
+					var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+					path.setAttribute('stroke',info.color);
+					path.setAttribute('fill','transparent');
+					path.setAttribute('stroke-width','1');
+					path.setAttribute('d',pathString);
+					svg.appendChild(path);
+				});
+			});
+			return "'data:image/svg+xml;utf8,"+svg.outerHTML+"'";
 		};
 
 		var draw = function(instructions){
@@ -91,6 +113,14 @@ div.parent {margin:10px;}
 					{
 						color: "#000",
 						contour: this.getRectangle(parent).expand(-5).combineNegative(this.getRectangle(children.b).expand(5))
+					}
+				];
+			},
+			"b": function(parent, children){
+				return [
+					{
+						color: "#000",
+						contour: this.getRectangle(parent).expand(-20).combine(this.getRectangle(children.b).expand(5))
 					}
 				];
 			}
