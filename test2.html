@@ -13,7 +13,7 @@ div.parent {margin:10px;}
 			
 		</div>
 		<div class="parent" style="height:200px" data-contour="parent b">
-			<div style="margin:10px;">
+			<div>
 				<span data-contour="child b" style="margin:5px;padding:5px;font-family:Verdana;font-size:20px;position:relative;top:10px">Whatever else</span>
 			</div>
 			
@@ -47,7 +47,7 @@ div.parent {margin:10px;}
 			svg.setAttribute('height', height);
 			svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
 			contourInfo.map(function(info){
-				var svgPaths = info.contour.makeSvgPaths(4);
+				var svgPaths = info.contour.makeSvgPaths(6);
 				svgPaths.map(function(pathString){
 					var path = document.createElementNS('http://www.w3.org/2000/svg','path');
 					path.setAttribute('stroke',info.color);
@@ -120,7 +120,7 @@ div.parent {margin:10px;}
 				return [
 					{
 						color: "#000",
-						contour: this.getRectangle(parent).expand(-20).combine(this.getRectangle(children.b).expand(5))
+						contour: this.getRectangle(parent).expand(-20).combine(this.getRectangle(children.b).expand(3))
 					}
 				];
 			}
