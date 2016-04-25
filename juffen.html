@@ -1,0 +1,51 @@
+<html>
+<body>
+<div id="list"></div>
+<script>
+(function(){
+	var nextJuf = (function(){
+		var isJuf = function(n){
+			return n % 7 == 0 || n.toString().indexOf('7') != -1;
+		};
+		var index = 0, otherIndex = -1, soFar = [];
+		return function(){
+			var res, other, level, n;
+			if(isJuf(++index)){
+				other = soFar[++otherIndex];
+				n = other.n;
+				level = other.level + 1;
+			}else{
+				n = index;
+				level = 0;
+			}
+			res = {n:n,level:level};
+			soFar.push(res);
+			return res;
+		};
+	})();
+	var fillList = (function(list){
+		var addOne = function(){
+			var one = nextJuf();
+			var div = document.createElement('div');
+			div.appendChild(document.createTextNode(one.n.toString()));
+			list.appendChild(div);
+		};
+		return function(){
+			for(var i=0;i<30;i++){addOne();}
+			return list.getBoundingClientRect();
+		};
+	})(document.getElementById("list"));
+	var fillScreen = (function(){
+		var currentHeight = 0;
+		return function(){
+			while(currentHeight < window.scrollY + window.innerHeight + 500){
+				currentHeight = fillList().bottom;
+			}
+		};
+	})();
+	setInterval(fillScreen, 200);
+})();
+</script>
+</body>
+</html>
+
