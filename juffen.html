@@ -79,7 +79,7 @@
 	var fillList = (function(list){
 		var addOne = function(){
 			var levelText,one = nextJuf();
-			list.appendChild(makeNode("<div class='entry'><span class='index column'>"+nextJuf.currentIndex()+"</span><span class='number column'>"+one.n+"</span><span class='level column last'>"+((levelText = one.level) > 0 ? levelText : "")+"</span></div>"));
+			list.appendChild(makeNode("<div class='entry' style='background-color:hsla("+one.level*20+",50%,50%,0.3)'><span class='index column'>"+nextJuf.currentIndex()+"</span><span class='number column'>"+one.n+"</span><span class='level column last'>"+((levelText = one.level) > 0 ? levelText : "")+"</span></div>"));
 		};
 		return function(){
 			for(var i=0;i<30;i++){addOne();}
