@@ -3,25 +3,52 @@
 		<style>
 			body {
 				background-color: #000;
+				margin:0px;
+				padding: 0px;
+				padding-top: 25px;
+			}
+			.header {
+				position: fixed;
+				left:0px;
+				top:0px;
+				width: 100%;
+				background-color:#000;
+				border-bottom: 1pt solid #999;
+			}
+			.column {
+				display: inline;
+				border-right: 1pt solid #999;
+			}
+			.last {
+				border-right: 0pt;
 			}
 			.entry {
+				display: inline-flex;
+				width:100%;
 				font-family: monospace;
 				font-size: 25px;
 			}
 			.index {
+				text-align: right;
 				color: #999;
-				width: 300px;
-				height: 30 px;
-				border-right: 1pt solid #999;
+				width: 100px;
 				background-color: #333;
 			}
 			.number {
+				padding-left: 10px;
+				width:300px;
 				color: #fff;
+			}
+			.level {
+				color: #999;
 			}
 		</style>
 	</head>
 <body>
 <script src="makeNode.js"></script>
+<div class="header">
+	<div class="entry"><span class="index column">n</span><span class="number column">juf</span><span class="level column last">niveau</span></div>
+</div>
 <div id="list"></div>
 <script>
 (function(){
@@ -51,10 +78,8 @@
 	})();
 	var fillList = (function(list){
 		var addOne = function(){
-			var one = nextJuf();
-			var div = document.createElement('div');
-			div.appendChild(makeNode("<div class='entry'><span class='index'>"+nextJuf.currentIndex()+"</span><span class='number'>"+one.n+"</span></div>"));
-			list.appendChild(div);
+			var levelText,one = nextJuf();
+			list.appendChild(makeNode("<div class='entry'><span class='index column'>"+nextJuf.currentIndex()+"</span><span class='number column'>"+one.n+"</span><span class='level column last'>"+((levelText = one.level) > 0 ? levelText : "")+"</span></div>"));
 		};
 		return function(){
 			for(var i=0;i<30;i++){addOne();}
