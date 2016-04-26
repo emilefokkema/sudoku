@@ -1,5 +1,27 @@
 <html>
+	<head>
+		<style>
+			body {
+				background-color: #000;
+			}
+			.entry {
+				font-family: monospace;
+				font-size: 25px;
+			}
+			.index {
+				color: #999;
+				width: 300px;
+				height: 30 px;
+				border-right: 1pt solid #999;
+				background-color: #333;
+			}
+			.number {
+				color: #fff;
+			}
+		</style>
+	</head>
 <body>
+<script src="makeNode.js"></script>
 <div id="list"></div>
 <script>
 (function(){
@@ -8,7 +30,7 @@
 			return n % 7 == 0 || n.toString().indexOf('7') != -1;
 		};
 		var index = 0, otherIndex = -1, soFar = [];
-		return function(){
+		var f = function(){
 			var res, other, level, n;
 			if(isJuf(++index)){
 				other = soFar[++otherIndex];
@@ -22,12 +44,16 @@
 			soFar.push(res);
 			return res;
 		};
+		f.currentIndex = function(){
+			return index;
+		};
+		return f;
 	})();
 	var fillList = (function(list){
 		var addOne = function(){
 			var one = nextJuf();
 			var div = document.createElement('div');
-			div.appendChild(document.createTextNode(one.n.toString()));
+			div.appendChild(makeNode("<div class='entry'><span class='index'>"+nextJuf.currentIndex()+"</span><span class='number'>"+one.n+"</span></div>"));
 			list.appendChild(div);
 		};
 		return function(){
@@ -48,4 +74,3 @@
 </script>
 </body>
 </html>
-
