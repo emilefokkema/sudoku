@@ -27,11 +27,11 @@ div.parent {margin:10px;}
 	<script>
 	contourBackgrounds({
 		"a": function(parent, children){
-			var b = this.getRectangle(children.b);
+			var b = children.b;
 			return [
 				{
 					color: "#000",
-					contour: this.getRectangle(parent).expand(-5).combineNegative(b.expand(5))
+					contour: parent.expand(-5).combineNegative(b.expand(5))
 				},
 				{
 					color: "#000",
@@ -43,9 +43,9 @@ div.parent {margin:10px;}
 			return [
 				{
 					color: "#000",
-					contour: this.getRectangle(parent).expand(-7)
-						.combineNegative(this.getRectangle(children.a).expand(5))
-						.combine(this.getRectangle(children.b).expand(3))
+					contour: parent.expand(-7)
+						.combineNegative(children.a.expand(5))
+						.combine(children.b.expand(3))
 				}
 			];
 		}

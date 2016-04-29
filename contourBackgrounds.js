@@ -68,18 +68,16 @@
 			var children, parentName = contourNameOf(set.parent);
 			if(instructions[parentName]){
 				children = {};
-				set.children.map(function(child){
-					children[contourNameOf(child)] = child;
-				});
 				var parentRect = set.parent.getBoundingClientRect();
-				var contourInfo = instructions[parentName].apply({
-					getRectangle: (function(){
-						return function(node){
-							var clientRect = node.getBoundingClientRect();
-							return contourMaker.rectangle(clientRect.left - parentRect.left, clientRect.top - parentRect.top, clientRect.width, clientRect.height);
-						};
-					})()
-				}, [set.parent, children]);
+				var getRectangle = function(node){
+					var clientRect = node.getBoundingClientRect();
+					return contourMaker.rectangle(clientRect.left - parentRect.left, clientRect.top - parentRect.top, clientRect.width, clientRect.height);
+				};
+				set.children.map(function(child){
+					children[contourNameOf(child)] = getRectangle(child);
+				});
+				
+				var contourInfo = instructions[parentName].apply(null, [getRectangle(set.parent), children]);
 				set.parent.style.backgroundImage = "url("+getSvgBackgroundString(parentRect.width, parentRect.height, contourInfo)+")";
 				set.parent.style.backgroundRepeat = "no-repeat";
 			}
