@@ -1,0 +1,95 @@
+<html>
+<body>
+<script src="makeModule.js"></script>
+<script>
+(function(){
+	var sender = function(){
+		var toDo = [];
+		var toReturn = function(){
+			var args = arguments;
+			return toDo.map(function(f){return f.apply(null, args);});
+		};
+		toReturn.add = function(f){toDo.push(f);};
+		return toReturn;
+	};
+	var position = makeModule(function(execute){
+		var finish;
+		execute = (function(old){
+			return function(context){
+				var finish_ = finish(context);
+				var result = old.apply(null, [context, finish_]);
+			};
+		})(execute);
+		this.expose({
+			execute: execute
+		});
+		this.extend('step', function(){
+			var then;
+			finish = function(context){
+				return function(){
+					(then || function(){})(context);
+				};
+			};
+			this.expose({
+				then: function(otherPosition){
+					then = otherPosition.execute;
+					return this;
+				}
+			});
+		});
+		this.extend('question',function(){
+			var ifyes, ifno;
+			finish = function(context){
+				return function(answer){
+					if(answer){
+						(ifyes || function(){})(context);
+					}else{
+						(ifno || function(){})(context);
+					}
+				};
+			};
+			this.expose({
+				ifyes: function(otherPosition){
+					ifyes = otherPosition.execute;
+					return this;
+				},
+				ifno: function(otherPosition){
+					ifno = otherPosition.execute;
+					return this;
+				}
+			});
+		});
+	});
+
+	var context = {number: 3};
+	var q1 = position.step(function(context, finish){
+		document.write("going to sqare now<br>");
+		context.number *= context.number;
+		finish();
+	});
+	var q2 = position.question(function(context, finish){
+		document.write("let's see...<br>");
+		setTimeout(function(){
+			var answer = Math.random() < 0.7;
+			finish(answer);
+		}, 750);
+		
+	});
+	var q3 = position.step(function(context, finish){
+		document.write("going to double now<br>");
+		context.number *= 2;
+		finish();
+	});
+	var q4 = position.step(function(context, finish){
+		document.write(context.number);
+		finish();
+	});
+	q1.then(q2);
+	q2.ifyes(q3).ifno(q4);
+	q3.then(q2);
+	q1.execute(context);
+	console.log(context);
+})();
+</script>
+</body>
+</html>
