@@ -1,5 +1,6 @@
 ;(function(){
 	window.contourMaker = (function(){
+		var rectangle;
 		var test = (function(){
 			return function(name,t){
 				try{
@@ -227,9 +228,14 @@
 				maxy:maxy,
 				plus:function(b){
 					return box(Math.min(minx, b.minx), Math.max(maxx, b.maxx), Math.min(miny, b.miny), Math.max(maxy, b.maxy));
+				},
+				toRectangle: function(){
+					return rectangle(minx, miny, maxx - minx, maxy - miny);
 				}
 			};
 		};
+
+
 		
 		var side = function(p1,p2){
 			var ret,prev,next;
@@ -1225,10 +1231,11 @@
 			return sideBuilder(point(x,y)).to(point(x, y+height)).to(point(x+width,y+height)).to(point(x+width,y)).to(point(x,y)).close();
 		};
 
-		var rectangle = function(x,y,width,height){
+		rectangle = function(x,y,width,height){
 			var sides = [rectangleSide(x,y,width,height)];
 			return contour(sides);
 		};
+
 		test("intersectionTest1", function(){
 			var p = intersectSegments(point(0,10),point(10,10),point(7,7),point(7,17));
 			this.expect(p[0].x).toBe(7);

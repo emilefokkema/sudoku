@@ -23,11 +23,12 @@
 		svg.setAttribute('height', height);
 		svg.setAttribute('xmlns','http://www.w3.org/2000/svg');
 		contourInfo.map(function(info){
-			var svgPaths = info.contour.makeSvgPaths(4);
+			var angleRounding = info.borderRadius || 0;
+			var svgPaths = info.contour.makeSvgPaths(angleRounding);
 			svgPaths.map(function(pathString){
 				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
 				path.setAttribute('stroke',info.color);
-				path.setAttribute('fill','transparent');
+				path.setAttribute('fill',info.fill || 'transparent');
 				path.setAttribute('stroke-width','1');
 				path.setAttribute('d',pathString);
 				svg.appendChild(path);
@@ -56,7 +57,7 @@
 		return parents.map(function(p){
 			return {
 				parent: p.node,
-				children: p.children.map(function(c){return str.allNodes(c);}).reduce(concatenate).map(function(c){return c.node;})
+				children: p.children.map(function(c){return str.allNodes(c);}).reduce(concatenate, []).map(function(c){return c.node;})
 			};
 		});
 	};
@@ -91,6 +92,12 @@
 		window.addEventListener('resize', function(){draw();});
 		window.addEventListener('DOMNodeInserted', function(){
 			draw(true);
+		});
+		window.addEventListener('DOMNodeRemoved', function(){
+			setTimeout(function(){
+				draw(true);
+			},10);
+			
 		})
 	};
 	

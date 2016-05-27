@@ -1,13 +1,16 @@
 <html>
 <body>
 <script src="makeNode.js"></script>
+<script src="structureHelpers.js"></script>
+<script src="contourMaker.js"></script>
+<script src="contourBackgrounds.js"></script>
 <script type="makeNode">
 (function(){
 	var episode = function(title){
 		return <div><input type="checkbox" />'{title}'</div>;
 	};
 	var series = function(remove){
-		return <div id="1" style="width:200px;display:inline;margin:10px"><div id="2" style="background-color:#ddd"></div>
+		return <div id="1" style="width:200px;display:inline;margin:10px"><div id="2"></div>
 				function(outer, inner){
 					remove = (function(old){
 						return function(){
@@ -26,8 +29,11 @@
 						};
 					})(remove);
 					var title = <div id="1" style="position:relative">
-								<input type="text" id="2"/>
-								<span id="3" style="display:none"></span>
+								<div style="padding:5px">
+									<input type="text" id="2"/>
+									<span id="3" style="display:none"></span>
+								</div>
+								
 								<input type="button" id="4" value="x" style="position:absolute;right:0px;top:0px" />
 								function(outer, input, text, removeButton){
 									input.addEventListener('blur',function(){
@@ -39,10 +45,10 @@
 								}
 								</div>;
 					inner.appendChild(title);
-					var episodeList = <div id="1">
-										<div><input type="button" value="-" id="4"/></div>
-										<div id="2"></div>
-										<div><input type="button" value="+" id="3"/></div>
+					var episodeList = <div id="1" data-contour="parent list" style="padding:7px">
+										<div><input type="button" style="background-color:transparent;border:none" data-contour="child minus" value="-" id="4"/></div>
+										<div id="2" data-contour="child innerList"></div>
+										<div><input type="button" style="background-color:transparent;border:none" data-contour="child plus" value="+" id="3"/></div>
 										function(outer, list, addButton, subtractButton){
 											var counter;
 											var episodeList = Array.apply(null, new Array(12)).map(function(x,i){return episode("Episode "+(counter = i+1));});
@@ -87,6 +93,19 @@
 							document.body.appendChild(outer);
 						}
 					</div>;
+	contourBackgrounds({
+		"list": function(parent, children){
+			var plusMinus = children.plus.box().plus(children.minus.box()).toRectangle();
+			return [
+				{
+					color: '#000',
+					fill: '#eee',
+					contour: children.innerList.combine(plusMinus.expand(3)),
+					borderRadius:10
+				}
+			];
+		}
+	});
 })();
 </script>
 </body>
