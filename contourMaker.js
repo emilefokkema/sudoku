@@ -231,6 +231,9 @@
 				},
 				toRectangle: function(){
 					return rectangle(minx, miny, maxx - minx, maxy - miny);
+				},
+				expand: function(specs){
+					return box(minx - (specs.left || 0), maxx + (specs.right || 0), miny - (specs.top || 0), maxy + (specs.bottom || 0));
 				}
 			};
 		};
