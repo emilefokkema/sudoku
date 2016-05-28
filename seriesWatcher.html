@@ -6,8 +6,9 @@
 <script src="contourBackgrounds.js"></script>
 <script type="makeNode">
 (function(){
-	var episode = function(title){
+	var episode = function(title, selectEpisode){
 		return <div id="1" style="cursor:pointer"><input type="checkbox" id="3"/><span id="2"></span>function(div, text, checkbox){
+			var toReturn;
 			text.innerHTML = title;
 			var selected = false;
 			var select = function(){
@@ -16,14 +17,13 @@
 			var unselect = function(){
 				checkbox.checked = selected = false;
 			};
-			div.addEventListener('click',function(){
-				selected ? unselect() : select();
-			});
-			return {
+			div.addEventListener('click',function(){selectEpisode(toReturn);});
+			toReturn = {
 				node: div,
 				select:select,
 				unselect:unselect
 			};
+			return toReturn;
 		}</div>;
 	};
 	var series = function(remove){
@@ -68,14 +68,23 @@
 					inner.appendChild(title);
 					var episodeList = <div id="1" data-contour="parent list" style="padding:7px">
 										<div><input type="button" style="background-color:transparent;border:none" data-contour="child minus" value="-" id="4"/></div>
-										<div id="2" data-contour="child innerList"></div>
+										<div id="2" style="padding:5px" data-contour="child innerList"></div>
 										<div><input type="button" style="background-color:transparent;border:none" data-contour="child plus" value="+" id="3"/></div>
 										function(outer, list, addButton, subtractButton){
-											var counter;
-											var episodeList = Array.apply(null, new Array(12)).map(function(x,i){return episode("Episode "+(counter = i+1));});
+											var counter, episodeList;
+											var selectEpisode = function(e){
+												var index = episodeList.indexOf(e);
+												episodeList.map(function(ep, i){
+													ep[i<=index?"select":"unselect"]();
+												});
+											};
+											episodeList = Array.apply(null, new Array(12)).map(function(x,i){
+												return episode("Episode "+(counter = i+1), selectEpisode);
+											});
+
 											episodeList.map(function(e){list.appendChild(e.node);});
 											var addOne = function(){
-												var newOne = episode("Episode "+(++counter));
+												var newOne = episode("Episode "+(++counter), selectEpisode);
 												episodeList.push(newOne);
 												list.appendChild(newOne.node);
 											};
@@ -122,7 +131,8 @@
 					color: '#000',
 					fill: '#eee',
 					contour: children.innerList.combine(plusMinus.expand(3)),
-					borderRadius:10
+					borderRadius:6,
+					width:0.5
 				}
 			];
 		},
@@ -131,8 +141,9 @@
 				{
 					color: '#000',
 					fill: '#ddd',
-					contour: parent.expand(-2).combineNegative(children.title.expand(11)),
-					borderRadius:10
+					contour: parent.expand(-2).box().expand({bottom:-15}).toRectangle().combineNegative(children.title.expand(11).box().expand({bottom:5}).toRectangle()),
+					borderRadius:6,
+					width:0.5
 				}
 			];
 		}

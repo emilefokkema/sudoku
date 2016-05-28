@@ -29,7 +29,7 @@
 				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
 				path.setAttribute('stroke',info.color);
 				path.setAttribute('fill',info.fill || 'transparent');
-				path.setAttribute('stroke-width','1');
+				path.setAttribute('stroke-width',info.width||0);
 				path.setAttribute('d',pathString);
 				svg.appendChild(path);
 			});
