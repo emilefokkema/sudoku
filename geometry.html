@@ -1,0 +1,282 @@
+<html>
+<body style="margin:0px;padding:0px">
+<script src="makeModule.js"></script>
+<script>
+(function(document, w,h){
+	var throttle = function(f, interval){
+		var going = false;
+		return function(){
+			if(!going){
+				var args = arguments;
+				going = true;
+				setTimeout(function(){
+					f.apply(null, args);
+					going = false;
+				}, interval);
+			}
+		};
+	};
+	var sender = function(){
+		var todo= [];
+		var f = function(){
+			var args = arguments;
+			todo.map(function(g){
+				g.apply(null, args);
+			});
+		};
+		f.add = function(g){todo.push(g);return f;};
+		return f;
+	};
+	var promise = function(evaluator){
+		var reason, value, pending = true, resolved = false;
+		var then = function(v){};
+		var notThen = function(r){};
+		var resolve = function(v){
+			if(!resolved && pending){
+				value = v;
+				resolved = true;
+				pending = false;
+				then(value);
+			}
+		};
+		var reject = function(r){
+			if(pending){
+				pending = false;
+				reason = r;
+				notThen(reason);
+			}
+		};
+		evaluator.apply(null, [resolve, reject]);
+		return {
+			then: function(onResolve, onReject){
+				return promise(function(res, rej){
+					if(pending){
+						then = function(v){
+							res(onResolve(v));
+						};
+						notThen = function(r){
+							rej(r);
+							onReject(r);
+						};
+					}else{
+						if(resolved){
+							res(onResolve(value));
+						}else{
+							rej(reason);
+							onReject(reason);
+						}
+					}
+				});
+			},
+			getValue:function(){if(!pending && resolved){return value;}}
+		};
+	};
+	var point = function(x,y){
+		return {
+			x:x,
+			y:y,
+			minus: function(p){return point(x - p.x, y - p.y);},
+			plus: function(p){return point(x + p.x, y + p.y);},
+			mod: function(){return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));},
+			scale: function(r){return point(r*x, r*y);},
+			unit: function(){return this.scale(1/this.mod());}
+		};
+	};
+	var canvas = (function(){
+		var context, c = document.createElement('canvas');
+		c.setAttribute('width', w);
+		c.setAttribute('height', h);
+		document.body.appendChild(c);
+		context = c.getContext('2d');
+
+		var shape = makeModule(function(specs){
+			var fill = specs.fill || 'transparent';
+			var stroke = specs.stroke || 'black';
+			var thickness = specs.thickness || 1;
+			var name = specs.name || 'shape';
+			var draw = function(ctx){
+				ctx.strokeStyle = stroke;
+				ctx.lineWidth = thickness;
+				ctx.fillStyle = fill;
+			};
+			var contains = function(p){return distance(p) < 10;};
+			var distance = function(p){return Infinity;};
+			var closestPointTo = function(p){return point(0,0);}
+			var onmouseover = sender().add(function(e){
+				stroke = '#f00';
+			});
+			var onmouseout = sender().add(function(e){
+				stroke = 'black';
+			});
+			var onclick = sender();
+			this.expose({
+				draw: draw,
+				contains: contains,
+				onmouseover: onmouseover,
+				onmouseout: onmouseout,
+				onclick: onclick,
+				setName: function(n){name = n;},
+				toString:function(){return '['+name+']';},
+				changer:{}
+			});
+			this.extend('circle', function(_specs){
+				var center = _specs.center || point(0,0);
+				var r = _specs.r || 1;
+				
+				draw = this.override(draw, function(ctx){
+					this(ctx);
+					ctx.beginPath();
+					ctx.arc(center.x, center.y, r, 0, 2*Math.PI);
+					ctx.stroke();
+				});
+
+				distance = function(p){
+					return Math.abs(center.minus(p).mod() - r);
+				};
+
+				closestPointTo = function(p){
+					return center.plus(p.minus(center).unit().scale(r));
+				};
+				this.expose({
+					draw:draw,
+					closestPointTo: closestPointTo
+				});
+			});
+			this.extend('point',function(_specs){
+				var loc = _specs.location || point(0,0);
+				
+				draw = this.override(draw, function(ctx){
+					fill = stroke;
+					stroke = 'transparent';
+					this(ctx);
+					ctx.beginPath();
+					ctx.arc(loc.x, loc.y, 2*thickness, 0, 2*Math.PI);
+					ctx.fill();
+				});
+
+				distance = function(p){
+					return loc.minus(p).mod();
+				};
+
+				closestPointTo = function(p){return loc;};
+				var changer = {
+					setLocation: function(l){loc = l;}
+				};
+				this.expose({
+					draw:draw,
+					closestPointTo: closestPointTo,
+					changer: changer
+				});
+			});
+		});
+
+		var shapes = [];
+
+		var draw = throttle(function(){
+			c.width = w;
+			shapes.map(function(s){
+				s.draw(context);
+			});
+		}, 5);
+
+		var onmouseovershape = function(s, e){};
+
+		var onmouseovernotshape = function(e){};
+
+		var addShape = function(s){
+			s.setName('shape'+(shapes.length));
+			s.onmouseover.add(function(e){
+				onmouseovershape.apply(null, [s, e]);
+			});
+			shapes.push(s);
+			draw();
+			return {
+				remove: function(){
+					var index = shapes.indexOf(s);
+					if(index != -1){
+						shapes.splice(index, 1);
+						draw();
+					}
+				},
+				onmouseover:function(f){s.onmouseover.add(f);},
+				onmouseout: function(f){s.onmouseout.add(f);},
+				onclick: function(f){s.onclick.add(f);},
+				toString: function(){return s.toString();},
+				closestPointTo: s.closestPointTo,
+				changer: s.changer
+			};
+		};
+
+		c.addEventListener('mousemove', function(e){
+			var hitShape = false;
+			shapes.map(function(s){
+				var contains = s.contains(point(e.clientX, e.clientY));
+				if(contains){
+					hitShape = true;
+					s.onmouseover(e);
+				}else{
+					s.onmouseout(e);
+				}
+			});
+			if(!hitShape){
+				onmouseovernotshape(e);
+			}
+			draw();
+		});
+
+		c.addEventListener('click',function(e){
+			shapes.map(function(s){
+				if(s.contains(point(e.clientX, e.clientY))){
+					s.onclick(e);
+				}
+			});
+			draw();
+		});
+
+
+
+		return {
+			addCircle: function(specs){
+				return addShape(shape.circle({}, specs));
+			},
+			addPoint: function(specs){
+				return addShape(shape.point({}, specs));
+			},
+			onmouseovershape: function(f){onmouseovershape = f || function(){};},
+			onmouseovernotshape: function(f){onmouseovernotshape = f || function(){}}
+		};
+
+	})(w,h);
+
+	
+
+	
+
+
+
+
+
+
+
+	var c = canvas.addCircle({
+		center: point(200, 200),
+		r: 100
+	});
+	var c2 = canvas.addCircle({
+		center: point(300,300),
+		r: 100
+	});
+	var p = canvas.addPoint({
+		location: point(200,200)
+	});
+
+	c2.onclick(function(e){
+		var closest = c2.closestPointTo(point(e.clientX, e.clientY));
+		p.changer.setLocation(closest);
+	});
+
+
+})(document, document.body.offsetWidth, document.body.offsetHeight);
+</script>
+</body>
+</html>
