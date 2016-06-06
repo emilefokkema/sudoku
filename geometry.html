@@ -177,17 +177,21 @@
 			shapes.map(function(s){
 				s.draw(context);
 			});
-		}, 5);
+		}, 2);
 
 		var onmouseovershape = function(s, e){};
 
+		var onclickshape = function(s, e){};
+
 		var onmouseovernotshape = function(e){};
+
+		var onclicknotshape = function(e){};
 
 		var addShape = function(s){
 			s.setName('shape'+(shapes.length));
-			s.onmouseover.add(function(e){
-				onmouseovershape.apply(null, [s, e]);
-			});
+			// s.onmouseover.add(function(e){
+			// 	onmouseovershape.apply(null, [s, e]);
+			// });
 			shapes.push(s);
 			draw();
 			return {
@@ -214,6 +218,7 @@
 				if(contains){
 					hitShape = true;
 					s.onmouseover(e);
+					onmouseovershape(s, e);
 				}else{
 					s.onmouseout(e);
 				}
@@ -225,11 +230,18 @@
 		});
 
 		c.addEventListener('click',function(e){
+			var hitShape = false;
 			shapes.map(function(s){
 				if(s.contains(point(e.clientX, e.clientY))){
+					hitShape = true;
 					s.onclick(e);
+					onclickshape(s, e);
 				}
 			});
+			if(!hitShape)
+			{
+				onclicknotshape(e);
+			}
 			draw();
 		});
 
@@ -243,7 +255,9 @@
 				return addShape(shape.point({}, specs));
 			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
-			onmouseovernotshape: function(f){onmouseovernotshape = f || function(){}}
+			onmouseovernotshape: function(f){onmouseovernotshape = f || function(){};},
+			onclickshape: function(f){onclickshape = f || function(){};},
+			onclicknotshape: function(f){onclicknotshape = f || function(){};}
 		};
 
 	})(w,h);
@@ -255,7 +269,7 @@
 
 
 
-
+	
 
 
 	var c = canvas.addCircle({
@@ -266,14 +280,35 @@
 		center: point(300,300),
 		r: 100
 	});
-	var p = canvas.addPoint({
-		location: point(200,200)
-	});
+	
 
-	c2.onclick(function(e){
-		var closest = c2.closestPointTo(point(e.clientX, e.clientY));
-		p.changer.setLocation(closest);
-	});
+	var makePoint = function(res, rej){
+		var p = canvas.addPoint({
+			location: point(200,200)
+		});
+		var stop = function(){
+			canvas.onclickshape();
+			canvas.onclicknotshape();
+			canvas.onmouseovershape();
+			canvas.onmouseovernotshape();
+		};
+		canvas.onmouseovershape(function(s, e){
+			p.changer.setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
+		});
+		canvas.onmouseovernotshape(function(e){
+			p.changer.setLocation(point(e.clientX, e.clientY));
+		});
+		canvas.onclickshape(function(s, e){
+			stop();
+		});
+		canvas.onclicknotshape(function(e){
+			stop();
+		});
+	};
+
+	makePoint();
+
+	
 
 
 })(document, document.body.offsetWidth, document.body.offsetHeight);
