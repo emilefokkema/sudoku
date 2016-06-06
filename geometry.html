@@ -106,6 +106,7 @@
 			var onmouseover = sender().add(function(e){
 				stroke = '#f00';
 			});
+			var changer = {};
 			var onmouseout = sender().add(function(e){
 				stroke = 'black';
 			});
@@ -119,7 +120,8 @@
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
 				changer:{},
-				getSpecs: getSpecs
+				getSpecs: getSpecs,
+				getChanger: function(){return changer;}
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -138,6 +140,10 @@
 
 				closestPointTo = function(p){
 					return center.plus(p.minus(center).unit().scale(r));
+				};
+
+				changer = {
+					setR: function(r_){r = r_;}
 				};
 
 				getSpecs = function(){
@@ -170,7 +176,7 @@
 
 				closestPointTo = function(p){return loc;};
 
-				var changer = {
+				changer = {
 					setLocation: function(l){loc = l;}
 				};
 
@@ -182,7 +188,6 @@
 				this.expose({
 					draw:draw,
 					closestPointTo: closestPointTo,
-					changer: changer,
 					getSpecs: getSpecs
 				});
 			});
@@ -285,44 +290,46 @@
 
 	
 
-
+	
 	
 	var c = canvas.addCircle({
 		center: point(200,200),
 		r: 100
 	});
 
-	var makePoint = function(res, rej){
+	var doNothing = function(){
+		canvas.onclickshape();
+		canvas.onclicknotshape();
+		canvas.onmouseovershape();
+		canvas.onmouseovernotshape();
+	};
+
+	var makePoint = function(res, stop){
 		var p = canvas.addPoint({
 			location: point(200,200)
 		}, true);
-		var stop = function(){
-			canvas.onclickshape();
-			canvas.onclicknotshape();
-			canvas.onmouseovershape();
-			canvas.onmouseovernotshape();
-			p.remove();
-		};
+		
 		canvas.onmouseovershape(function(s, e){
-			p.shape.changer.setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
+			p.shape.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
 		});
 		canvas.onmouseovernotshape(function(e){
-			p.shape.changer.setLocation(point(e.clientX, e.clientY));
+			p.shape.getChanger().setLocation(point(e.clientX, e.clientY));
 		});
 		canvas.onclickshape(function(s, e){
 			stop();
-			console.log(s);
+			p.remove();
 			res(p);
 		});
 		canvas.onclicknotshape(function(e){
 			stop();
+			p.remove();
 			res(p);
 		});
 	};
 
 	makePoint(function(p){
 		var p = canvas.addPoint(p.shape.getSpecs());
-	}, function(){});
+	}, doNothing);
 
 	
 
