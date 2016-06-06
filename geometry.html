@@ -205,8 +205,9 @@
 
 		var onclicknotshape = function(e){};
 
-		var addShape = function(s){
+		var addShape = function(s, toBeExcludedFromMouseEvents){
 			s.setName('shape'+(shapes.length));
+			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
 			draw();
 			return {
@@ -220,17 +221,14 @@
 				onmouseover:function(f){s.onmouseover.add(f);},
 				onmouseout: function(f){s.onmouseout.add(f);},
 				onclick: function(f){s.onclick.add(f);},
-				toString: function(){return s.toString();},
-				closestPointTo: s.closestPointTo,
-				changer: s.changer,
-				getSpecs: s.getSpecs
+				shape:s
 			};
 		};
 
 		c.addEventListener('mousemove', function(e){
 			var hitShape = false;
 			shapes.map(function(s){
-				var contains = s.contains(point(e.clientX, e.clientY));
+				var contains = !s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY));
 				if(contains){
 					hitShape = true;
 					s.onmouseover(e);
@@ -248,7 +246,7 @@
 		c.addEventListener('click',function(e){
 			var hitShape = false;
 			shapes.map(function(s){
-				if(s.contains(point(e.clientX, e.clientY))){
+				if(!s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY))){
 					hitShape = true;
 					s.onclick(e);
 					onclickshape(s, e);
@@ -264,11 +262,11 @@
 
 
 		return {
-			addCircle: function(specs){
-				return addShape(shape.circle({}, specs));
+			addCircle: function(specs, toBeExcludedFromMouseEvents){
+				return addShape(shape.circle({}, specs), toBeExcludedFromMouseEvents);
 			},
-			addPoint: function(specs){
-				return addShape(shape.point({}, specs));
+			addPoint: function(specs, toBeExcludedFromMouseEvents){
+				return addShape(shape.point({}, specs), toBeExcludedFromMouseEvents);
 			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
 			onmouseovernotshape: function(f){onmouseovernotshape = f || function(){};},
@@ -297,7 +295,7 @@
 	var makePoint = function(res, rej){
 		var p = canvas.addPoint({
 			location: point(200,200)
-		});
+		}, true);
 		var stop = function(){
 			canvas.onclickshape();
 			canvas.onclicknotshape();
@@ -306,13 +304,14 @@
 			p.remove();
 		};
 		canvas.onmouseovershape(function(s, e){
-			p.changer.setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
+			p.shape.changer.setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
 		});
 		canvas.onmouseovernotshape(function(e){
-			p.changer.setLocation(point(e.clientX, e.clientY));
+			p.shape.changer.setLocation(point(e.clientX, e.clientY));
 		});
 		canvas.onclickshape(function(s, e){
 			stop();
+			console.log(s);
 			res(p);
 		});
 		canvas.onclicknotshape(function(e){
@@ -322,7 +321,7 @@
 	};
 
 	makePoint(function(p){
-		var p = canvas.addPoint(p.getSpecs());
+		var p = canvas.addPoint(p.shape.getSpecs());
 	}, function(){});
 
 	
