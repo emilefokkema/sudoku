@@ -92,7 +92,7 @@
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
-			var thickness = specs.thickness || 1;
+			var thickness = specs.thickness || 2;
 			var name = specs.name || 'shape';
 			var draw = function(ctx){
 				ctx.strokeStyle = stroke;
@@ -102,6 +102,7 @@
 			var contains = function(p){return distance(p) < 10;};
 			var distance = function(p){return Infinity;};
 			var closestPointTo = function(p){return point(0,0);}
+			var getSpecs = function(){return {};};
 			var onmouseover = sender().add(function(e){
 				stroke = '#f00';
 			});
@@ -117,7 +118,8 @@
 				onclick: onclick,
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
-				changer:{}
+				changer:{},
+				getSpecs: getSpecs
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -137,9 +139,17 @@
 				closestPointTo = function(p){
 					return center.plus(p.minus(center).unit().scale(r));
 				};
+
+				getSpecs = function(){
+					return {
+						center:center,
+						r:r
+					};
+				};
 				this.expose({
 					draw:draw,
-					closestPointTo: closestPointTo
+					closestPointTo: closestPointTo,
+					getSpecs: getSpecs
 				});
 			});
 			this.extend('point',function(_specs){
@@ -159,13 +169,21 @@
 				};
 
 				closestPointTo = function(p){return loc;};
+
 				var changer = {
 					setLocation: function(l){loc = l;}
+				};
+
+				getSpecs = function(){
+					return {
+						location: loc
+					};
 				};
 				this.expose({
 					draw:draw,
 					closestPointTo: closestPointTo,
-					changer: changer
+					changer: changer,
+					getSpecs: getSpecs
 				});
 			});
 		});
@@ -189,9 +207,6 @@
 
 		var addShape = function(s){
 			s.setName('shape'+(shapes.length));
-			// s.onmouseover.add(function(e){
-			// 	onmouseovershape.apply(null, [s, e]);
-			// });
 			shapes.push(s);
 			draw();
 			return {
@@ -207,7 +222,8 @@
 				onclick: function(f){s.onclick.add(f);},
 				toString: function(){return s.toString();},
 				closestPointTo: s.closestPointTo,
-				changer: s.changer
+				changer: s.changer,
+				getSpecs: s.getSpecs
 			};
 		};
 
@@ -272,15 +288,11 @@
 	
 
 
-	var c = canvas.addCircle({
-		center: point(200, 200),
-		r: 100
-	});
-	var c2 = canvas.addCircle({
-		center: point(300,300),
-		r: 100
-	});
 	
+	var c = canvas.addCircle({
+		center: point(200,200),
+		r: 100
+	});
 
 	var makePoint = function(res, rej){
 		var p = canvas.addPoint({
@@ -291,6 +303,7 @@
 			canvas.onclicknotshape();
 			canvas.onmouseovershape();
 			canvas.onmouseovernotshape();
+			p.remove();
 		};
 		canvas.onmouseovershape(function(s, e){
 			p.changer.setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
@@ -300,13 +313,17 @@
 		});
 		canvas.onclickshape(function(s, e){
 			stop();
+			res(p);
 		});
 		canvas.onclicknotshape(function(e){
 			stop();
+			res(p);
 		});
 	};
 
-	makePoint();
+	makePoint(function(p){
+		var p = canvas.addPoint(p.getSpecs());
+	}, function(){});
 
 	
 
