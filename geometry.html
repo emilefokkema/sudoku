@@ -1,6 +1,20 @@
 <html>
+<head>
+<style>
+.button {
+	width: 30px;
+	height: 30px;
+	background-color: #ddd;
+	position: absolute;
+}
+.active {
+	border: 1px solid #f00;
+}
+</style>
+</head>
 <body style="margin:0px;padding:0px">
 <script src="makeModule.js"></script>
+<script src="makeNode.js"></script>
 <script>
 (function(document, w,h){
 	var throttle = function(f, interval){
@@ -72,9 +86,7 @@
 		};
 	};
 	var point = function(x,y){
-		if(x==undefined || y==undefined){
-			console.log("oeps");
-		}
+		
 		return {
 			x:x,
 			y:y,
@@ -82,7 +94,8 @@
 			plus: function(p){return point(x + p.x, y + p.y);},
 			mod: function(){return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));},
 			scale: function(r){return point(r*x, r*y);},
-			unit: function(){return this.scale(1/this.mod());}
+			unit: function(){return this.scale(1/this.mod());},
+			toString: function(){return "("+x+","+y+")";}
 		};
 	};
 	var canvas = (function(){
@@ -139,7 +152,6 @@
 				onchange: onchange,
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
-				changer:{},
 				getSpecs: getSpecs,
 				getChanger: getChanger,
 				dragTo: function(p){ondrag(p);}
@@ -216,6 +228,12 @@
 
 		var shapes = [];
 
+		var shapeWrappers = [];
+
+		var wrapperBelongingTo = function(s){
+			return shapeWrappers.filter(function(w){return w.shape == s;})[0].wrapper;
+		};
+
 		var draw = throttle(function(){
 			c.width = w;
 			shapes.map(function(s){
@@ -239,8 +257,8 @@
 			s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
-			draw();
-			return {
+			
+			var wrapper = {
 				remove: function(){
 					var index = shapes.indexOf(s);
 					if(index != -1){
@@ -253,8 +271,17 @@
 				onclick: function(f){s.onclick.add(f);},
 				onchange: function(f){s.onchange.add(f);},
 				ondrag: function(f){s.ondrag.add(f);},
-				shape:s
+				dragTo: function(p){s.dragTo(p);},
+				getChanger: s.getChanger,
+				getSpecs: s.getSpecs,
+				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
+				closestPointTo: s.closestPointTo
 			};
+			shapeWrappers.push({
+				shape: s,
+				wrapper: wrapper
+			});
+			return wrapper;
 		};
 
 		var mouseActionHandler = function(doToHitShape, doToNotHitShape, doIfNotHitShape){
@@ -264,6 +291,7 @@
 			return function(e){
 				var hitShape = false;
 				shapes.map(function(s){
+					//var sw = wrapperBelongingTo(s);
 					if(!s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY))){
 						hitShape = true;
 						doToHitShape(s, e);
@@ -281,7 +309,7 @@
 		c.addEventListener('mousemove', mouseActionHandler(
 			function(s, e){
 				s.onmouseover(e);
-				onmouseovershape(s, e);
+				onmouseovershape(wrapperBelongingTo(s), e);
 			},
 			function(s, e){
 				s.onmouseout(e);
@@ -294,7 +322,7 @@
 
 		c.addEventListener('mousedown', mouseActionHandler(
 			function(s, e){
-				onmousedownonshape(s, e);
+				onmousedownonshape(wrapperBelongingTo(s), e);
 			}
 			
 
@@ -308,7 +336,7 @@
 		c.addEventListener('click',mouseActionHandler(
 			function(s, e){
 				s.onclick(e);
-				onclickshape(s, e);
+				onclickshape(wrapperBelongingTo(s), e);
 			},
 			function(s, e){
 				s.onmouseout(e);
@@ -336,7 +364,11 @@
 				onmouseovernotshape = f || function(){};
 			},
 			onclickshape: function(f){onclickshape = f || function(){};},
-			onclicknotshape: function(f){onclicknotshape = f || function(){};},
+			onclicknotshape: function(f){
+				
+				
+				onclicknotshape = f || function(){};
+			},
 			haspointer: function(){c.style.cursor = "-webkit-grab";},
 			isgrabbing: function(){c.style.cursor = "-webkit-grabbing";},
 			onmouseup: function(f){onmouseup = f || function(){};},
@@ -347,91 +379,103 @@
 
 	})(w,h);
 
-	
 
-	
-
-
-
-
-	
-
-	var pointStructure = function(canvasPoint, canvasShape){
-		var putOnShapeClosestTo;
-		if(!canvasShape){
-			canvasPoint.ondrag(function(p){
-				canvasPoint.shape.getChanger().setLocation(p);
-			});
-		}else{
-			putOnShapeClosestTo = function(p){
-				canvasPoint.shape.getChanger().setLocation(canvasShape.closestPointTo(p));
+	var structure = {
+		point: function(canvasPoint, canvasShape){
+			var putOnShapeClosestTo;
+			if(!canvasShape){
+				canvasPoint.ondrag(function(p){
+					canvasPoint.getChanger().setLocation(p);
+				});
+			}else{
+				putOnShapeClosestTo = function(p){
+					canvasPoint.getChanger().setLocation(canvasShape.closestPointTo(p));
+				};
+				canvasPoint.ondrag(putOnShapeClosestTo);
+				putOnShapeClosestTo(canvasPoint.getSpecs().location);
+			}
+			
+			return {
+				onchange: function(f){canvasPoint.onchange(f);}
 			};
-			canvasPoint.ondrag(putOnShapeClosestTo);
-			putOnShapeClosestTo(canvasPoint.shape.getSpecs().location);
 		}
-		
-		return {
-			onchange: function(f){canvasPoint.onchange(f);}
-		};
 	};
 
-	var d = canvas.addCircle({
-		center:point(200,200),
-		r:100
+	var action = {
+		doNothing: function(){
+			canvas.onclickshape();
+			canvas.onclicknotshape();
+			canvas.onmousedownonshape(action.startMoving);
+			canvas.onmouseovershape(canvas.haspointer);
+			canvas.onmouseovernotshape(canvas.hasnopointer);
+			canvas.onmouseup();
+		},
+		startMoving: function(s, e){
+			var doMove = function(e){
+				canvas.isgrabbing();
+				s.dragTo(point(e.clientX, e.clientY));
+			};
+
+			canvas.onmouseup(action.doNothing);
+			canvas.onmouseovershape(function(s, e){doMove(e);});
+			canvas.onmouseovernotshape(doMove);
+			doMove(e);
+		},
+		makePointStructure: function(res, stop){
+			var p = canvas.addPoint({
+				location: point(200,200)
+			}, true);
+			
+			canvas.onmouseovershape(function(s, e){
+				p.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
+			});
+			canvas.onmouseovernotshape(function(e){
+				p.getChanger().setLocation(point(e.clientX, e.clientY));
+			});
+			canvas.onclickshape(function(s, e){
+				stop();
+				
+				res(structure.point(p, s));
+				p.exclude(false);
+			});
+			canvas.onclicknotshape(function(e){
+				stop();
+				
+				res(structure.point(p));
+				p.exclude(false);
+			});
+		}
+	};
+
+	var button = (function(){
+		var x=20,y=20;
+		var button = function(a){
+			var b = makeNode("<div id='1' class='button' style='left:"+x+"px;top:"+y+"px'></div>", function(div){
+				var makeActive = function(){div.setAttribute('class','button active');};
+				var makeNonActive = function(){div.setAttribute('class','button');};
+				div.onclick = function(e){
+					e.preventDefault();
+					makeActive();
+					a(makeNonActive);
+				};
+				document.body.appendChild(div);
+			});
+			x+=40;
+		};
+		return button;
+	})();
+
+	button(function(deactivateButton){
+		action.makePointStructure(function(p){
+			
+		}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
 	});
-	
-	
-
-	var doNothing = function(){
-		canvas.onclickshape();
-		canvas.onclicknotshape();
-		canvas.onmousedownonshape(startMoving);
-		canvas.onmouseovershape(canvas.haspointer);
-		canvas.onmouseovernotshape(canvas.hasnopointer);
-	};
-
-	var startMoving = function(s, e){
-		var doMove = function(e){
-			canvas.isgrabbing();
-			s.dragTo(point(e.clientX, e.clientY));
-		};
-
-		canvas.onmouseup(doNothing);
-		canvas.onmouseovershape(function(s, e){doMove(e);});
-		canvas.onmouseovernotshape(doMove);
-		doMove(e);
-	};
-
-	var makePointStructure = function(res, stop){
-		var p = canvas.addPoint({
-			location: point(200,200)
-		}, true);
-		
-		canvas.onmouseovershape(function(s, e){
-			p.shape.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
-		});
-		canvas.onmouseovernotshape(function(e){
-			p.shape.getChanger().setLocation(point(e.clientX, e.clientY));
-		});
-		canvas.onclickshape(function(s, e){
-			stop();
-			
-			res(pointStructure(p, s));
-			p.shape.toBeExcludedFromMouseEvents = false;
-		});
-		canvas.onclicknotshape(function(e){
-			stop();
-			
-			res(pointStructure(p));
-			p.shape.toBeExcludedFromMouseEvents = false;
-		});
-	};
-
 
 	//doNothing();
-	makePointStructure(function(p){
-		
-	}, doNothing);
+	
 
 	
 
