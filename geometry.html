@@ -356,18 +356,31 @@
 
 	
 
-	var freePointStructure = function(canvasPoint){
-		canvasPoint.ondrag(function(p){
-			canvasPoint.shape.getChanger().setLocation(p);
-		});
+	var pointStructure = function(canvasPoint, canvasShape){
+		var putOnShapeClosestTo;
+		if(!canvasShape){
+			canvasPoint.ondrag(function(p){
+				canvasPoint.shape.getChanger().setLocation(p);
+			});
+		}else{
+			putOnShapeClosestTo = function(p){
+				canvasPoint.shape.getChanger().setLocation(canvasShape.closestPointTo(p));
+			};
+			canvasPoint.ondrag(putOnShapeClosestTo);
+			putOnShapeClosestTo(canvasPoint.shape.getSpecs().location);
+		}
+		
 		return {
 			onchange: function(f){canvasPoint.onchange(f);}
 		};
 	};
+
+	var d = canvas.addCircle({
+		center:point(200,200),
+		r:100
+	});
 	
-	var c = freePointStructure(canvas.addPoint({
-		location: point(200,200)
-	}));
+	
 
 	var doNothing = function(){
 		canvas.onclickshape();
@@ -389,7 +402,7 @@
 		doMove(e);
 	};
 
-	var makePoint = function(res, stop){
+	var makePointStructure = function(res, stop){
 		var p = canvas.addPoint({
 			location: point(200,200)
 		}, true);
@@ -402,21 +415,23 @@
 		});
 		canvas.onclickshape(function(s, e){
 			stop();
-			p.remove();
-			res(p);
+			
+			res(pointStructure(p, s));
+			p.shape.toBeExcludedFromMouseEvents = false;
 		});
 		canvas.onclicknotshape(function(e){
 			stop();
-			p.remove();
-			res(p);
+			
+			res(pointStructure(p));
+			p.shape.toBeExcludedFromMouseEvents = false;
 		});
 	};
 
 
-	doNothing();
-	// makePoint(function(p){
-	// 	var p = canvas.addPoint(p.shape.getSpecs());
-	// }, doNothing);
+	//doNothing();
+	makePointStructure(function(p){
+		
+	}, doNothing);
 
 	
 
