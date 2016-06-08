@@ -308,7 +308,7 @@
 			};
 		};
 
-		c.addEventListener('mousemove', mouseActionHandler(
+		var moveHandler = mouseActionHandler(
 			function(s, e){
 				s.onmouseover(e);
 				onmouseovershape(wrapperBelongingTo(s), e);
@@ -320,23 +320,15 @@
 				onmouseovernotshape(e);
 			},
 			true
-			
-		));
+		);
 
-		c.addEventListener('mousedown', mouseActionHandler(
+		var downHandler = mouseActionHandler(
 			function(s, e){
 				onmousedownonshape(wrapperBelongingTo(s), e);
 			}
-			
+		);
 
-			));
-
-		c.addEventListener('mouseup', function(e){
-			onmouseup(e);
-			draw();
-		})
-
-		c.addEventListener('click',mouseActionHandler(
+		var clickHandler = mouseActionHandler(
 			function(s, e){
 				s.onclick(e);
 				onclickshape(wrapperBelongingTo(s), e);
@@ -348,7 +340,18 @@
 				onclicknotshape(e);
 			}
 			
-		));
+		);
+
+		c.addEventListener('mousemove', moveHandler);
+
+		c.addEventListener('mousedown', downHandler);
+
+		c.addEventListener('mouseup', function(e){
+			onmouseup(e);
+			draw();
+		});
+
+		c.addEventListener('click', clickHandler);
 
 		
 
@@ -401,11 +404,23 @@
 			return {
 				onchange: function(f){canvasPoint.onchange(f);}
 			};
+		},
+		circle: function(pointStructureCenter, canvasCircle, pointStructureBoundary){
+			if(!pointStructureBoundary){
+				canvasCircle.ondrag(function(p){
+					var center = canvasCircle.getSpecs().center;
+					canvasCircle.getChanger().setR(center.minus(p).mod());
+				});
+				
+			}else{
+
+			}
 		}
 	};
 
 	var action = {
 		doNothing: function(){
+			console.log("do nothing");
 			canvas.onclickshape();
 			canvas.onclicknotshape();
 			canvas.onmousedownonshape(action.startMoving);
@@ -414,6 +429,7 @@
 			canvas.onmouseup();
 		},
 		startMoving: function(s, e){
+			console.log("start moving");
 			var doMove = function(e){
 				canvas.isgrabbing();
 				s.dragTo(point(e.clientX, e.clientY));
@@ -425,10 +441,11 @@
 			doMove(e);
 		},
 		makePointStructure: function(res, stop){
+			console.log("make point structure");
 			var p = canvas.addPoint({
 				location: point(200,200)
 			}, true);
-			
+			canvas.onmousedownonshape();
 			canvas.onmouseovershape(function(s, e){
 				p.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
 			});
@@ -436,16 +453,18 @@
 				p.getChanger().setLocation(point(e.clientX, e.clientY));
 			});
 			canvas.onclickshape(function(s, e){
-				stop();
 				
+				console.log("clicked shape");
 				res(structure.point(p, s));
 				p.exclude(false);
+				stop();
 			});
 			canvas.onclicknotshape(function(e){
-				stop();
+				
 				
 				res(structure.point(p));
 				p.exclude(false);
+				stop();
 			});
 		}
 	};
@@ -476,8 +495,14 @@
 			deactivateButton();
 		});
 	});
+	var c = canvas.addCircle({
+		center: point(200,200),
+		r:100
+	});
+	var p = structure.point(canvas.addPoint({location:point(200,200)}));
+	structure.circle(p, c);
 
-	//doNothing();
+	action.doNothing();
 	
 
 	
