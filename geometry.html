@@ -284,14 +284,13 @@
 			return wrapper;
 		};
 
-		var mouseActionHandler = function(doToHitShape, doToNotHitShape, doIfNotHitShape){
+		var mouseActionHandler = function(doToHitShape, doToNotHitShape, doIfNotHitShape, drawAfter){
 			doToHitShape = doToHitShape || function(){};
 			doToNotHitShape = doToNotHitShape || function(){};
 			doIfNotHitShape = doIfNotHitShape || function(){};
 			return function(e){
 				var hitShape = false;
 				shapes.map(function(s){
-					//var sw = wrapperBelongingTo(s);
 					if(!s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY))){
 						hitShape = true;
 						doToHitShape(s, e);
@@ -302,7 +301,10 @@
 				if(!hitShape){
 					doIfNotHitShape(e);
 				}
-				draw();
+				if(drawAfter){
+					draw();
+				}
+				
 			};
 		};
 
@@ -316,7 +318,8 @@
 			},
 			function(e){
 				onmouseovernotshape(e);
-			}
+			},
+			true
 			
 		));
 
