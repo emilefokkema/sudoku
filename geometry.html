@@ -106,6 +106,14 @@
 		document.body.appendChild(c);
 		context = c.getContext('2d');
 
+		var shapeFilter = {
+			ALL: 0,
+			POINT: 1,
+			NONE:2
+		};
+
+		var currentMouseFilter = shapeFilter.ALL;
+
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
@@ -124,6 +132,7 @@
 			var onmouseover = sender().add(function(e){
 				stroke = '#f00';
 			});
+			var passesFilter = function(){return true;};
 			var onchange = sender();
 			var ondrag = sender();
 			var changer = {};
@@ -160,7 +169,8 @@
 				getSpecs: getSpecs,
 				getChanger: getChanger,
 				dragTo: function(p){ondrag(p);},
-				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);}
+				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
+				passesFilter: function(f){return passesFilter(f);}
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -180,6 +190,8 @@
 				closestPointTo = function(p){
 					return center.plus(p.minus(center).unit().scale(r));
 				};
+
+				passesFilter = function(f){return f != shapeFilter.POINT && f!=shapeFilter.NONE;};
 
 				changer = {
 					setR: function(r_){r = r_;},
@@ -227,6 +239,8 @@
 
 				closestPointTo = function(p){return loc;};
 
+				passesFilter = function(f){return f!=shapeFilter.NONE;};
+
 				changer = {
 					setLocation: function(l){loc = l;}
 				};
@@ -243,6 +257,8 @@
 				});
 			});
 		});
+
+
 
 		var shapes = [];
 
@@ -275,7 +291,6 @@
 			s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
-			
 			var wrapper = {
 				remove: function(){
 					var index = shapes.indexOf(s);
@@ -307,10 +322,10 @@
 			doToHitShape = doToHitShape || function(){};
 			doToNotHitShape = doToNotHitShape || function(){};
 			doIfNotHitShape = doIfNotHitShape || function(){};
-			return function(e){
+			var toReturn = function(e){
 				var hitShape;
 				shapes.map(function(s){
-					if(!s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY))){
+					if(!s.toBeExcludedFromMouseEvents && s.passesFilter(currentMouseFilter) && s.contains(point(e.clientX, e.clientY))){
 						hitShape = s;
 						
 					}else{
@@ -327,6 +342,7 @@
 				}
 				
 			};
+			return toReturn;
 		};
 
 		var moveHandler = mouseActionHandler(
@@ -401,7 +417,9 @@
 			onmouseup: function(f){onmouseup = f || function(){};},
 			hasnopointer: function(){
 				c.style.cursor = "default";
-			}
+			},
+			setMouseFilter: function(f){currentMouseFilter = f;},
+			mouseFilter: shapeFilter
 		};
 
 	})(w,h);
@@ -429,11 +447,11 @@
 				onchange: function(f){canvasPoint.onchange(f);}
 			};
 		},
-		circle: function(pointStructureCenter, canvasCircle, pointStructureBoundary){
-			pointStructureCenter.onchange(function(oldSpecs, newSpecs){
+		circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
+			canvasPointCenter.onchange(function(oldSpecs, newSpecs){
 				canvasCircle.getChanger().setCenter(newSpecs.location);
 			});
-			if(!pointStructureBoundary){
+			if(!canvasPointBoundary){
 				canvasCircle.ondrag(function(p){
 					var center = canvasCircle.getSpecs().center;
 					var changer = canvasCircle.getChanger();
@@ -493,6 +511,26 @@
 				p.exclude(false);
 				stop();
 			});
+		},
+		makeCircleStructure: function(res, stop){
+			canvas.setMouseFilter(canvas.mouseFilter.POINT);
+			var chosenCenter, chooseBoundaryPoint, growCircle, circle;
+			canvas.onmouseovershape();
+			canvas.onmousedownonshape();
+			canvas.onclickshape(function(s, e){
+				chosenCenter = s;
+				canvas.setMouseFilter(canvas.mouseFilter.NONE);
+				circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
+				growCircle = function(p){circle.getChanger().setR(p.minus(chosenCenter.getSpecs().location).mod());};
+				canvas.onmouseovernotshape(function(e){
+					growCircle(point(e.clientX, e.clientY));
+				});
+				canvas.onclicknotshape(function(e){
+					res(structure.circle(chosenCenter, circle));
+					canvas.setMouseFilter(canvas.mouseFilter.ALL);
+					stop();
+				});
+			});
 		}
 	};
 
@@ -522,12 +560,20 @@
 			deactivateButton();
 		});
 	});
-	var c = canvas.addCircle({
-		center: point(200,200),
-		r:100
+
+	button(function(deactivateButton){
+		action.makeCircleStructure(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
 	});
-	var p = structure.point(canvas.addPoint({location:point(200,200)}));
-	structure.circle(p, c);
+	// var c = canvas.addCircle({
+	// 	center: point(200,200),
+	// 	r:100
+	// });
+	// var p = canvas.addPoint({location:point(200,200)});
+	// structure.point(p);
+	// structure.circle(p, c);
 
 	action.doNothing();
 	
