@@ -95,7 +95,8 @@
 			mod: function(){return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));},
 			scale: function(r){return point(r*x, r*y);},
 			unit: function(){return this.scale(1/this.mod());},
-			toString: function(){return "("+x+","+y+")";}
+			toString: function(){return "("+x+","+y+")";},
+			equals: function(p){return this == p||this.minus(p) ==0;}
 		};
 	};
 	var canvas = (function(){
@@ -130,8 +131,9 @@
 				for(var f in changer){
 					if(changer.hasOwnProperty(f)){
 						o[f] = function(){
+							var oldSpecs = getSpecs();
 							changer[f].apply(null, arguments);
-							onchange(getSpecs());
+							onchange(oldSpecs, getSpecs());
 						};
 					}
 				}
@@ -411,7 +413,6 @@
 					var center = canvasCircle.getSpecs().center;
 					canvasCircle.getChanger().setR(center.minus(p).mod());
 				});
-				
 			}else{
 
 			}
