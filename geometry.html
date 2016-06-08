@@ -131,11 +131,13 @@
 				var o = {};
 				for(var f in changer){
 					if(changer.hasOwnProperty(f)){
-						o[f] = function(){
-							var oldSpecs = getSpecs();
-							changer[f].apply(null, arguments);
-							onchange(oldSpecs, getSpecs());
-						};
+						o[f] = (function(f_){
+							return function(){
+								var oldSpecs = getSpecs();
+								changer[f_].apply(null, arguments);
+								onchange(oldSpecs, getSpecs());
+							};
+						})(f)
 					}
 				}
 				return o;
@@ -180,7 +182,10 @@
 				};
 
 				changer = {
-					setR: function(r_){r = r_;}
+					setR: function(r_){r = r_;},
+					setCenter: function(c_){
+						center = c_;
+					}
 				};
 
 				getSpecs = function(){
@@ -193,6 +198,9 @@
 				repositionPoint = function(p, oldSpecs, newSpecs){
 					if(oldSpecs.center.equals(newSpecs.center)){
 						return oldSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
+					}
+					else{
+						return p.plus(newSpecs.center.minus(oldSpecs.center));
 					}
 				};
 				this.expose({
@@ -422,10 +430,14 @@
 			};
 		},
 		circle: function(pointStructureCenter, canvasCircle, pointStructureBoundary){
+			pointStructureCenter.onchange(function(oldSpecs, newSpecs){
+				canvasCircle.getChanger().setCenter(newSpecs.location);
+			});
 			if(!pointStructureBoundary){
 				canvasCircle.ondrag(function(p){
 					var center = canvasCircle.getSpecs().center;
-					canvasCircle.getChanger().setR(center.minus(p).mod());
+					var changer = canvasCircle.getChanger();
+					changer.setR(center.minus(p).mod());
 				});
 			}else{
 
