@@ -120,6 +120,7 @@
 			var distance = function(p){return Infinity;};
 			var closestPointTo = function(p){return point(0,0);}
 			var getSpecs = function(){return {};};
+			var repositionPoint = function(p, oldSpecs, newSpecs){};
 			var onmouseover = sender().add(function(e){
 				stroke = '#f00';
 			});
@@ -156,7 +157,8 @@
 				toString:function(){return '['+name+']';},
 				getSpecs: getSpecs,
 				getChanger: getChanger,
-				dragTo: function(p){ondrag(p);}
+				dragTo: function(p){ondrag(p);},
+				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);}
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -186,6 +188,12 @@
 						center:center,
 						r:r
 					};
+				};
+
+				repositionPoint = function(p, oldSpecs, newSpecs){
+					if(oldSpecs.center.equals(newSpecs.center)){
+						return oldSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
+					}
 				};
 				this.expose({
 					draw:draw,
@@ -277,7 +285,8 @@
 				getChanger: s.getChanger,
 				getSpecs: s.getSpecs,
 				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
-				closestPointTo: s.closestPointTo
+				closestPointTo: s.closestPointTo,
+				repositionPoint: s.repositionPoint
 			};
 			shapeWrappers.push({
 				shape: s,
@@ -291,17 +300,19 @@
 			doToNotHitShape = doToNotHitShape || function(){};
 			doIfNotHitShape = doIfNotHitShape || function(){};
 			return function(e){
-				var hitShape = false;
+				var hitShape;
 				shapes.map(function(s){
 					if(!s.toBeExcludedFromMouseEvents && s.contains(point(e.clientX, e.clientY))){
-						hitShape = true;
-						doToHitShape(s, e);
+						hitShape = s;
+						
 					}else{
 						doToNotHitShape(s, e);
 					}
 				});
 				if(!hitShape){
 					doIfNotHitShape(e);
+				}else{
+					doToHitShape(hitShape, e);
 				}
 				if(drawAfter){
 					draw();
@@ -401,6 +412,9 @@
 				};
 				canvasPoint.ondrag(putOnShapeClosestTo);
 				putOnShapeClosestTo(canvasPoint.getSpecs().location);
+				canvasShape.onchange(function(oldSpecs, newSpecs){
+					canvasPoint.getChanger().setLocation(canvasShape.repositionPoint(canvasPoint.getSpecs().location, oldSpecs, newSpecs));
+				});
 			}
 			
 			return {
