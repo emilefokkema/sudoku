@@ -107,19 +107,45 @@
 			toString: function(){return "("+x+","+y+")";},
 			equals: function(p){return this == p||this.minus(p) ==0;},
 			matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
+			dot:function(p){return x*p.x + y*p.y;}
 		};
 	};
 
-	var intersectLines = function(p1,p2,q1,q2){
-		var x1 = p2.minus(p1);
-		var x2 = q2.minus(q1);
-		var cross = x2.cross(x1);
-		if(cross == 0){
-			return null;
-		}
-		var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
-		return p1.plus(p2.minus(p1).scale(st.x));
-	};
+	
+
+	var intersectWithBox = (function(){
+		var intersectLines = function(p1,p2,q1,q2){
+			var x1 = p2.minus(p1);
+			var x2 = q2.minus(q1);
+			var cross = x2.cross(x1);
+			if(cross == 0){
+				return null;
+			}
+			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
+			return p1.plus(p2.minus(p1).scale(st.x));
+		};
+		var sides = [
+			{p1:point(0,0), p2: point(w,0)},
+			{p1:point(w,0), p2: point(w,h)},
+			{p1:point(w,h), p2: point(0,h)},
+			{p1:point(0,h), p2: point(0,0)}
+		];
+		var intersectWithSide = function(p1, p2, side){
+			return intersectLines(p1, p2, side.p1, side.p2);
+		};
+		
+
+		return function(p1, p2){
+			if(p1.x == p2.x){
+				return {p1:intersectWithSide(p1, p2, sides[0]), p2: intersectWithSide(p1, p2, sides[2])};
+			}
+			//if(p1.y == p2.y){
+			return {p1:intersectWithSide(p1, p2, sides[1]), p2: intersectWithSide(p1, p2, sides[3])};
+			//}
+			
+		};
+	})();
+
 	var canvas = (function(){
 		var context, c = document.createElement('canvas');
 		c.setAttribute('width', w);
@@ -132,6 +158,8 @@
 			POINT: 1,
 			NONE:2
 		};
+
+
 
 		var currentMouseFilter = shapeFilter.ALL;
 
@@ -236,6 +264,49 @@
 						return p.plus(newSpecs.center.minus(oldSpecs.center));
 					}
 				};
+				this.expose({
+					draw:draw,
+					closestPointTo: closestPointTo,
+					getSpecs: getSpecs
+				});
+			});
+			this.extend('line', function(_specs){
+				var p1 = _specs.p1 || point(0,0);
+				var p2 = _specs.p2 || point(1,0);
+
+				draw = this.override(draw, function(ctx){
+					this(ctx);
+					var onEdges = intersectWithBox(p1, p2);
+					ctx.moveTo(onEdges.p1.x, onEdges.p1.y);
+					ctx.lineTo(onEdges.p2.x, onEdges.p2.y);
+					ctx.stroke();
+				});
+
+				var p1ToClosestPoint = function(p){
+					var x = p.minus(p1), y = p2.minus(p1);
+					var dot = x.dot(y);
+					return y.unit().scale(dot/y.mod());
+				};
+				closestPointTo = function(p){
+					return p1.plus(p1ToClosestPoint(p));
+				};
+				distance = function(p){
+					return p.minus(closestPointTo(p)).mod();
+				};
+				passesFilter = function(f){return f != shapeFilter.POINT && f!=shapeFilter.NONE;};
+
+				getSpecs = function(){
+					return {
+						p1:p1,
+						p2:p2
+					};
+				};
+
+				changer = {
+					setP1:function(p){p1 = p;},
+					setP2:function(p){p2 = p;}
+				};
+
 				this.expose({
 					draw:draw,
 					closestPointTo: closestPointTo,
@@ -427,6 +498,9 @@
 			},
 			addPoint: function(specs, toBeExcludedFromMouseEvents){
 				return addShape(shape.point({}, specs), toBeExcludedFromMouseEvents);
+			},
+			addLine: function(specs, toBeExcludedFromMouseEvents){
+				return addShape(shape.line({}, specs), toBeExcludedFromMouseEvents);
 			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
 			onmousedownonshape: function(f){onmousedownonshape = f || function(){};},
@@ -634,6 +708,11 @@
 			action.doNothing();
 			deactivateButton();
 		});
+	});
+
+	var l = canvas.addLine({
+		p1: point(100,100),
+		p2: point(300,80)
 	});
 	// var c = canvas.addCircle({
 	// 	center: point(200,200),
