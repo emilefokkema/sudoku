@@ -92,12 +92,25 @@
 			y:y,
 			minus: function(p){return point(x - p.x, y - p.y);},
 			plus: function(p){return point(x + p.x, y + p.y);},
+			cross:function(p){return x*p.y - y*p.x;},
 			mod: function(){return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));},
 			scale: function(r){return point(r*x, r*y);},
 			unit: function(){return this.scale(1/this.mod());},
 			toString: function(){return "("+x+","+y+")";},
-			equals: function(p){return this == p||this.minus(p) ==0;}
+			equals: function(p){return this == p||this.minus(p) ==0;},
+			matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
 		};
+	};
+
+	var intersectLines = function(p1,p2,q1,q2){
+		var x1 = p2.minus(p1);
+		var x2 = q2.minus(q1);
+		var cross = x2.cross(x1);
+		if(cross == 0){
+			return null;
+		}
+		var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
+		return p1.plus(p2.minus(p1).scale(st.x));
 	};
 	var canvas = (function(){
 		var context, c = document.createElement('canvas');
@@ -323,18 +336,24 @@
 			doToNotHitShape = doToNotHitShape || function(){};
 			doIfNotHitShape = doIfNotHitShape || function(){};
 			var toReturn = function(e){
-				var hitShape;
+				var hitPoints, hitShape, hitShapes = [];
 				shapes.map(function(s){
 					if(!s.toBeExcludedFromMouseEvents && s.passesFilter(currentMouseFilter) && s.contains(point(e.clientX, e.clientY))){
-						hitShape = s;
+						hitShapes.push(s);
 						
 					}else{
 						doToNotHitShape(s, e);
 					}
 				});
-				if(!hitShape){
+				if(hitShapes.length == 0){
 					doIfNotHitShape(e);
 				}else{
+					hitPoints = hitShapes.filter(function(s){return s.passesFilter(shapeFilter.POINT);});
+					if(hitPoints.length > 0){
+						hitShape = hitPoints[hitPoints.length - 1];
+					}else{
+						hitShape = hitShapes[hitShapes.length - 1];
+					}
 					doToHitShape(hitShape, e);
 				}
 				if(drawAfter){
@@ -448,17 +467,28 @@
 			};
 		},
 		circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
-			canvasPointCenter.onchange(function(oldSpecs, newSpecs){
-				canvasCircle.getChanger().setCenter(newSpecs.location);
-			});
+			var setAnew;
 			if(!canvasPointBoundary){
+				canvasPointCenter.onchange(function(oldSpecs, newSpecs){
+					canvasCircle.getChanger().setCenter(newSpecs.location);
+				});
 				canvasCircle.ondrag(function(p){
 					var center = canvasCircle.getSpecs().center;
 					var changer = canvasCircle.getChanger();
 					changer.setR(center.minus(p).mod());
 				});
 			}else{
-
+				setAnew = function(c,b){
+					var changer = canvasCircle.getChanger();
+					changer.setCenter(c);
+					changer.setR(b.minus(c).mod());
+				}
+				canvasPointCenter.onchange(function(oldSpecs, newSpecs){
+					setAnew(newSpecs.location, canvasPointBoundary.getSpecs().location);
+				});
+				canvasPointBoundary.onchange(function(oldSpecs, newSpecs){
+					setAnew(canvasPointCenter.getSpecs().location, newSpecs.location);
+				});
 			}
 		}
 	};
@@ -519,14 +549,21 @@
 			canvas.onmousedownonshape();
 			canvas.onclickshape(function(s, e){
 				chosenCenter = s;
-				canvas.setMouseFilter(canvas.mouseFilter.NONE);
 				circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
 				growCircle = function(p){circle.getChanger().setR(p.minus(chosenCenter.getSpecs().location).mod());};
 				canvas.onmouseovernotshape(function(e){
 					growCircle(point(e.clientX, e.clientY));
 				});
+				canvas.onmouseovershape(function(s, e){
+					growCircle(s.closestPointTo(point(e.clientX, e.clientY)));
+				});
 				canvas.onclicknotshape(function(e){
 					res(structure.circle(chosenCenter, circle));
+					canvas.setMouseFilter(canvas.mouseFilter.ALL);
+					stop();
+				});
+				canvas.onclickshape(function(s, e){
+					res(structure.circle(chosenCenter, circle, s));
 					canvas.setMouseFilter(canvas.mouseFilter.ALL);
 					stop();
 				});
