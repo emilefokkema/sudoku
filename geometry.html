@@ -498,6 +498,7 @@
 	var action = {
 		doNothing: function(){
 			console.log("do nothing");
+			canvas.setMouseFilter(canvas.mouseFilter.ALL);
 			canvas.onclickshape();
 			canvas.onclicknotshape();
 			canvas.onmousedownonshape(action.startMoving);
@@ -543,12 +544,18 @@
 				p.exclude(false);
 				stop();
 			});
+			return function(){
+				p.remove();
+				stop();
+			};
 		},
 		makeCircleStructure: function(res, stop){
+			var revert = stop;
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			var chosenCenter, chooseBoundaryPoint, growCircle, circle;
 			canvas.onmouseovershape();
 			canvas.onmousedownonshape();
+			
 			canvas.onclickshape(function(s, e){
 				chosenCenter = s;
 				circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
@@ -569,7 +576,14 @@
 					canvas.setMouseFilter(canvas.mouseFilter.ALL);
 					stop();
 				});
+				revert = function(){
+					circle.remove();
+					stop();
+				};
 			});
+			return function(){
+				revert();
+			};
 		}
 	};
 
@@ -579,11 +593,20 @@
 			var b = makeNode("<div id='1' class='button' style='left:"+x+"px;top:"+y+"px'></div>", function(div){
 				var makeActive = function(){div.setAttribute('class','button active');};
 				var makeNonActive = function(){div.setAttribute('class','button');};
-				div.onclick = function(e){
+				var normalOnClick = function(e){
+					var stop;
 					e.preventDefault();
 					makeActive();
-					a(makeNonActive);
+					stop = a(function(){
+						makeNonActive();
+						div.onclick = normalOnClick;
+					});
+					div.onclick = function(){
+						stop();
+						div.onclick = normalOnClick;
+					};
 				};
+				div.onclick = normalOnClick;
 				document.body.appendChild(div);
 			});
 			x+=40;
@@ -592,7 +615,7 @@
 	})();
 
 	button(function(deactivateButton){
-		action.makePointStructure(function(p){
+		return action.makePointStructure(function(p){
 			
 		}, function(){
 			action.doNothing();
@@ -601,7 +624,7 @@
 	});
 
 	button(function(deactivateButton){
-		action.makeCircleStructure(function(){}, function(){
+		return action.makeCircleStructure(function(){}, function(){
 			action.doNothing();
 			deactivateButton();
 		});
