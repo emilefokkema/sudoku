@@ -320,7 +320,8 @@
 
 				repositionPoint = function(p, oldSpecs, newSpecs){
 					if(oldSpecs.p1.equals(newSpecs.p1)){
-						return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).unit().scale(p.minus(newSpecs.p1).mod()));
+						var sign = p.minus(oldSpecs.p1).dot(oldSpecs.p2.minus(oldSpecs.p1)) >=0 ? 1: -1;
+						return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).unit().scale(sign * p.minus(newSpecs.p1).mod()));
 					}
 					if(!oldSpecs.p2.equals(newSpecs.p2)){
 						return p.plus(newSpecs.p2.minus(oldSpecs.p2));
