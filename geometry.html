@@ -133,7 +133,9 @@
 			var stroke = specs.stroke || 'black';
 			var thickness = specs.thickness || 1.5;
 			var name = specs.name || 'shape';
+			var selected = false;
 			var draw = function(ctx){
+				ctx.setLineDash(selected ? [5] : []);
 				ctx.strokeStyle = stroke;
 				ctx.lineWidth = thickness;
 				ctx.fillStyle = fill;
@@ -184,7 +186,8 @@
 				getChanger: getChanger,
 				dragTo: function(p){ondrag(p);},
 				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
-				passesFilter: function(f){return passesFilter(f);}
+				passesFilter: function(f){return passesFilter(f);},
+				setSelected: function(b){selected = b;}
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -358,6 +361,10 @@
 			return shapeWrappers.filter(function(w){return w.shape == s;})[0].wrapper;
 		};
 
+		var shapeBelongingTo = function(w){
+			return shapeWrappers.filter(function(w_){return w_.wrapper == w;})[0].shape;
+		};
+
 		var draw = throttle(function(){
 			c.width = w;
 			shapes.map(function(s){
@@ -407,6 +414,23 @@
 			});
 			return wrapper;
 		};
+
+		var selection = (function(){
+			var all = [];
+			var addShape = function(w){
+				var s = shapeBelongingTo(w);
+				s.setSelected(true);
+				all.push(s);
+			};
+			var clear = function(){
+				all.map(function(s){s.setSelected(false);});
+				all = [];
+			};
+			return {
+				addShape: addShape,
+				clear: clear
+			};
+		})();
 
 		var mouseActionHandler = function(doToHitShape, doToNotHitShape, doIfNotHitShape, drawAfter){
 			doToHitShape = doToHitShape || function(){};
@@ -510,7 +534,9 @@
 				c.style.cursor = "default";
 			},
 			setMouseFilter: function(f){currentMouseFilter = f;},
-			mouseFilter: shapeFilter
+			mouseFilter: shapeFilter,
+			selectShape: function(s){selection.addShape(s);},
+			clearSelection: function(){selection.clear();}
 		};
 
 	})(w,h);
@@ -599,6 +625,19 @@
 			canvas.onmouseovershape(canvas.haspointer);
 			canvas.onmouseovernotshape(canvas.hasnopointer);
 			canvas.onmouseup();
+		},
+		select: function(stop){
+			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+			canvas.onmousedownonshape();
+			canvas.onmouseovershape(canvas.hasnopointer);
+			canvas.onmouseovernotshape(canvas.hasnopointer);
+			canvas.onclickshape(function(s, e){
+				canvas.selectShape(s);
+			});
+			canvas.onclicknotshape(function(e){
+				canvas.clearSelection();
+			});
+			return stop;
 		},
 		startMoving: function(s, e){
 			var doMove = function(e){
@@ -736,6 +775,7 @@
 					});
 					div.onclick = function(){
 						stop();
+						makeNonActive();
 						div.onclick = normalOnClick;
 					};
 				};
@@ -769,6 +809,14 @@
 			deactivateButton();
 		});
 	}, "line");
+
+	button(function(deactivateButton){
+		return action.select(function(){
+			action.doNothing();
+			deactivateButton();
+		});
+		
+	});
 
 	action.doNothing();
 
