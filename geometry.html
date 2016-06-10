@@ -58,50 +58,6 @@
 		f.add = function(g){todo.push(g);return f;};
 		return f;
 	};
-	var promise = function(evaluator){
-		var reason, value, pending = true, resolved = false;
-		var then = function(v){};
-		var notThen = function(r){};
-		var resolve = function(v){
-			if(!resolved && pending){
-				value = v;
-				resolved = true;
-				pending = false;
-				then(value);
-			}
-		};
-		var reject = function(r){
-			if(pending){
-				pending = false;
-				reason = r;
-				notThen(reason);
-			}
-		};
-		evaluator.apply(null, [resolve, reject]);
-		return {
-			then: function(onResolve, onReject){
-				return promise(function(res, rej){
-					if(pending){
-						then = function(v){
-							res(onResolve(v));
-						};
-						notThen = function(r){
-							rej(r);
-							onReject(r);
-						};
-					}else{
-						if(resolved){
-							res(onResolve(value));
-						}else{
-							rej(reason);
-							onReject(reason);
-						}
-					}
-				});
-			},
-			getValue:function(){if(!pending && resolved){return value;}}
-		};
-	};
 	var point = function(x,y){
 		
 		return {
@@ -530,10 +486,6 @@
 
 		c.addEventListener('click', clickHandler);
 
-		
-
-
-
 		return {
 			addCircle: function(specs, toBeExcludedFromMouseEvents){
 				return addShape(shape.circle({}, specs), toBeExcludedFromMouseEvents);
@@ -550,11 +502,7 @@
 				onmouseovernotshape = f || function(){};
 			},
 			onclickshape: function(f){onclickshape = f || function(){};},
-			onclicknotshape: function(f){
-				
-				
-				onclicknotshape = f || function(){};
-			},
+			onclicknotshape: function(f){onclicknotshape = f || function(){};},
 			haspointer: function(){c.style.cursor = "-webkit-grab";},
 			isgrabbing: function(){c.style.cursor = "-webkit-grabbing";},
 			onmouseup: function(f){onmouseup = f || function(){};},
@@ -644,7 +592,6 @@
 
 	var action = {
 		doNothing: function(){
-			console.log("do nothing");
 			canvas.setMouseFilter(canvas.mouseFilter.ALL);
 			canvas.onclickshape();
 			canvas.onclicknotshape();
@@ -654,7 +601,6 @@
 			canvas.onmouseup();
 		},
 		startMoving: function(s, e){
-			console.log("start moving");
 			var doMove = function(e){
 				canvas.isgrabbing();
 				s.dragTo(point(e.clientX, e.clientY));
@@ -666,7 +612,6 @@
 			doMove(e);
 		},
 		makePointStructure: function(res, stop){
-			console.log("make point structure");
 			var p = canvas.addPoint({
 				location: point(200,200)
 			}, true);
@@ -825,26 +770,7 @@
 		});
 	}, "line");
 
-
-
-	// var l = canvas.addLine({
-	// 	p1: point(100,100),
-	// 	p2: point(300,80)
-	// });
-
-	// var p1 = canvas.addPoint({location:point(100,100)});
-	// var p2 = canvas.addPoint({location:point(300,80)});
-
-	// structure.point(p1);
-	// structure.point(p2);
-	// structure.line(p1, l, p2);
-	
-
 	action.doNothing();
-	
-
-	
-
 
 })(document, document.body.offsetWidth, document.body.offsetHeight);
 </script>
