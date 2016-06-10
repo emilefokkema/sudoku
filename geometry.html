@@ -637,7 +637,10 @@
 			canvas.onclicknotshape(function(e){
 				canvas.clearSelection();
 			});
-			return stop;
+			return function(){
+				canvas.clearSelection();
+				stop();
+			};
 		},
 		startMoving: function(s, e){
 			var doMove = function(e){
