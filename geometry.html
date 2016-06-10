@@ -14,6 +14,15 @@
 	border: 1px solid #000;
 	
 }
+.point {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
+}
+.circle {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"15\" r=\"10\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+}
+.line {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"2\" y1=\"28\" x2=\"28\" y2=\"2\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+}
 .active {
 	border: 1px solid #f00;
 	background-color: #daa;
@@ -105,7 +114,7 @@
 			scale: function(r){return point(r*x, r*y);},
 			unit: function(){return this.scale(1/this.mod());},
 			toString: function(){return "("+x+","+y+")";},
-			equals: function(p){return this == p||this.minus(p) ==0;},
+			equals: function(p){return this == p|| (x == p.x && y == p.y);},
 			matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
 			dot:function(p){return x*p.x + y*p.y;}
 		};
@@ -166,7 +175,7 @@
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
-			var thickness = specs.thickness || 2;
+			var thickness = specs.thickness || 1.5;
 			var name = specs.name || 'shape';
 			var draw = function(ctx){
 				ctx.strokeStyle = stroke;
@@ -229,6 +238,7 @@
 					this(ctx);
 					ctx.beginPath();
 					ctx.arc(center.x, center.y, r, 0, 2*Math.PI);
+					ctx.closePath();
 					ctx.stroke();
 				});
 
@@ -276,10 +286,18 @@
 
 				draw = this.override(draw, function(ctx){
 					this(ctx);
-					var onEdges = intersectWithBox(p1, p2);
-					ctx.moveTo(onEdges.p1.x, onEdges.p1.y);
-					ctx.lineTo(onEdges.p2.x, onEdges.p2.y);
-					ctx.stroke();
+					if(!p1.equals(p2)){
+						var onEdges = intersectWithBox(p1, p2);
+						if(onEdges.p1 == null || onEdges.p2 == null){
+							console.log("nope");
+						}
+						ctx.beginPath();
+						ctx.moveTo(onEdges.p1.x, onEdges.p1.y);
+						ctx.lineTo(onEdges.p2.x, onEdges.p2.y);
+						ctx.closePath();
+						ctx.stroke();
+					}
+					
 				});
 
 				var p1ToClosestPoint = function(p){
@@ -345,6 +363,7 @@
 					this(ctx);
 					ctx.beginPath();
 					ctx.arc(loc.x, loc.y, 2*thickness, 0, 2*Math.PI);
+					ctx.closePath();
 					ctx.fill();
 				});
 
@@ -715,16 +734,53 @@
 		},
 		makeLineStructure: function(res, stop){
 			var revert = stop;
-
+			canvas.setMouseFilter(canvas.mouseFilter.POINT);
+			var chosenP1, moveLine, line;
+			canvas.onmouseovershape();
+			canvas.onmousedownonshape();
+			canvas.onclickshape(function(s, e){
+				chosenP1 = s;
+				line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(point(100,0))});
+				moveLine = function(p){line.getChanger().moveTo(p);};
+				canvas.onmouseovernotshape(function(e){
+					moveLine(point(e.clientX, e.clientY));
+				});
+				canvas.onmouseovershape(function(s, e){
+					moveLine(s.closestPointTo(point(e.clientX, e.clientY)));
+				});
+				canvas.onclicknotshape(function(e){
+					res(structure.line(chosenP1, line));
+					canvas.setMouseFilter(canvas.mouseFilter.ALL);
+					stop();
+				});
+				canvas.onclickshape(function(s, e){
+					res(structure.line(chosenP1, line, s));
+					canvas.setMouseFilter(canvas.mouseFilter.ALL);
+					stop();
+				});
+				revert = function(){
+					line.remove();
+					stop();
+				};
+			});
+			return function(){
+				revert();
+			};
 		}
 	};
 
 	var button = (function(){
 		var x=20,y=20;
-		var button = function(a){
-			var b = makeNode("<div id='1' class='button' style='left:"+x+"px;top:"+y+"px'></div>", function(div){
-				var makeActive = function(){div.setAttribute('class','button active');};
-				var makeNonActive = function(){div.setAttribute('class','button');};
+		var addClass = function(el, name){
+			el.setAttribute('class', el.getAttribute('class') + " "+name);
+		};
+		var removeClass = function(el, name){
+			el.setAttribute('class', el.getAttribute('class').split(/[\s]+/g).filter(function(c){return c!=name;}).join(' '));
+		};
+		var button = function(a, className){
+			var b = makeNode("<div id='1' class='button"+(className?" "+className:"")+"' style='left:"+x+"px;top:"+y+"px'></div>", function(div){
+				var makeActive = function(){addClass(div, 'active');};
+				var makeNonActive = function(){removeClass(div, 'active');};
 				var normalOnClick = function(e){
 					var stop;
 					e.preventDefault();
@@ -753,26 +809,35 @@
 			action.doNothing();
 			deactivateButton();
 		});
-	});
+	}, "point");
 
 	button(function(deactivateButton){
 		return action.makeCircleStructure(function(){}, function(){
 			action.doNothing();
 			deactivateButton();
 		});
-	});
+	}, "circle");
 
-	var l = canvas.addLine({
-		p1: point(100,100),
-		p2: point(300,80)
-	});
+	button(function(deactivateButton){
+		return action.makeLineStructure(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "line");
 
-	var p1 = canvas.addPoint({location:point(100,100)});
-	var p2 = canvas.addPoint({location:point(300,80)});
 
-	structure.point(p1);
-	structure.point(p2);
-	structure.line(p1, l, p2);
+
+	// var l = canvas.addLine({
+	// 	p1: point(100,100),
+	// 	p2: point(300,80)
+	// });
+
+	// var p1 = canvas.addPoint({location:point(100,100)});
+	// var p2 = canvas.addPoint({location:point(300,80)});
+
+	// structure.point(p1);
+	// structure.point(p2);
+	// structure.line(p1, l, p2);
 	
 
 	action.doNothing();
