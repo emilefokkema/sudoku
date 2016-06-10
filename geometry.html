@@ -304,7 +304,28 @@
 
 				changer = {
 					setP1:function(p){p1 = p;},
-					setP2:function(p){p2 = p;}
+					setP2:function(p){p2 = p;},
+					translateBy: function(d){
+						p1 = p1.plus(d);
+						p2 = p2.plus(d);
+					},
+					moveTo: function(p){
+						if(p.minus(p1).dot(p2.minus(p1)) > 0){
+							p2 = p;
+						}else{
+							p2 = p1.plus(p1.minus(p));
+						}
+					}
+				};
+
+				repositionPoint = function(p, oldSpecs, newSpecs){
+					if(oldSpecs.p1.equals(newSpecs.p1)){
+						return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).unit().scale(p.minus(newSpecs.p1).mod()));
+					}
+					if(!oldSpecs.p2.equals(newSpecs.p2)){
+						return p.plus(newSpecs.p2.minus(oldSpecs.p2));
+					}
+					return p;
 				};
 
 				this.expose({
@@ -572,6 +593,18 @@
 					setAnew(canvasPointCenter.getSpecs().location, newSpecs.location);
 				});
 			}
+		},
+		line: function(canvasPoint1, canvasLine, canvasPoint2){
+			if(!canvasPoint2){
+				canvasPoint1.onchange(function(oldSpecs, newSpecs){
+					var changer = canvasLine.getChanger();
+					var diff = newSpecs.location.minus(oldSpecs.location);
+					changer.translateBy(diff);
+				});
+				canvasLine.ondrag(function(p){
+					canvasLine.getChanger().moveTo(p);
+				});
+			}
 		}
 	};
 
@@ -714,13 +747,12 @@
 		p1: point(100,100),
 		p2: point(300,80)
 	});
-	// var c = canvas.addCircle({
-	// 	center: point(200,200),
-	// 	r:100
-	// });
-	// var p = canvas.addPoint({location:point(200,200)});
-	// structure.point(p);
-	// structure.circle(p, c);
+
+	var p = canvas.addPoint({location:point(100,100)});
+
+	structure.point(p);
+	structure.line(p, l);
+	
 
 	action.doNothing();
 	
