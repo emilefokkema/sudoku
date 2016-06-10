@@ -326,7 +326,8 @@
 					if(!oldSpecs.p2.equals(newSpecs.p2)){
 						return p.plus(newSpecs.p2.minus(oldSpecs.p2));
 					}
-					return p;
+					var sign = p.minus(oldSpecs.p2).dot(oldSpecs.p1.minus(oldSpecs.p2)) >=0 ? 1: -1;
+					return newSpecs.p2.plus(newSpecs.p1.minus(newSpecs.p2).unit().scale(sign * p.minus(newSpecs.p2).mod()));
 				};
 
 				this.expose({
@@ -596,6 +597,7 @@
 			}
 		},
 		line: function(canvasPoint1, canvasLine, canvasPoint2){
+			var setAnew;
 			if(!canvasPoint2){
 				canvasPoint1.onchange(function(oldSpecs, newSpecs){
 					var changer = canvasLine.getChanger();
@@ -604,6 +606,18 @@
 				});
 				canvasLine.ondrag(function(p){
 					canvasLine.getChanger().moveTo(p);
+				});
+			}else{
+				setAnew = function(p1, p2){
+					var changer = canvasLine.getChanger();
+					changer.setP1(p1);
+					changer.setP2(p2);
+				};
+				canvasPoint1.onchange(function(oldSpecs, newSpecs){
+					setAnew(newSpecs.location, canvasPoint2.getSpecs().location);
+				});
+				canvasPoint2.onchange(function(oldSpecs, newSpecs){
+					setAnew(canvasPoint1.getSpecs().location, newSpecs.location);
 				});
 			}
 		}
@@ -666,7 +680,7 @@
 		makeCircleStructure: function(res, stop){
 			var revert = stop;
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
-			var chosenCenter, chooseBoundaryPoint, growCircle, circle;
+			var chosenCenter, growCircle, circle;
 			canvas.onmouseovershape();
 			canvas.onmousedownonshape();
 			
@@ -698,6 +712,10 @@
 			return function(){
 				revert();
 			};
+		},
+		makeLineStructure: function(res, stop){
+			var revert = stop;
+
 		}
 	};
 
@@ -749,10 +767,12 @@
 		p2: point(300,80)
 	});
 
-	var p = canvas.addPoint({location:point(100,100)});
+	var p1 = canvas.addPoint({location:point(100,100)});
+	var p2 = canvas.addPoint({location:point(300,80)});
 
-	structure.point(p);
-	structure.line(p, l);
+	structure.point(p1);
+	structure.point(p2);
+	structure.line(p1, l, p2);
 	
 
 	action.doNothing();
