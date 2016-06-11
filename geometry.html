@@ -135,8 +135,14 @@
 			var name = specs.name || 'shape';
 			var selected = false;
 			var draw = function(ctx){
-				ctx.setLineDash(selected ? [5] : []);
-				ctx.strokeStyle = stroke;
+				if(selected){
+					ctx.setLineDash([5]);
+					ctx.strokeStyle = '#00f';
+				}else{
+					ctx.setLineDash([]);
+					ctx.strokeStyle = stroke;
+				}
+				//ctx.strokeStyle = stroke;
 				ctx.lineWidth = thickness;
 				ctx.fillStyle = fill;
 			};
@@ -317,9 +323,9 @@
 				var loc = _specs.location || point(0,0);
 				
 				draw = this.override(draw, function(ctx){
-					fill = stroke;
-					stroke = 'transparent';
 					this(ctx);
+					ctx.fillStyle = ctx.strokeStyle;
+					ctx.strokeStyle = 'transparent';
 					ctx.beginPath();
 					ctx.arc(loc.x, loc.y, 2*thickness, 0, 2*Math.PI);
 					ctx.closePath();
