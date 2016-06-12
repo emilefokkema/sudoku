@@ -659,6 +659,7 @@
 					canvasPoint.getChanger().setLocation(loc);
 				}
 			};
+			console.log(i.s1, i.s2);
 			i.s1.onchange(setLocation);
 			i.s2.onchange(setLocation);
 		},
@@ -734,6 +735,7 @@
 			canvas.onmousedownonshape(action.startMoving);
 			canvas.onmouseovershape(canvas.haspointer);
 			canvas.onmouseoverintersection();
+			canvas.onclickintersection(function(){console.log("clicked intersection");});
 			canvas.onmouseovernotshape(canvas.hasnopointer);
 			canvas.onmouseup();
 		},
@@ -762,6 +764,7 @@
 			canvas.onmouseup(action.doNothing);
 			canvas.onmouseovershape(function(s, e){doMove(e);});
 			canvas.onmouseovernotshape(doMove);
+			canvas.onmouseoverintersection(function(i,e){doMove(e);});
 			doMove(e);
 		},
 		makePointStructure: function(res, stop){
