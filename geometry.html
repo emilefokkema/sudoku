@@ -90,6 +90,19 @@
 		return p1.plus(p2.minus(p1).scale(st.x));
 	};
 
+	var intersectCircles = function(p1, r1, p2, r2, index){
+		var sina, cosa, d = p1.minus(p2).mod();
+		if(r1 + r2 < d || r1 + d < r2 || r2 + d < r1 || d == 0){
+			return null;
+		}else if(r1 + r2 == d){
+			return p1.plus(p2.minus(p1).unit().scale(r1));
+		}else{
+			cosa = (r1 * r1 - r2 * r2 + d * d) / (2 * d * r1);
+			sina = Math.sqrt(1 - cosa * cosa) * (index == 0 ? 1 : -1);
+			return p1.plus(p2.minus(p1).unit().scale(r1).matrix(cosa, -sina, sina, cosa));
+		}
+	};
+
 	var intersectWithBox = (function(){
 		
 		var sides = [
@@ -467,8 +480,20 @@
 						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
 						return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
 					}));
+				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.CIRCLE)){
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 0);
+					}));
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 1);
+					}));
 				}
-				all.push(intersection(s1, s2, function(){return null;}));
+				else{
+					all.push(intersection(s1, s2, function(){return null;}));
+				}
+				
 			};
 			var removeForShape = function(s){
 				all = all.filter(function(i){return i.s1 != s && i.s2 != s;});
@@ -673,6 +698,8 @@
 			console.log(i.s1, i.s2);
 			i.s1.onchange(setLocation);
 			i.s2.onchange(setLocation);
+			i.s1.onremove(canvasPoint.remove);
+			i.s2.onremove(canvasPoint.remove);
 		},
 		circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
 			var setAnew;
