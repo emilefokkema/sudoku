@@ -103,6 +103,26 @@
 		}
 	};
 
+	var intersectLineAndCircle = function(p1, p2, c, r, index){
+		var sina, cossign, cosa, x = c.minus(p1), y = p2.minus(p1);
+		var cross, dot = x.dot(y);
+		var closestToCenter = p1.plus(y.unit().scale(dot/y.mod()));
+		var d = closestToCenter.minus(c).mod();
+		if(d == 0){
+			return c.plus(y.unit().scale(r * (index == 0 ? 1 : -1)));
+		}else if(d > r){
+			return null;
+		}else if(d == r){
+			return closestToCenter;
+		}else{
+			cossign = (x.cross(y) > 0 ? 1 : -1)
+			cosa = (d / r) * cossign;
+			
+			sina = Math.sqrt(1 - cosa * cosa) * (index == 0 ? 1 : -1);
+			return c.plus(closestToCenter.minus(c).unit().scale(r * cossign).matrix(cosa, -sina, sina, cosa));
+		}
+	};
+
 	var intersectWithBox = (function(){
 		
 		var sides = [
@@ -488,6 +508,24 @@
 					all.push(intersection(s1, s2, function(){
 						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
 						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 1);
+					}));
+				}else if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.CIRCLE)){
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 0);
+					}));
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 1);
+					}));
+				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.LINE)){
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 0);
+					}));
+					all.push(intersection(s1, s2, function(){
+						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 1);
 					}));
 				}
 				else{
