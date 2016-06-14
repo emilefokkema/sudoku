@@ -179,8 +179,9 @@
 			var name = specs.name || 'shape';
 			var selected = false;
 			var hidden = false;
+			var available = true;
 			var draw = function(ctx){
-				if(!hidden || showHidden){
+				
 					if(selected){
 						ctx.setLineDash([5]);
 						ctx.strokeStyle = '#00f';
@@ -194,7 +195,7 @@
 					//ctx.strokeStyle = stroke;
 					ctx.lineWidth = thickness;
 					ctx.fillStyle = fill;
-				}
+				
 				
 			};
 			var contains = function(p){return distance(p) < 10;};
@@ -232,8 +233,13 @@
 				hidden = !hidden;
 			};
 			this.expose({
-				draw: draw,
+				draw: function(ctx){
+					if(available && (!hidden || showHidden)){
+						draw(ctx);
+					}
+				},
 				contains: contains,
+				makeAvailable: function(b){available = b;},
 				onmouseover: onmouseover,
 				onmouseout: onmouseout,
 				onclick: onclick,
@@ -294,7 +300,7 @@
 					}
 				};
 				this.expose({
-					draw:draw,
+					//draw:draw,
 					closestPointTo: closestPointTo,
 					getSpecs: getSpecs
 				});
@@ -366,7 +372,7 @@
 				};
 
 				this.expose({
-					draw:draw,
+					//draw:draw,
 					closestPointTo: closestPointTo,
 					getSpecs: getSpecs
 				});
@@ -402,7 +408,7 @@
 					};
 				};
 				this.expose({
-					draw:draw,
+					//draw:draw,
 					closestPointTo: closestPointTo,
 					getSpecs: getSpecs
 				});
@@ -454,6 +460,7 @@
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
 			var onremove = sender();
+			var onchangeavailability = sender();
 			var shapeWrapperPair;
 			var wrapper = {
 				remove: function(){
@@ -467,10 +474,12 @@
 						draw();
 					}
 				},
+				makeAvailable: function(b){s.makeAvailable(b);onchangeavailability(b);},
 				onmouseover:function(f){s.onmouseover.add(f);},
 				onmouseout: function(f){s.onmouseout.add(f);},
 				onclick: function(f){s.onclick.add(f);},
 				onchange: function(f){s.onchange.add(f);},
+				onchangeavailability: function(f){onchangeavailability.add(f);},
 				ondrag: function(f){s.ondrag.add(f);},
 				onremove: function(f){onremove.add(f);},
 				dragTo: function(p){s.dragTo(p);},
@@ -722,12 +731,14 @@
 		var linkExistence = function(s, ss){
 			ss.map(function(s_){
 				s_.onremove(function(){s.remove();});
+				s_.onchangeavailability(function(b){s.makeAvailable(b);});
 			});
 		};
 		var linkChange = function(dependent, independent, howToChange, constants){
 			independent.onchange(function(oldSpecs, newSpecs){
 				howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : []);
 			});
+			linkExistence(dependent, [independent]);
 		};
 		return {
 			point: function(canvasPoint, canvasShape){
@@ -756,7 +767,10 @@
 				var setLocation = function(){
 					var loc = i.calculate();
 					if(loc){
+						canvasPoint.makeAvailable(true);
 						canvasPoint.getChanger().setLocation(loc);
+					}else{
+						canvasPoint.makeAvailable(false);
 					}
 				};
 				
@@ -769,7 +783,6 @@
 					linkChange(canvasCircle, canvasPointCenter, function(oldSpecs, newSpecs, changer){
 						changer.setCenter(newSpecs.location);
 					});
-					linkExistence(canvasCircle, [canvasPointCenter]);
 					canvasCircle.ondrag(function(p){
 						var center = canvasCircle.getSpecs().center;
 						var changer = canvasCircle.getChanger();
@@ -792,8 +805,6 @@
 							changer.setR(newSpecs.location.minus(constants[0].location).mod());
 						},
 						[canvasPointBoundary]);
-					
-					linkExistence(canvasCircle, [canvasPointCenter, canvasPointBoundary]);
 				}
 			},
 			line: function(canvasPoint1, canvasLine, canvasPoint2){
@@ -801,8 +812,6 @@
 					canvasLine.ondrag(function(p){
 						canvasLine.getChanger().moveTo(p);
 					});
-					
-					linkExistence(canvasLine, [canvasPoint1]);
 
 					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
 						var diff = newSpecs.location.minus(oldSpecs.location);
@@ -822,9 +831,6 @@
 					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
 						changer.setP1(newSpecs.location);
 					});
-					
-					linkExistence(canvasLine, [canvasPoint1, canvasPoint2]);
-
 				}
 			}
 		};
