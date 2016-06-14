@@ -20,8 +20,11 @@
 .circle {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"15\" r=\"10\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
+.hide {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"15\" r=\"10\" stroke=\"rgba(0,0,0,0.15)\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+}
 .line {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"2\" y1=\"28\" x2=\"28\" y2=\"2\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"2\" y1=\"24\" x2=\"28\" y2=\"6\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 .active {
 	border: 1px solid #f00;
@@ -29,6 +32,9 @@
 }
 .remove {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"4\" y1=\"26\" x2=\"26\" y2=\"4\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"4\" y1=\"4\" x2=\"26\" y2=\"26\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+}
+.select {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"6\" width=\"26\" height=\"18\" stroke=\"black\" stroke-dasharray=\"3,2\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 </style>
 </head>
@@ -162,7 +168,7 @@
 			CIRCLE:4
 		};
 
-
+		var showHidden = false;
 
 		var currentMouseFilter = shapeFilter.ALL;
 
@@ -172,17 +178,24 @@
 			var thickness = specs.thickness || 1.5;
 			var name = specs.name || 'shape';
 			var selected = false;
+			var hidden = false;
 			var draw = function(ctx){
-				if(selected){
-					ctx.setLineDash([5]);
-					ctx.strokeStyle = '#00f';
-				}else{
-					ctx.setLineDash([]);
-					ctx.strokeStyle = stroke;
+				if(!hidden || showHidden){
+					if(selected){
+						ctx.setLineDash([5]);
+						ctx.strokeStyle = '#00f';
+					}else{
+						ctx.setLineDash([]);
+						ctx.strokeStyle = stroke;
+					}
+					if(hidden){
+						ctx.strokeStyle = '#bbb';
+					}
+					//ctx.strokeStyle = stroke;
+					ctx.lineWidth = thickness;
+					ctx.fillStyle = fill;
 				}
-				//ctx.strokeStyle = stroke;
-				ctx.lineWidth = thickness;
-				ctx.fillStyle = fill;
+				
 			};
 			var contains = function(p){return distance(p) < 10;};
 			var distance = function(p){return Infinity;};
@@ -215,7 +228,9 @@
 				stroke = 'black';
 			});
 			var onclick = sender();
-
+			var hideUnhide = function(){
+				hidden = !hidden;
+			};
 			this.expose({
 				draw: draw,
 				contains: contains,
@@ -231,7 +246,8 @@
 				dragTo: function(p){ondrag(p);},
 				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
 				passesFilter: function(f){return passesFilter(f);},
-				setSelected: function(b){selected = b;}
+				setSelected: function(b){selected = b;},
+				hideUnhide: hideUnhide
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -462,7 +478,8 @@
 				getSpecs: s.getSpecs,
 				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
 				closestPointTo: s.closestPointTo,
-				repositionPoint: s.repositionPoint
+				repositionPoint: s.repositionPoint,
+				hideUnhide:s.hideUnhide
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -693,7 +710,10 @@
 			mouseFilter: shapeFilter,
 			selectShape: function(s){selection.addShape(s);},
 			clearSelection: function(){selection.clear();},
-			removeSelection: function(){selection.removeAll();}
+			removeSelection: function(){selection.removeAll();},
+			showHidden:function(){showHidden = true;},
+			hideHidden: function(){showHidden = false;}
+
 		};
 
 	})(w,h);
@@ -829,6 +849,21 @@
 			});
 			return function(){
 				canvas.clearSelection();
+				stop();
+			};
+		},
+		hideUnhide: function(stop){
+			canvas.showHidden();
+			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+			canvas.onmousedownonshape();
+			canvas.onmouseovershape(canvas.hasnopointer);
+			canvas.onmouseovernotshape(canvas.hasnopointer);
+			canvas.onclicknotshape();
+			canvas.onclickshape(function(s, e){
+				s.hideUnhide();
+			});
+			return function(){
+				canvas.hideHidden();
 				stop();
 			};
 		},
@@ -1022,7 +1057,14 @@
 			deactivateButton();
 		});
 		
-	});
+	}, "select");
+
+	button(function(deactivateButton){
+		return action.hideUnhide(function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	},"hide");
 	button(function(deactivateButton){
 		canvas.removeSelection();
 		deactivateButton();
