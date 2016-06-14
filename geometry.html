@@ -238,6 +238,8 @@
 						draw(ctx);
 					}
 				},
+				isHidden:function(){return hidden;},
+				isAvailable: function(){return available;},
 				contains: contains,
 				makeAvailable: function(b){available = b;},
 				onmouseover: onmouseover,
@@ -504,7 +506,9 @@
 				return {
 					s1:s1,
 					s2:s2,
-					calculate:calculate
+					calculate:function(){
+						return calculate(s1.getSpecs(), s2.getSpecs());
+					}
 				};
 			};
 			var getForShapes = function(s1, s2, p){
@@ -520,35 +524,28 @@
 			};
 			var makeForShapes = function(s1, s2){
 				if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.LINE)){
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
 					}));
 				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.CIRCLE)){
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 0);
 					}));
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 1);
 					}));
 				}else if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.CIRCLE)){
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 0);
 					}));
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 1);
 					}));
 				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.LINE)){
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 0);
 					}));
-					all.push(intersection(s1, s2, function(){
-						var s1specs = s1.getSpecs(), s2specs = s2.getSpecs();
+					all.push(intersection(s1, s2, function(s1specs, s2specs){
 						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 1);
 					}));
 				}
@@ -597,7 +594,7 @@
 			var toReturn = function(e){
 				var hitPoints, hitShape, hitIntersection, intersectingShape1, intersectingShape2, hitShapes = [];
 				shapes.map(function(s){
-					if(!s.toBeExcludedFromMouseEvents && s.passesFilter(currentMouseFilter) && s.contains(point(e.clientX, e.clientY))){
+					if(!s.toBeExcludedFromMouseEvents && s.isAvailable() && (!s.isHidden() || showHidden) && s.passesFilter(currentMouseFilter) && s.contains(point(e.clientX, e.clientY))){
 						hitShapes.push(s);
 						
 					}else{
@@ -740,6 +737,9 @@
 			});
 			linkExistence(dependent, [independent]);
 		};
+		var linkToIntersection = function(dependentPoint, i){
+			linkExistence(dependentPoint, [i.s1, i.s2]);
+		};
 		return {
 			point: function(canvasPoint, canvasShape){
 				var putOnShapeClosestTo;
@@ -776,7 +776,7 @@
 				
 				i.s1.onchange(setLocation);
 				i.s2.onchange(setLocation);
-				linkExistence(canvasPoint, [i.s1, i.s2]);
+				linkToIntersection(canvasPoint, i);
 			},
 			circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
 				if(!canvasPointBoundary){
