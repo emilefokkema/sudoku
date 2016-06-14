@@ -291,9 +291,7 @@
 					this(ctx);
 					if(!p1.equals(p2)){
 						var onEdges = intersectWithBox(p1, p2);
-						if(onEdges.p1 == null || onEdges.p2 == null){
-							console.log("nope");
-						}
+						
 						ctx.beginPath();
 						ctx.moveTo(onEdges.p1.x, onEdges.p1.y);
 						ctx.lineTo(onEdges.p2.x, onEdges.p2.y);
@@ -733,7 +731,7 @@
 					canvasPoint.getChanger().setLocation(loc);
 				}
 			};
-			console.log(i.s1, i.s2);
+			
 			i.s1.onchange(setLocation);
 			i.s2.onchange(setLocation);
 			i.s1.onremove(canvasPoint.remove);
@@ -786,6 +784,9 @@
 				});
 				canvasPoint1.onremove(function(){canvasLine.remove();});
 			}else{
+				var changer = canvasLine.getChanger();
+				changer.setP1(canvasPoint1.getSpecs().location);
+				changer.setP2(canvasPoint2.getSpecs().location);
 				setAnew = function(p1, p2){
 					var changer = canvasLine.getChanger();
 					changer.setP1(p1);
@@ -811,7 +812,7 @@
 			canvas.onmousedownonshape(action.startMoving);
 			canvas.onmouseovershape(canvas.haspointer);
 			canvas.onmouseoverintersection();
-			canvas.onclickintersection(function(){console.log("clicked intersection");});
+			canvas.onclickintersection();
 			canvas.onmouseovernotshape(canvas.hasnopointer);
 			canvas.onmouseup();
 		},
@@ -860,7 +861,7 @@
 			});
 			canvas.onclickshape(function(s, e){
 				
-				console.log("clicked shape");
+				
 				res(structure.point(p, s));
 				p.exclude(false);
 				stop();
