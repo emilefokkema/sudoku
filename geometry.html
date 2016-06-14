@@ -718,111 +718,118 @@
 
 	})(w,h);
 
+	var structure = (function(){
+		var linkExistence = function(s, ss){
+			ss.map(function(s_){
+				s_.onremove(function(){s.remove();});
+			});
+		};
+		var linkChange = function(dependent, independent, howToChange, constants){
+			independent.onchange(function(oldSpecs, newSpecs){
+				howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : []);
+			});
+		};
+		return {
+			point: function(canvasPoint, canvasShape){
+				var putOnShapeClosestTo;
+				if(!canvasShape){
+					canvasPoint.ondrag(function(p){
+						canvasPoint.getChanger().setLocation(p);
+					});
+				}else{
+					putOnShapeClosestTo = function(p){
+						canvasPoint.getChanger().setLocation(canvasShape.closestPointTo(p));
+					};
+					canvasPoint.ondrag(putOnShapeClosestTo);
+					putOnShapeClosestTo(canvasPoint.getSpecs().location);
+					canvasShape.onchange(function(oldSpecs, newSpecs){
+						canvasPoint.getChanger().setLocation(canvasShape.repositionPoint(canvasPoint.getSpecs().location, oldSpecs, newSpecs));
+					});
+					linkExistence(canvasPoint, [canvasShape]);
+				}
+				
+				return {
+					onchange: function(f){canvasPoint.onchange(f);}
+				};
+			},
+			pointOnIntersection: function(canvasPoint, i){
+				var setLocation = function(){
+					var loc = i.calculate();
+					if(loc){
+						canvasPoint.getChanger().setLocation(loc);
+					}
+				};
+				
+				i.s1.onchange(setLocation);
+				i.s2.onchange(setLocation);
+				linkExistence(canvasPoint, [i.s1, i.s2]);
+			},
+			circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
+				if(!canvasPointBoundary){
+					linkChange(canvasCircle, canvasPointCenter, function(oldSpecs, newSpecs, changer){
+						changer.setCenter(newSpecs.location);
+					});
+					linkExistence(canvasCircle, [canvasPointCenter]);
+					canvasCircle.ondrag(function(p){
+						var center = canvasCircle.getSpecs().center;
+						var changer = canvasCircle.getChanger();
+						changer.setR(center.minus(p).mod());
+					});
+				}else{
+					
+					linkChange(
+						canvasCircle,
+						canvasPointBoundary,
+						function(oldSpecs, newSpecs, changer, constants){
+							changer.setR(newSpecs.location.minus(constants[0].location).mod());
+						},
+						[canvasPointCenter]);
+					linkChange(
+						canvasCircle,
+						canvasPointCenter,
+						function(oldSpecs, newSpecs, changer, constants){
+							changer.setCenter(newSpecs.location);
+							changer.setR(newSpecs.location.minus(constants[0].location).mod());
+						},
+						[canvasPointBoundary]);
+					
+					linkExistence(canvasCircle, [canvasPointCenter, canvasPointBoundary]);
+				}
+			},
+			line: function(canvasPoint1, canvasLine, canvasPoint2){
+				if(!canvasPoint2){
+					canvasLine.ondrag(function(p){
+						canvasLine.getChanger().moveTo(p);
+					});
+					
+					linkExistence(canvasLine, [canvasPoint1]);
 
-	var structure = {
-		point: function(canvasPoint, canvasShape){
-			var putOnShapeClosestTo;
-			if(!canvasShape){
-				canvasPoint.ondrag(function(p){
-					canvasPoint.getChanger().setLocation(p);
-				});
-			}else{
-				putOnShapeClosestTo = function(p){
-					canvasPoint.getChanger().setLocation(canvasShape.closestPointTo(p));
-				};
-				canvasPoint.ondrag(putOnShapeClosestTo);
-				putOnShapeClosestTo(canvasPoint.getSpecs().location);
-				canvasShape.onchange(function(oldSpecs, newSpecs){
-					canvasPoint.getChanger().setLocation(canvasShape.repositionPoint(canvasPoint.getSpecs().location, oldSpecs, newSpecs));
-				});
-				canvasShape.onremove(function(){
-					canvasPoint.remove();
-				});
-			}
-			
-			return {
-				onchange: function(f){canvasPoint.onchange(f);}
-			};
-		},
-		pointOnIntersection: function(canvasPoint, i){
-			var setLocation = function(){
-				var loc = i.calculate();
-				if(loc){
-					canvasPoint.getChanger().setLocation(loc);
-				}
-			};
-			
-			i.s1.onchange(setLocation);
-			i.s2.onchange(setLocation);
-			i.s1.onremove(canvasPoint.remove);
-			i.s2.onremove(canvasPoint.remove);
-		},
-		circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
-			var setAnew;
-			if(!canvasPointBoundary){
-				canvasPointCenter.onchange(function(oldSpecs, newSpecs){
-					canvasCircle.getChanger().setCenter(newSpecs.location);
-				});
-				canvasPointCenter.onremove(function(){
-					canvasCircle.remove();
-				});
-				canvasCircle.ondrag(function(p){
-					var center = canvasCircle.getSpecs().center;
-					var changer = canvasCircle.getChanger();
-					changer.setR(center.minus(p).mod());
-				});
-			}else{
-				setAnew = function(c,b){
-					var changer = canvasCircle.getChanger();
-					changer.setCenter(c);
-					changer.setR(b.minus(c).mod());
-				}
-				canvasPointCenter.onchange(function(oldSpecs, newSpecs){
-					setAnew(newSpecs.location, canvasPointBoundary.getSpecs().location);
-				});
-				canvasPointCenter.onremove(function(){
-					canvasCircle.remove();
-				});
-				canvasPointBoundary.onchange(function(oldSpecs, newSpecs){
-					setAnew(canvasPointCenter.getSpecs().location, newSpecs.location);
-				});
-				canvasPointBoundary.onremove(function(){
-					canvasCircle.remove();
-				});
-			}
-		},
-		line: function(canvasPoint1, canvasLine, canvasPoint2){
-			var setAnew;
-			if(!canvasPoint2){
-				canvasPoint1.onchange(function(oldSpecs, newSpecs){
+					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
+						var diff = newSpecs.location.minus(oldSpecs.location);
+						changer.translateBy(diff);
+					});
+				}else{
 					var changer = canvasLine.getChanger();
-					var diff = newSpecs.location.minus(oldSpecs.location);
-					changer.translateBy(diff);
-				});
-				canvasLine.ondrag(function(p){
-					canvasLine.getChanger().moveTo(p);
-				});
-				canvasPoint1.onremove(function(){canvasLine.remove();});
-			}else{
-				var changer = canvasLine.getChanger();
-				changer.setP1(canvasPoint1.getSpecs().location);
-				changer.setP2(canvasPoint2.getSpecs().location);
-				setAnew = function(p1, p2){
-					var changer = canvasLine.getChanger();
-					changer.setP1(p1);
-					changer.setP2(p2);
-				};
-				canvasPoint1.onchange(function(oldSpecs, newSpecs){
-					setAnew(newSpecs.location, canvasPoint2.getSpecs().location);
-				});
-				canvasPoint1.onremove(function(){canvasLine.remove();});
-				canvasPoint2.onchange(function(oldSpecs, newSpecs){
-					setAnew(canvasPoint1.getSpecs().location, newSpecs.location);
-				});
-				canvasPoint2.onremove(function(){canvasLine.remove();});
+					changer.setP1(canvasPoint1.getSpecs().location);
+					changer.setP2(canvasPoint2.getSpecs().location);
+					
+					
+
+					linkChange(canvasLine, canvasPoint2, function(oldSpecs, newSpecs, changer){
+						changer.setP2(newSpecs.location);
+					});
+
+					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
+						changer.setP1(newSpecs.location);
+					});
+					
+					linkExistence(canvasLine, [canvasPoint1, canvasPoint2]);
+
+				}
 			}
-		}
-	};
+		};
+	})();
+	
 
 	var action = {
 		doNothing: function(){
