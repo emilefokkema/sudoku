@@ -1,94 +1,61 @@
 <html>
 <body>
 <script src="makeModule.js"></script>
+<script src="makeNode.js"></script>
 <script>
 (function(){
-	var sender = function(){
-		var toDo = [];
-		var toReturn = function(){
-			var args = arguments;
-			return toDo.map(function(f){return f.apply(null, args);});
+	var step = function(execute){
+		var finish = function(){};
+		return {
+			execute:function(context){
+				finish = execute(context || {}, function(){finish();});
+				return finish || function(){};
+			},
+			then: function(otherStep){
+				return step(function(context, finish){
+					var stop2 = function(){}, stop = execute(context, function(){
+						stop2 = otherStep.then(step(function(){finish();})).execute(context);
+						
+					});
+					return function(){
+						stop2();
+						stop();
+					};
+				});
+			}
 		};
-		toReturn.add = function(f){toDo.push(f);};
-		return toReturn;
 	};
-	var position = makeModule(function(execute){
-		var finish;
-		execute = (function(old){
-			return function(context){
-				var finish_ = finish(context);
-				var result = old.apply(null, [context, finish_]);
+
+	var chooseOne = step(function(context, finish){
+		var choice = makeNode("<div><input type='button' value='1' id='1'/><input type='button' value='2' id='2'/></div>", function(b1, b2){
+			b1.onclick = function(){
+				context.value = 1;finish();
 			};
-		})(execute);
-		this.expose({
-			execute: execute
+			b2.onclick = function(){context.value = 2;finish();};
 		});
-		this.extend('step', function(){
-			var then;
-			finish = function(context){
-				return function(){
-					(then || function(){})(context);
-				};
-			};
-			this.expose({
-				then: function(otherPosition){
-					then = otherPosition.execute;
-					return this;
-				}
-			});
-		});
-		this.extend('question',function(){
-			var ifyes, ifno;
-			finish = function(context){
-				return function(answer){
-					if(answer){
-						(ifyes || function(){})(context);
-					}else{
-						(ifno || function(){})(context);
-					}
-				};
-			};
-			this.expose({
-				ifyes: function(otherPosition){
-					ifyes = otherPosition.execute;
-					return this;
-				},
-				ifno: function(otherPosition){
-					ifno = otherPosition.execute;
-					return this;
-				}
-			});
-		});
+		document.body.appendChild(choice);
+		return function(){
+			document.body.removeChild(choice);
+		};
 	});
 
-	var context = {number: 3};
-	var q1 = position.step(function(context, finish){
-		document.write("going to sqare now<br>");
-		context.number *= context.number;
+	var chooseOther = step(function(context, finish){
+		var choice = makeNode("<div><input type='button' value='one' id='1'/><input type='button' value='other' id='2'/></div>", function(b1, b2){
+			b1.onclick = function(){context.value2 = 1;finish();};
+			b2.onclick = function(){context.value2 = 2;finish();};
+		});
+		document.body.appendChild(choice);
+		return function(){
+			document.body.removeChild(choice);
+		};
+	});
+
+	var display = step(function(context, finish){
+		console.log(context);
 		finish();
 	});
-	var q2 = position.question(function(context, finish){
-		document.write("let's see...<br>");
-		setTimeout(function(){
-			var answer = Math.random() < 0.7;
-			finish(answer);
-		}, 750);
-		
-	});
-	var q3 = position.step(function(context, finish){
-		document.write("going to double now<br>");
-		context.number *= 2;
-		finish();
-	});
-	var q4 = position.step(function(context, finish){
-		document.write(context.number);
-		finish();
-	});
-	q1.then(q2);
-	q2.ifyes(q3).ifno(q4);
-	q3.then(q2);
-	q1.execute(context);
-	console.log(context);
+
+	window.stop = chooseOne.then(chooseOther).then(display).execute({});
 })();
 </script>
 </body>

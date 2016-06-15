@@ -852,202 +852,207 @@
 			}
 		};
 	})();
+
+	var action = (function(){
+
+		return {
+			doNothing: function(){
+				canvas.setMouseFilter(canvas.mouseFilter.ALL);
+				canvas.onclickshape();
+				canvas.onclicknotshape();
+				canvas.onmousedownonshape(action.startMoving);
+				canvas.onmouseovershape(canvas.cangrab);
+				canvas.onmouseoverintersection();
+				canvas.onclickintersection();
+				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.onmouseup();
+			},
+			select: function(stop){
+				canvas.setMouseFilter(canvas.mouseFilter.ALL);
+				canvas.onmousedownonshape();
+				canvas.onmouseovershape(canvas.hasnopointer);
+				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.onclickshape(function(s, e){
+					canvas.selectShape(s);
+				});
+				canvas.onclicknotshape(function(e){
+					canvas.clearSelection();
+				});
+				return function(){
+					canvas.clearSelection();
+					stop();
+				};
+			},
+			hideUnhide: function(stop){
+				canvas.showHidden();
+				canvas.setMouseFilter(canvas.mouseFilter.ALL);
+				canvas.onmousedownonshape();
+				canvas.onmouseovershape(canvas.hasnopointer);
+				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.onclicknotshape();
+				canvas.onclickshape(function(s, e){
+					s.hideUnhide();
+				});
+				return function(){
+					canvas.hideHidden();
+					stop();
+				};
+			},
+			startMoving: function(s, e){
+				var doMove = function(e){
+					canvas.isgrabbing();
+					s.dragTo(point(e.clientX, e.clientY));
+				};
+
+				canvas.onmouseup(action.doNothing);
+				canvas.onmouseovershape(function(s, e){doMove(e);});
+				canvas.onmouseovernotshape(doMove);
+				canvas.onmouseoverintersection(function(i,e){doMove(e);});
+				doMove(e);
+			},
+			makePointStructure: function(res, stop){
+				var p = canvas.addPoint({
+					location: point(200,200)
+				}, true);
+				canvas.onmousedownonshape();
+				canvas.onmouseovershape(function(s, e){
+					p.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
+				});
+				canvas.onmouseovernotshape(function(e){
+					p.getChanger().setLocation(point(e.clientX, e.clientY));
+				});
+				canvas.onmouseoverintersection(function(i, e){
+					p.getChanger().setLocation(i.calculate());
+					
+				});
+				canvas.onclickshape(function(s, e){
+					
+					
+					res(structure.point(p, s));
+					p.exclude(false);
+					stop();
+				});
+				canvas.onclickintersection(function(i){
+					res(structure.pointOnIntersection(p, i));
+					p.exclude(false);
+					stop();
+				});
+				canvas.onclicknotshape(function(e){
+					
+					
+					res(structure.point(p));
+					p.exclude(false);
+					stop();
+				});
+				return function(){
+					p.remove();
+					stop();
+				};
+			},
+			makeCircleStructure: function(res, stop){
+				var revert = stop;
+				canvas.setMouseFilter(canvas.mouseFilter.POINT);
+				var chosenCenter, growCircle, circle;
+				canvas.onmouseovershape(canvas.haspointer);
+				canvas.onmousedownonshape();
+				
+				canvas.onclickshape(function(s, e){
+					chosenCenter = s;
+					circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
+					growCircle = function(p){circle.getChanger().setR(p.minus(chosenCenter.getSpecs().location).mod());};
+					canvas.onmouseovernotshape(function(e){
+						canvas.hasnopointer();
+						growCircle(point(e.clientX, e.clientY));
+					});
+					canvas.onmouseovershape(function(s, e){
+						canvas.haspointer();
+						growCircle(s.closestPointTo(point(e.clientX, e.clientY)));
+					});
+					canvas.onclicknotshape(function(e){
+						res(structure.circle(chosenCenter, circle));
+						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+					canvas.onclickshape(function(s, e){
+						res(structure.circle(chosenCenter, circle, s));
+						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+					revert = function(){
+						circle.remove();
+						stop();
+					};
+				});
+				return function(){
+					revert();
+				};
+			},
+			makeLineStructure: function(res, stop){
+				var revert = stop;
+				canvas.setMouseFilter(canvas.mouseFilter.POINT);
+				var chosenP1, moveLine, line;
+				canvas.onmouseovershape(canvas.haspointer);
+				canvas.onmousedownonshape();
+				canvas.onclickshape(function(s, e){
+					chosenP1 = s;
+					line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(point(100,0))});
+					moveLine = function(p){line.getChanger().moveTo(p);};
+					canvas.onmouseovernotshape(function(e){
+						canvas.hasnopointer();
+						moveLine(point(e.clientX, e.clientY));
+					});
+					canvas.onmouseovershape(function(s, e){
+						canvas.haspointer();
+						moveLine(s.closestPointTo(point(e.clientX, e.clientY)));
+					});
+					canvas.onclicknotshape(function(e){
+						res(structure.line(chosenP1, line));
+						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+					canvas.onclickshape(function(s, e){
+						res(structure.line(chosenP1, line, s));
+						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+					revert = function(){
+						line.remove();
+						stop();
+					};
+				});
+				return function(){
+					revert();
+				};
+			},
+			makePerpendicularLine: function(res, stop){
+				var revert = stop;
+				canvas.setMouseFilter(canvas.mouseFilter.POINT);
+				var chosenPoint;
+				canvas.onmouseovershape(canvas.haspointer);
+				canvas.onmousedownonshape();
+				canvas.onclicknotshape();
+				canvas.onclickshape(function(s, e){
+					chosenPoint = s;
+					canvas.setMouseFilter(canvas.mouseFilter.LINE);
+					canvas.onmouseovershape(canvas.haspointer);
+					canvas.onmouseovernotshape(canvas.hasnopointer);
+					canvas.onclickshape(function(l, e){
+						var lSpecs = l.getSpecs(), p1 = chosenPoint.getSpecs().location, p2 = p1.plus(lSpecs.p2.minus(lSpecs.p1).matrix(0,-1,1,0));
+						var perpLine = canvas.addLine({p1:p1, p2:p2});
+						res(structure.perpendicularLine(chosenPoint, perpLine, l));
+						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+				});
+				return function(){
+					revert();
+				};
+			}
+		};
+	})();
 	
 
-	var action = {
-		doNothing: function(){
-			canvas.setMouseFilter(canvas.mouseFilter.ALL);
-			canvas.onclickshape();
-			canvas.onclicknotshape();
-			canvas.onmousedownonshape(action.startMoving);
-			canvas.onmouseovershape(canvas.cangrab);
-			canvas.onmouseoverintersection();
-			canvas.onclickintersection();
-			canvas.onmouseovernotshape(canvas.hasnopointer);
-			canvas.onmouseup();
-		},
-		select: function(stop){
-			canvas.setMouseFilter(canvas.mouseFilter.ALL);
-			canvas.onmousedownonshape();
-			canvas.onmouseovershape(canvas.hasnopointer);
-			canvas.onmouseovernotshape(canvas.hasnopointer);
-			canvas.onclickshape(function(s, e){
-				canvas.selectShape(s);
-			});
-			canvas.onclicknotshape(function(e){
-				canvas.clearSelection();
-			});
-			return function(){
-				canvas.clearSelection();
-				stop();
-			};
-		},
-		hideUnhide: function(stop){
-			canvas.showHidden();
-			canvas.setMouseFilter(canvas.mouseFilter.ALL);
-			canvas.onmousedownonshape();
-			canvas.onmouseovershape(canvas.hasnopointer);
-			canvas.onmouseovernotshape(canvas.hasnopointer);
-			canvas.onclicknotshape();
-			canvas.onclickshape(function(s, e){
-				s.hideUnhide();
-			});
-			return function(){
-				canvas.hideHidden();
-				stop();
-			};
-		},
-		startMoving: function(s, e){
-			var doMove = function(e){
-				canvas.isgrabbing();
-				s.dragTo(point(e.clientX, e.clientY));
-			};
-
-			canvas.onmouseup(action.doNothing);
-			canvas.onmouseovershape(function(s, e){doMove(e);});
-			canvas.onmouseovernotshape(doMove);
-			canvas.onmouseoverintersection(function(i,e){doMove(e);});
-			doMove(e);
-		},
-		makePointStructure: function(res, stop){
-			var p = canvas.addPoint({
-				location: point(200,200)
-			}, true);
-			canvas.onmousedownonshape();
-			canvas.onmouseovershape(function(s, e){
-				p.getChanger().setLocation(s.closestPointTo(point(e.clientX, e.clientY)));
-			});
-			canvas.onmouseovernotshape(function(e){
-				p.getChanger().setLocation(point(e.clientX, e.clientY));
-			});
-			canvas.onmouseoverintersection(function(i, e){
-				p.getChanger().setLocation(i.calculate());
-				
-			});
-			canvas.onclickshape(function(s, e){
-				
-				
-				res(structure.point(p, s));
-				p.exclude(false);
-				stop();
-			});
-			canvas.onclickintersection(function(i){
-				res(structure.pointOnIntersection(p, i));
-				p.exclude(false);
-				stop();
-			});
-			canvas.onclicknotshape(function(e){
-				
-				
-				res(structure.point(p));
-				p.exclude(false);
-				stop();
-			});
-			return function(){
-				p.remove();
-				stop();
-			};
-		},
-		makeCircleStructure: function(res, stop){
-			var revert = stop;
-			canvas.setMouseFilter(canvas.mouseFilter.POINT);
-			var chosenCenter, growCircle, circle;
-			canvas.onmouseovershape(canvas.haspointer);
-			canvas.onmousedownonshape();
-			
-			canvas.onclickshape(function(s, e){
-				chosenCenter = s;
-				circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
-				growCircle = function(p){circle.getChanger().setR(p.minus(chosenCenter.getSpecs().location).mod());};
-				canvas.onmouseovernotshape(function(e){
-					canvas.hasnopointer();
-					growCircle(point(e.clientX, e.clientY));
-				});
-				canvas.onmouseovershape(function(s, e){
-					canvas.haspointer();
-					growCircle(s.closestPointTo(point(e.clientX, e.clientY)));
-				});
-				canvas.onclicknotshape(function(e){
-					res(structure.circle(chosenCenter, circle));
-					canvas.setMouseFilter(canvas.mouseFilter.ALL);
-					stop();
-				});
-				canvas.onclickshape(function(s, e){
-					res(structure.circle(chosenCenter, circle, s));
-					canvas.setMouseFilter(canvas.mouseFilter.ALL);
-					stop();
-				});
-				revert = function(){
-					circle.remove();
-					stop();
-				};
-			});
-			return function(){
-				revert();
-			};
-		},
-		makeLineStructure: function(res, stop){
-			var revert = stop;
-			canvas.setMouseFilter(canvas.mouseFilter.POINT);
-			var chosenP1, moveLine, line;
-			canvas.onmouseovershape(canvas.haspointer);
-			canvas.onmousedownonshape();
-			canvas.onclickshape(function(s, e){
-				chosenP1 = s;
-				line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(point(100,0))});
-				moveLine = function(p){line.getChanger().moveTo(p);};
-				canvas.onmouseovernotshape(function(e){
-					canvas.hasnopointer();
-					moveLine(point(e.clientX, e.clientY));
-				});
-				canvas.onmouseovershape(function(s, e){
-					canvas.haspointer();
-					moveLine(s.closestPointTo(point(e.clientX, e.clientY)));
-				});
-				canvas.onclicknotshape(function(e){
-					res(structure.line(chosenP1, line));
-					canvas.setMouseFilter(canvas.mouseFilter.ALL);
-					stop();
-				});
-				canvas.onclickshape(function(s, e){
-					res(structure.line(chosenP1, line, s));
-					canvas.setMouseFilter(canvas.mouseFilter.ALL);
-					stop();
-				});
-				revert = function(){
-					line.remove();
-					stop();
-				};
-			});
-			return function(){
-				revert();
-			};
-		},
-		makePerpendicularLine: function(res, stop){
-			var revert = stop;
-			canvas.setMouseFilter(canvas.mouseFilter.POINT);
-			var chosenPoint;
-			canvas.onmouseovershape(canvas.haspointer);
-			canvas.onmousedownonshape();
-			canvas.onclicknotshape();
-			canvas.onclickshape(function(s, e){
-				chosenPoint = s;
-				canvas.setMouseFilter(canvas.mouseFilter.LINE);
-				canvas.onmouseovershape(canvas.haspointer);
-				canvas.onmouseovernotshape(canvas.hasnopointer);
-				canvas.onclickshape(function(l, e){
-					var lSpecs = l.getSpecs(), p1 = chosenPoint.getSpecs().location, p2 = p1.plus(lSpecs.p2.minus(lSpecs.p1).matrix(0,-1,1,0));
-					var perpLine = canvas.addLine({p1:p1, p2:p2});
-					res(structure.perpendicularLine(chosenPoint, perpLine, l));
-					canvas.setMouseFilter(canvas.mouseFilter.ALL);
-					stop();
-				});
-			});
-			return function(){
-				revert();
-			};
-		}
-	};
+	
 
 	var button = (function(){
 		var xl=20, xr = 20;
@@ -1142,6 +1147,8 @@
 	}, "remove", true);
 
 	action.doNothing();
+
+	
 
 })(document, document.body.offsetWidth, document.body.offsetHeight);
 </script>
