@@ -35,7 +35,7 @@
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"4\" y1=\"26\" x2=\"26\" y2=\"4\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"4\" y1=\"4\" x2=\"26\" y2=\"26\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 .perpendicular {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"10\" y1=\"0\" x2=\"20\" y2=\"20\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"0\" y1=\"30\" x2=\"30\" y2=\"15\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"10\" y1=\"0\" x2=\"20\" y2=\"20\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"0\" y1=\"30\" x2=\"30\" y2=\"15\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"13\" cy=\"6\" r=\"3\" fill=\"black\" /></svg>");
 }
 .select {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"6\" width=\"26\" height=\"18\" stroke=\"black\" stroke-dasharray=\"3,2\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
@@ -362,6 +362,9 @@
 						}else{
 							p2 = p1.plus(p1.minus(p));
 						}
+					},
+					setFromP1: function(d){
+						p2 = p1.plus(d);
 					}
 				};
 
@@ -710,7 +713,8 @@
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
 			onclicknotshape: function(f){onclicknotshape = f || function(){};},
-			haspointer: function(){c.style.cursor = "-webkit-grab";},
+			cangrab: function(){c.style.cursor = "-webkit-grab";},
+			haspointer: function(){c.style.cursor = 'pointer';},
 			isgrabbing: function(){c.style.cursor = "-webkit-grabbing";},
 			onmouseup: function(f){onmouseup = f || function(){};},
 			hasnopointer: function(){
@@ -836,6 +840,15 @@
 						changer.setP1(newSpecs.location);
 					});
 				}
+			},
+			perpendicularLine: function(canvasPoint, canvasPerpendicularLine, canvasLine){
+				linkChange(canvasPerpendicularLine, canvasPoint, function(oldSpecs, newSpecs, changer){
+					changer.translateBy(newSpecs.location.minus(oldSpecs.location));
+				});
+
+				linkChange(canvasPerpendicularLine, canvasLine, function(oldSpecs, newSpecs, changer){
+					changer.setFromP1(newSpecs.p2.minus(newSpecs.p1).matrix(0, -1, 1, 0));
+				});
 			}
 		};
 	})();
@@ -847,7 +860,7 @@
 			canvas.onclickshape();
 			canvas.onclicknotshape();
 			canvas.onmousedownonshape(action.startMoving);
-			canvas.onmouseovershape(canvas.haspointer);
+			canvas.onmouseovershape(canvas.cangrab);
 			canvas.onmouseoverintersection();
 			canvas.onclickintersection();
 			canvas.onmouseovernotshape(canvas.hasnopointer);
@@ -939,7 +952,7 @@
 			var revert = stop;
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			var chosenCenter, growCircle, circle;
-			canvas.onmouseovershape();
+			canvas.onmouseovershape(canvas.haspointer);
 			canvas.onmousedownonshape();
 			
 			canvas.onclickshape(function(s, e){
@@ -947,9 +960,11 @@
 				circle = canvas.addCircle({center:chosenCenter.getSpecs().location,r:20});
 				growCircle = function(p){circle.getChanger().setR(p.minus(chosenCenter.getSpecs().location).mod());};
 				canvas.onmouseovernotshape(function(e){
+					canvas.hasnopointer();
 					growCircle(point(e.clientX, e.clientY));
 				});
 				canvas.onmouseovershape(function(s, e){
+					canvas.haspointer();
 					growCircle(s.closestPointTo(point(e.clientX, e.clientY)));
 				});
 				canvas.onclicknotshape(function(e){
@@ -975,16 +990,18 @@
 			var revert = stop;
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			var chosenP1, moveLine, line;
-			canvas.onmouseovershape();
+			canvas.onmouseovershape(canvas.haspointer);
 			canvas.onmousedownonshape();
 			canvas.onclickshape(function(s, e){
 				chosenP1 = s;
 				line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(point(100,0))});
 				moveLine = function(p){line.getChanger().moveTo(p);};
 				canvas.onmouseovernotshape(function(e){
+					canvas.hasnopointer();
 					moveLine(point(e.clientX, e.clientY));
 				});
 				canvas.onmouseovershape(function(s, e){
+					canvas.haspointer();
 					moveLine(s.closestPointTo(point(e.clientX, e.clientY)));
 				});
 				canvas.onclicknotshape(function(e){
@@ -1001,6 +1018,30 @@
 					line.remove();
 					stop();
 				};
+			});
+			return function(){
+				revert();
+			};
+		},
+		makePerpendicularLine: function(res, stop){
+			var revert = stop;
+			canvas.setMouseFilter(canvas.mouseFilter.POINT);
+			var chosenPoint;
+			canvas.onmouseovershape(canvas.haspointer);
+			canvas.onmousedownonshape();
+			canvas.onclicknotshape();
+			canvas.onclickshape(function(s, e){
+				chosenPoint = s;
+				canvas.setMouseFilter(canvas.mouseFilter.LINE);
+				canvas.onmouseovershape(canvas.haspointer);
+				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.onclickshape(function(l, e){
+					var lSpecs = l.getSpecs(), p1 = chosenPoint.getSpecs().location, p2 = p1.plus(lSpecs.p2.minus(lSpecs.p1).matrix(0,-1,1,0));
+					var perpLine = canvas.addLine({p1:p1, p2:p2});
+					res(structure.perpendicularLine(chosenPoint, perpLine, l));
+					canvas.setMouseFilter(canvas.mouseFilter.ALL);
+					stop();
+				});
 			});
 			return function(){
 				revert();
@@ -1074,6 +1115,13 @@
 	}, "line");
 
 	button(function(deactivateButton){
+		return action.makePerpendicularLine(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "perpendicular");
+
+	button(function(deactivateButton){
 		return action.select(function(){
 			action.doNothing();
 			deactivateButton();
@@ -1087,6 +1135,7 @@
 			deactivateButton();
 		});
 	},"hide", true);
+
 	button(function(deactivateButton){
 		canvas.removeSelection();
 		deactivateButton();
