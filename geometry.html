@@ -4,6 +4,7 @@
 .button {
 	width: 30px;
 	height: 30px;
+	top:20px;
 	background-color: #ddd;
 	position: absolute;
 	border-radius: 3px;
@@ -32,6 +33,9 @@
 }
 .remove {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"4\" y1=\"26\" x2=\"26\" y2=\"4\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"4\" y1=\"4\" x2=\"26\" y2=\"26\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
+}
+.perpendicular {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"10\" y1=\"0\" x2=\"20\" y2=\"20\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"0\" y1=\"30\" x2=\"30\" y2=\"15\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 .select {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"6\" width=\"26\" height=\"18\" stroke=\"black\" stroke-dasharray=\"3,2\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
@@ -1005,15 +1009,15 @@
 	};
 
 	var button = (function(){
-		var x=20,y=20;
+		var xl=20, xr = 20;
 		var addClass = function(el, name){
 			el.setAttribute('class', el.getAttribute('class') + " "+name);
 		};
 		var removeClass = function(el, name){
 			el.setAttribute('class', el.getAttribute('class').split(/[\s]+/g).filter(function(c){return c!=name;}).join(' '));
 		};
-		var button = function(a, className){
-			var b = makeNode("<div id='1' class='button"+(className?" "+className:"")+"' style='left:"+x+"px;top:"+y+"px'></div>", function(div){
+		var button = function(a, className, right){
+			var b = makeNode("<div id='1' class='button"+(className?" "+className:"")+"' style='"+(right ? "right:"+xr+"px" : "left:"+xl+"px")+"'></div>", function(div){
 				var makeActive = function(){addClass(div, 'active');};
 				var makeNonActive = function(){removeClass(div, 'active');};
 				var normalOnClick = function(e){
@@ -1036,7 +1040,12 @@
 				div.onclick = normalOnClick;
 				document.body.appendChild(div);
 			});
-			x+=40;
+			if(right){
+				xr += 40;
+			}else{
+				xl+=40;
+			}
+			
 		};
 		return button;
 	})();
@@ -1070,18 +1079,18 @@
 			deactivateButton();
 		});
 		
-	}, "select");
+	}, "select", true);
 
 	button(function(deactivateButton){
 		return action.hideUnhide(function(){
 			action.doNothing();
 			deactivateButton();
 		});
-	},"hide");
+	},"hide", true);
 	button(function(deactivateButton){
 		canvas.removeSelection();
 		deactivateButton();
-	}, "remove");
+	}, "remove", true);
 
 	action.doNothing();
 
