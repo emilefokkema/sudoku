@@ -4,17 +4,19 @@
 <script src="makeNode.js"></script>
 <script>
 (function(){
-	var sender = function(){
-		var todo= [];
+	var sequentialSender = function(){
+		var all=[], i = 0;
 		var f = function(){
-			var args = arguments;
-			todo.map(function(g){
-				g.apply(null, args);
-			});
+			if(i < all.length){
+				return all[i].apply(null, arguments);
+				i++;
+			}
 		};
-		f.add = function(g){todo.push(g);return f;};
+		f.add = function(f_){all.push(f_);};
 		return f;
+
 	};
+	
 	var step = (function(){
 		var s = function(execute){
 			var finish = function(){};
@@ -40,37 +42,47 @@
 		return s;
 	})();
 
-	var chooser = (function(){
-		var ch = function(selector, send){
-			
+	var chooser = function(selector, send){
+		var makeStep = function(sel){
+			return step(function(context, finish){
+				return sel(function(v){
+					context(v);
+					finish();
+				});
+			});
 		};
-
-	})();
+		var step_ = makeStep(selector);
+		var context = sequentialSender();
+		context.add(send);
+		var exec = function(){return step_(context);}
+		exec.then = function(selector_, send_){
+			step_ = step_.then(makeStep(selector_));
+			console.log("adding function to context");
+			context.add(send_);
+			return exec;
+		};
+		return exec;
+	}
 	
 
 
-
-	var chooseOne = step(function(context, finish){
+	var selectOne = function(send){
 		var choice = makeNode("<div><input type='button' value='1' id='1'/><input type='button' value='2' id='2'/></div>", function(b1, b2){
 			b1.onclick = function(){
-				context.value = 1;finish();
+				send(1);
 			};
-			b2.onclick = function(){context.value = 2;finish();};
+			b2.onclick = function(){send(2);};
 		});
 		document.body.appendChild(choice);
 		return function(){
 			document.body.removeChild(choice);
 		};
-	});
-
+	}
 	
 
-	var display = step(function(context, finish){
-		console.log(context);
-		finish();
-	});
-
-	window.stop = chooseOne.then(chooseOne).then(display)();
+	window.stop = chooser(selectOne, function(v){console.log(v);})
+			.then(selectOne, function(v){console.log(v);})
+			.then(selectOne, function(v){console.log(v);})();
 })();
 </script>
 </body>
