@@ -123,9 +123,78 @@
 		}
 		return result;
 	};
+	var once = function(f){
+		var called = false;
+		return function(){
+			if(!called){
+				called = true;
+				return f.apply(null, arguments);
+			}
+		};
+	};
+	var step = (function(){
+		var s = function(execute){
+			var finish = function(){};
+			var exec = function(context){
+				finish = execute(context || {}, function(){finish();});
+				return finish || function(){};
+			};
+			exec.then = function(otherStep){
+				return s(function(context, finish){
+					var stop2 = function(){}, stop = execute(context, function(){
+						stop2 = otherStep.then(s(function(){finish();}))(context);
+						
+					});
+					return function(){
+						stop2();
+						(stop || function(){})();
+						
+					};
+				});
+			};
+			return exec;
+		};
+		return s;
+	})();
+	var chooser = (function(){
+		var sequentialSender = function(){
+			var all=[], i = 0;
+			var f = function(){
+				if(i < all.length){
+					return all[i].apply(null, arguments);
+					i++;
+				}
+			};
+			f.add = function(f_){all.push(f_);};
+			return f;
+
+		};
+		var makeStep = function(sel){
+			return step(function(context, finish){
+				return sel(once(function(v){
+					context(v);
+					finish();
+				}));
+			});
+		};
+		return function(selector, send){
+			var step_ = makeStep(selector);
+			var context = sequentialSender();
+			context.add(send);
+			var exec = function(){return step_(context);}
+			exec.then = function(selector_, send_){
+				step_ = step_.then(makeStep(selector_));
+				console.log("adding function to context");
+				context.add(send_);
+				return exec;
+			};
+			return exec;
+		};
+	})();
 	window.structureHelpers = {
 		makeTrees: makeTrees,
-		allNodes: allNodes
+		allNodes: allNodes,
+		chooser: chooser
 	};
 })();
 

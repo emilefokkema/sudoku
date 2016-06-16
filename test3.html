@@ -4,19 +4,16 @@
 <script src="makeNode.js"></script>
 <script>
 (function(){
-	var sequentialSender = function(){
-		var all=[], i = 0;
-		var f = function(){
-			if(i < all.length){
-				return all[i].apply(null, arguments);
-				i++;
+	
+	var once = function(f){
+		var called = false;
+		return function(){
+			if(!called){
+				called = true;
+				return f.apply(null, arguments);
 			}
 		};
-		f.add = function(f_){all.push(f_);};
-		return f;
-
 	};
-	
 	var step = (function(){
 		var s = function(execute){
 			var finish = function(){};
@@ -41,28 +38,42 @@
 		};
 		return s;
 	})();
+	var chooser = (function(){
+		var sequentialSender = function(){
+			var all=[], i = 0;
+			var f = function(){
+				if(i < all.length){
+					return all[i].apply(null, arguments);
+					i++;
+				}
+			};
+			f.add = function(f_){all.push(f_);};
+			return f;
 
-	var chooser = function(selector, send){
+		};
 		var makeStep = function(sel){
 			return step(function(context, finish){
-				return sel(function(v){
+				return sel(once(function(v){
 					context(v);
 					finish();
-				});
+				}));
 			});
 		};
-		var step_ = makeStep(selector);
-		var context = sequentialSender();
-		context.add(send);
-		var exec = function(){return step_(context);}
-		exec.then = function(selector_, send_){
-			step_ = step_.then(makeStep(selector_));
-			console.log("adding function to context");
-			context.add(send_);
+		return function(selector, send){
+			var step_ = makeStep(selector);
+			var context = sequentialSender();
+			context.add(send);
+			var exec = function(){return step_(context);}
+			exec.then = function(selector_, send_){
+				step_ = step_.then(makeStep(selector_));
+				console.log("adding function to context");
+				context.add(send_);
+				return exec;
+			};
 			return exec;
 		};
-		return exec;
-	}
+	})();
+	
 	
 
 
