@@ -4,27 +4,51 @@
 <script src="makeNode.js"></script>
 <script>
 (function(){
-	var step = function(execute){
-		var finish = function(){};
-		return {
-			execute:function(context){
+	var sender = function(){
+		var todo= [];
+		var f = function(){
+			var args = arguments;
+			todo.map(function(g){
+				g.apply(null, args);
+			});
+		};
+		f.add = function(g){todo.push(g);return f;};
+		return f;
+	};
+	var step = (function(){
+		var s = function(execute){
+			var finish = function(){};
+			var exec = function(context){
 				finish = execute(context || {}, function(){finish();});
 				return finish || function(){};
-			},
-			then: function(otherStep){
-				return step(function(context, finish){
+			};
+			exec.then = function(otherStep){
+				return s(function(context, finish){
 					var stop2 = function(){}, stop = execute(context, function(){
-						stop2 = otherStep.then(step(function(){finish();})).execute(context);
+						stop2 = otherStep.then(s(function(){finish();}))(context);
 						
 					});
 					return function(){
 						stop2();
-						stop();
+						(stop || function(){})();
+						
 					};
 				});
-			}
+			};
+			return exec;
 		};
-	};
+		return s;
+	})();
+
+	var chooser = (function(){
+		var ch = function(selector, send){
+			
+		};
+
+	})();
+	
+
+
 
 	var chooseOne = step(function(context, finish){
 		var choice = makeNode("<div><input type='button' value='1' id='1'/><input type='button' value='2' id='2'/></div>", function(b1, b2){
@@ -39,23 +63,14 @@
 		};
 	});
 
-	var chooseOther = step(function(context, finish){
-		var choice = makeNode("<div><input type='button' value='one' id='1'/><input type='button' value='other' id='2'/></div>", function(b1, b2){
-			b1.onclick = function(){context.value2 = 1;finish();};
-			b2.onclick = function(){context.value2 = 2;finish();};
-		});
-		document.body.appendChild(choice);
-		return function(){
-			document.body.removeChild(choice);
-		};
-	});
+	
 
 	var display = step(function(context, finish){
 		console.log(context);
 		finish();
 	});
 
-	window.stop = chooseOne.then(chooseOther).then(display).execute({});
+	window.stop = chooseOne.then(chooseOne).then(display)();
 })();
 </script>
 </body>
