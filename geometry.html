@@ -651,6 +651,7 @@
 		};
 
 		var shapeCursor = cursorSetter.none;
+		var noShapeCursor = cursorSetter.none;
 
 		var moveHandler = mouseActionHandler(
 			function(s, e){
@@ -662,7 +663,7 @@
 				s.onmouseout(e);
 			},
 			function(e){
-				cursorSetter.none();
+				noShapeCursor();
 				onmouseovernotshape(e);
 			},
 			function(i, e){
@@ -739,6 +740,7 @@
 			showHidden:function(){showHidden = true;},
 			hideHidden: function(){showHidden = false;},
 			setShapeCursor: function(c){shapeCursor = c;},
+			setNoShapeCursor: function(c){noShapeCursor = c;},
 			cursor: cursorSetter
 
 		};
@@ -862,6 +864,17 @@
 				linkChange(canvasPerpendicularLine, canvasLine, function(oldSpecs, newSpecs, changer){
 					changer.setFromP1(newSpecs.p2.minus(newSpecs.p1).matrix(0, -1, 1, 0));
 				});
+			},
+			perpendicularBisector: function(canvasPoint1, perpBis, canvasPoint2){
+				linkChange(perpBis, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
+					changer.setP1(newSpecs.location.plus(constants[0].location).scale(1/2));
+					changer.setFromP1(constants[0].location.minus(newSpecs.location).matrix(0, -1, 1, 0));
+				}, [canvasPoint2]);
+
+				linkChange(perpBis, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
+					changer.setP1(constants[0].location.plus(newSpecs.location).scale(1/2));
+					changer.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
+				}, [canvasPoint1]);
 			}
 		};
 	})();
@@ -885,6 +898,8 @@
 		};
 		var selectLocationOrShapeOrIntersection = function(send, suggest){
 			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+			canvas.setShapeCursor(canvas.cursor.none);
+			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
 			canvas.onmouseovernotshape(function(e){
 				suggest(point(e.clientX, e.clientY));
@@ -908,6 +923,18 @@
 		var selectPoint = function(send){
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
+			canvas.setNoShapeCursor(canvas.cursor.none);
+			canvas.onmousedownonshape();
+			canvas.onmouseovershape();
+			canvas.onmouseovernotshape();
+			canvas.onclickshape(function(s, e){
+				send(s);
+			});
+		};
+		var selectLine = function(send){
+			canvas.setMouseFilter(canvas.mouseFilter.LINE);
+			canvas.setShapeCursor(canvas.cursor.pointer);
+			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
 			canvas.onmouseovershape();
 			canvas.onmouseovernotshape();
@@ -919,6 +946,7 @@
 			doNothing: function(){
 				canvas.setMouseFilter(canvas.mouseFilter.ALL);
 				canvas.setShapeCursor(canvas.cursor.abouttograb);
+				canvas.setNoShapeCursor(canvas.cursor.none);
 				canvas.onclickshape();
 				canvas.onclicknotshape();
 				canvas.onmousedownonshape(action.startMoving);
@@ -960,8 +988,9 @@
 				};
 			},
 			startMoving: function(s, e){
+				canvas.setShapeCursor(canvas.cursor.grabbing);
+				canvas.setNoShapeCursor(canvas.cursor.grabbing);
 				var doMove = function(e){
-					canvas.isgrabbing();
 					s.dragTo(point(e.clientX, e.clientY));
 				};
 
@@ -1054,22 +1083,30 @@
 				};
 			},
 			makePerpendicularLine: function(res, stop){
-				var revert = stop;
-				canvas.setMouseFilter(canvas.mouseFilter.POINT);
-				var chosenPoint;
-				canvas.onmouseovershape(canvas.haspointer);
-				canvas.onmousedownonshape();
-				canvas.onclicknotshape();
-				canvas.onclickshape(function(s, e){
+				var chosenPoint, revert = stop;
+				selectPoint(function(s){
 					chosenPoint = s;
-					canvas.setMouseFilter(canvas.mouseFilter.LINE);
-					canvas.onmouseovershape(canvas.haspointer);
-					canvas.onmouseovernotshape(canvas.hasnopointer);
-					canvas.onclickshape(function(l, e){
+					selectLine(function(l){
 						var lSpecs = l.getSpecs(), p1 = chosenPoint.getSpecs().location, p2 = p1.plus(lSpecs.p2.minus(lSpecs.p1).matrix(0,-1,1,0));
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.perpendicularLine(chosenPoint, perpLine, l));
-						canvas.setMouseFilter(canvas.mouseFilter.ALL);
+						stop();
+					});
+				});
+				return function(){
+					revert();
+				};
+			},
+			makePerpendicularBisector: function(res, stop){
+				var p1, revert = stop;
+				selectPoint(function(p1){
+					selectPoint(function(p2){
+						var p1loc = p1.getSpecs().location, p2loc = p2.getSpecs().location, newp1loc = p1loc.plus(p2loc).scale(1/2);
+						var perpBis = canvas.addLine({
+							p1: newp1loc,
+							p2: newp1loc.plus(p2loc.minus(p1loc).matrix(0, -1, 1, 0))
+						});
+						res(structure.perpendicularBisector(p1, perpBis, p2));
 						stop();
 					});
 				});
@@ -1154,6 +1191,13 @@
 			deactivateButton();
 		});
 	}, "perpendicular");
+
+	button(function(deactivateButton){
+		return action.makePerpendicularBisector(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		})
+	});
 
 	button(function(deactivateButton){
 		return action.select(function(){
