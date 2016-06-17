@@ -35,7 +35,10 @@
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"4\" y1=\"26\" x2=\"26\" y2=\"4\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"4\" y1=\"4\" x2=\"26\" y2=\"26\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 .perpendicular {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"10\" y1=\"0\" x2=\"20\" y2=\"20\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"0\" y1=\"30\" x2=\"30\" y2=\"15\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"13\" cy=\"6\" r=\"3\" fill=\"black\" /></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"11\" y1=\"2\" x2=\"24\" y2=\"28\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"2\" y1=\"29\" x2=\"28\" y2=\"14\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"14\" cy=\"8\" r=\"3\" fill=\"black\" /></svg>");
+}
+.bisect {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"5\" y1=\"0\" x2=\"20\" y2=\"30\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"8\" cy=\"21\" r=\"3\" fill=\"black\" /><circle cx=\"20\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
 }
 .select {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"6\" width=\"26\" height=\"18\" stroke=\"black\" stroke-dasharray=\"3,2\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
@@ -725,13 +728,7 @@
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
 			onclicknotshape: function(f){onclicknotshape = f || function(){};},
-			cangrab: function(){c.style.cursor = "-webkit-grab";},
-			haspointer: function(){c.style.cursor = 'pointer';},
-			isgrabbing: function(){c.style.cursor = "-webkit-grabbing";},
 			onmouseup: function(f){onmouseup = f || function(){};},
-			hasnopointer: function(){
-				c.style.cursor = "default";
-			},
 			setMouseFilter: function(f){currentMouseFilter = f;},
 			mouseFilter: shapeFilter,
 			selectShape: function(s){selection.addShape(s);},
@@ -959,8 +956,8 @@
 			select: function(stop){
 				canvas.setMouseFilter(canvas.mouseFilter.ALL);
 				canvas.onmousedownonshape();
-				canvas.onmouseovershape(canvas.hasnopointer);
-				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.setNoShapeCursor(canvas.cursor.none);
+				canvas.setShapeCursor(canvas.cursor.none);
 				canvas.onclickshape(function(s, e){
 					canvas.selectShape(s);
 				});
@@ -976,8 +973,8 @@
 				canvas.showHidden();
 				canvas.setMouseFilter(canvas.mouseFilter.ALL);
 				canvas.onmousedownonshape();
-				canvas.onmouseovershape(canvas.hasnopointer);
-				canvas.onmouseovernotshape(canvas.hasnopointer);
+				canvas.setNoShapeCursor(canvas.cursor.none);
+				canvas.setShapeCursor(canvas.cursor.none);
 				canvas.onclicknotshape();
 				canvas.onclickshape(function(s, e){
 					s.hideUnhide();
@@ -1197,7 +1194,7 @@
 			action.doNothing();
 			deactivateButton();
 		})
-	});
+	},"bisect");
 
 	button(function(deactivateButton){
 		return action.select(function(){
