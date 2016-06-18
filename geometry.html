@@ -160,6 +160,13 @@
 		};
 	})();
 
+	var shapeLogic = makeModule(function(specs){
+		var getSpecs, changer, closestPointTo, repositionPoint;
+		this.expose({
+
+		});
+	});
+
 	var canvas = (function(){
 		var context, c = document.createElement('canvas');
 		c.setAttribute('width', w);
@@ -256,13 +263,14 @@
 				onchange: onchange,
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
-				getSpecs: getSpecs,
+				getSpecs: function(){return getSpecs();},
 				getChanger: getChanger,
 				dragTo: function(p){ondrag(p);},
 				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
 				passesFilter: function(f){return passesFilter(f);},
 				setSelected: function(b){selected = b;},
-				hideUnhide: hideUnhide
+				hideUnhide: hideUnhide,
+				closestPointTo:function(p){return closestPointTo(p);}
 			});
 			this.extend('circle', function(_specs){
 				var center = _specs.center || point(0,0);
@@ -308,11 +316,7 @@
 						return p.plus(newSpecs.center.minus(oldSpecs.center));
 					}
 				};
-				this.expose({
-					//draw:draw,
-					closestPointTo: closestPointTo,
-					getSpecs: getSpecs
-				});
+				
 			});
 			this.extend('line', function(_specs){
 				var p1 = _specs.p1 || point(0,0);
@@ -383,11 +387,7 @@
 					return newSpecs.p2.plus(newSpecs.p1.minus(newSpecs.p2).unit().scale(sign * p.minus(newSpecs.p2).mod()));
 				};
 
-				this.expose({
-					//draw:draw,
-					closestPointTo: closestPointTo,
-					getSpecs: getSpecs
-				});
+				
 			});
 			this.extend('point',function(_specs){
 				var loc = _specs.location || point(0,0);
@@ -419,11 +419,7 @@
 						location: loc
 					};
 				};
-				this.expose({
-					//draw:draw,
-					closestPointTo: closestPointTo,
-					getSpecs: getSpecs
-				});
+				
 			});
 		});
 
