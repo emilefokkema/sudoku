@@ -161,9 +161,143 @@
 	})();
 
 	var shapeLogic = makeModule(function(specs){
-		var getSpecs, changer, closestPointTo, repositionPoint;
+		var getSpecs = function(){return {};},
+			changer = {},
+			closestPointTo = function(p){return point(0,0);},
+			repositionPoint = function(){},
+			getChanger = function(){
+				var o = {};
+				for(var f in changer){
+					if(changer.hasOwnProperty(f)){
+						o[f] = (function(f_){
+							return function(){
+								var oldSpecs = getSpecs();
+								changer[f_].apply(null, arguments);
+								onchange(oldSpecs, getSpecs());
+							};
+						})(f)
+					}
+				}
+				return o;
+			},
+			distance = function(p){return Infinity;},
+			onchange = sender();
 		this.expose({
+			getSpecs: function(){return getSpecs();},
+			getChanger: getChanger,
+			closestPointTo: function(p){return closestPointTo(p);},
+			repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
+			onchange: function(f){onchange.add(f);},
+			distance:function(p){return distance(p);}
+		});
+		this.extend('circle',function(){
+			var center = specs.center || point(0,0);
+			var r = specs.r || 1;
 
+			distance = function(p){
+				return Math.abs(center.minus(p).mod() - r);
+			};
+
+			closestPointTo = function(p){
+				return center.plus(p.minus(center).unit().scale(r));
+			};
+
+			changer = {
+				setR: function(r_){r = r_;},
+				setCenter: function(c_){
+					center = c_;
+				}
+			};
+
+			getSpecs = function(){
+				return {
+					center:center,
+					r:r
+				};
+			};
+
+			repositionPoint = function(p, oldSpecs, newSpecs){
+				if(oldSpecs.center.equals(newSpecs.center)){
+					return oldSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
+				}
+				else{
+					return p.plus(newSpecs.center.minus(oldSpecs.center));
+				}
+			};
+		});
+		this.extend('line',function(){
+			var p1 = specs.p1 || point(0,0);
+			var p2 = specs.p2 || point(1,0);
+
+			var p1ToClosestPoint = function(p){
+				var x = p.minus(p1), y = p2.minus(p1);
+				var dot = x.dot(y);
+				return y.unit().scale(dot/y.mod());
+			};
+			closestPointTo = function(p){
+				return p1.plus(p1ToClosestPoint(p));
+			};
+			distance = function(p){
+				return p.minus(closestPointTo(p)).mod();
+			};
+			getSpecs = function(){
+				return {
+					p1:p1,
+					p2:p2
+				};
+			};
+
+			changer = {
+				setP1:function(p){p1 = p;},
+				setP2:function(p){p2 = p;},
+				translateBy: function(d){
+					p1 = p1.plus(d);
+					p2 = p2.plus(d);
+				},
+				moveTo: function(p){
+					if(p.minus(p1).dot(p2.minus(p1)) > 0){
+						p2 = p;
+					}else{
+						p2 = p1.plus(p1.minus(p));
+					}
+				},
+				setFromP1: function(d){
+					p2 = p1.plus(d);
+				}
+			};
+
+			repositionPoint = function(p, oldSpecs, newSpecs){
+				if(oldSpecs.p1.equals(newSpecs.p1)){
+					var sign = p.minus(oldSpecs.p1).dot(oldSpecs.p2.minus(oldSpecs.p1)) >=0 ? 1: -1;
+					return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).unit().scale(sign * p.minus(newSpecs.p1).mod()));
+				}
+				if(!oldSpecs.p2.equals(newSpecs.p2)){
+					return p.plus(newSpecs.p2.minus(oldSpecs.p2));
+				}
+				var sign = p.minus(oldSpecs.p2).dot(oldSpecs.p1.minus(oldSpecs.p2)) >=0 ? 1: -1;
+				return newSpecs.p2.plus(newSpecs.p1.minus(newSpecs.p2).unit().scale(sign * p.minus(newSpecs.p2).mod()));
+			};
+		});
+		this.extend('point',function(){
+			var loc = specs.location || point(0,0);
+
+			distance = function(p){
+				return loc.minus(p).mod();
+			};
+
+			closestPointTo = function(p){return loc;};
+
+			passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
+
+			changer = {
+				setLocation: function(l){loc = l;}
+			};
+
+			getSpecs = function(){
+				return {
+					location: loc
+				};
+			};
 		});
 	});
 
@@ -195,50 +329,26 @@
 			var hidden = false;
 			var available = true;
 			var draw = function(ctx){
-				
-					if(selected){
-						ctx.setLineDash([5]);
-						ctx.strokeStyle = '#00f';
-					}else{
-						ctx.setLineDash([]);
-						ctx.strokeStyle = stroke;
-					}
-					if(hidden){
-						ctx.strokeStyle = '#bbb';
-					}
-					//ctx.strokeStyle = stroke;
-					ctx.lineWidth = thickness;
-					ctx.fillStyle = fill;
-				
-				
+				if(selected){
+					ctx.setLineDash([5]);
+					ctx.strokeStyle = '#00f';
+				}else{
+					ctx.setLineDash([]);
+					ctx.strokeStyle = stroke;
+				}
+				if(hidden){
+					ctx.strokeStyle = '#bbb';
+				}
+				ctx.lineWidth = thickness;
+				ctx.fillStyle = fill;
 			};
-			var contains = function(p){return distance(p) < 10;};
-			var distance = function(p){return Infinity;};
-			var closestPointTo = function(p){return point(0,0);}
-			var getSpecs = function(){return {};};
-			var repositionPoint = function(p, oldSpecs, newSpecs){};
+			var logic;
+			var contains = function(p){return logic.distance(p) < 10;};
 			var onmouseover = sender().add(function(e){
 				stroke = '#f00';
 			});
 			var passesFilter = function(){return true;};
-			var onchange = sender();
 			var ondrag = sender();
-			var changer = {};
-			var getChanger = function(){
-				var o = {};
-				for(var f in changer){
-					if(changer.hasOwnProperty(f)){
-						o[f] = (function(f_){
-							return function(){
-								var oldSpecs = getSpecs();
-								changer[f_].apply(null, arguments);
-								onchange(oldSpecs, getSpecs());
-							};
-						})(f)
-					}
-				}
-				return o;
-			};
 			var onmouseout = sender().add(function(e){
 				stroke = 'black';
 			});
@@ -246,12 +356,14 @@
 			var hideUnhide = function(){
 				hidden = !hidden;
 			};
+			var getNewShapeLogic = function(sp){};
 			this.expose({
 				draw: function(ctx){
 					if(available && (!hidden || showHidden)){
 						draw(ctx);
 					}
 				},
+				getNewShapeLogic: function(){return getNewShapeLogic(logic.getSpecs());},
 				isHidden:function(){return hidden;},
 				isAvailable: function(){return available;},
 				contains: contains,
@@ -260,72 +372,43 @@
 				onmouseout: onmouseout,
 				onclick: onclick,
 				ondrag: ondrag,
-				onchange: onchange,
+				onchange: function(f){logic.onchange(f);},
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
-				getSpecs: function(){return getSpecs();},
-				getChanger: getChanger,
+				getSpecs: function(){return logic.getSpecs();},
+				getChanger: function(){return logic.getChanger();},
 				dragTo: function(p){ondrag(p);},
-				repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
+				repositionPoint: function(p, oldSpecs, newSpecs){return logic.repositionPoint(p, oldSpecs, newSpecs);},
 				passesFilter: function(f){return passesFilter(f);},
 				setSelected: function(b){selected = b;},
 				hideUnhide: hideUnhide,
-				closestPointTo:function(p){return closestPointTo(p);}
+				closestPointTo:function(p){return logic.closestPointTo(p);}
 			});
 			this.extend('circle', function(_specs){
-				var center = _specs.center || point(0,0);
-				var r = _specs.r || 1;
 				
 				draw = this.override(draw, function(ctx){
 					this(ctx);
+					var sp = logic.getSpecs();
 					ctx.beginPath();
-					ctx.arc(center.x, center.y, r, 0, 2*Math.PI);
+					ctx.arc(sp.center.x, sp.center.y, sp.r, 0, 2*Math.PI);
 					ctx.closePath();
 					ctx.stroke();
 				});
 
-				distance = function(p){
-					return Math.abs(center.minus(p).mod() - r);
-				};
-
-				closestPointTo = function(p){
-					return center.plus(p.minus(center).unit().scale(r));
-				};
-
 				passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL;};
 
-				changer = {
-					setR: function(r_){r = r_;},
-					setCenter: function(c_){
-						center = c_;
-					}
-				};
+				getNewShapeLogic = function(sp){return shapeLogic.circle(sp);};
 
-				getSpecs = function(){
-					return {
-						center:center,
-						r:r
-					};
-				};
-
-				repositionPoint = function(p, oldSpecs, newSpecs){
-					if(oldSpecs.center.equals(newSpecs.center)){
-						return oldSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
-					}
-					else{
-						return p.plus(newSpecs.center.minus(oldSpecs.center));
-					}
-				};
+				logic = getNewShapeLogic(_specs);
 				
 			});
 			this.extend('line', function(_specs){
-				var p1 = _specs.p1 || point(0,0);
-				var p2 = _specs.p2 || point(1,0);
 
 				draw = this.override(draw, function(ctx){
 					this(ctx);
-					if(!p1.equals(p2)){
-						var onEdges = intersectWithBox(p1, p2);
+					var sp = logic.getSpecs();
+					if(!sp.p1.equals(sp.p2)){
+						var onEdges = intersectWithBox(sp.p1, sp.p2);
 						
 						ctx.beginPath();
 						ctx.moveTo(onEdges.p1.x, onEdges.p1.y);
@@ -336,89 +419,28 @@
 					
 				});
 
-				var p1ToClosestPoint = function(p){
-					var x = p.minus(p1), y = p2.minus(p1);
-					var dot = x.dot(y);
-					return y.unit().scale(dot/y.mod());
-				};
-				closestPointTo = function(p){
-					return p1.plus(p1ToClosestPoint(p));
-				};
-				distance = function(p){
-					return p.minus(closestPointTo(p)).mod();
-				};
 				passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL;};
 
-				getSpecs = function(){
-					return {
-						p1:p1,
-						p2:p2
-					};
-				};
+				getNewShapeLogic = function(sp){return shapeLogic.line(sp);};
 
-				changer = {
-					setP1:function(p){p1 = p;},
-					setP2:function(p){p2 = p;},
-					translateBy: function(d){
-						p1 = p1.plus(d);
-						p2 = p2.plus(d);
-					},
-					moveTo: function(p){
-						if(p.minus(p1).dot(p2.minus(p1)) > 0){
-							p2 = p;
-						}else{
-							p2 = p1.plus(p1.minus(p));
-						}
-					},
-					setFromP1: function(d){
-						p2 = p1.plus(d);
-					}
-				};
-
-				repositionPoint = function(p, oldSpecs, newSpecs){
-					if(oldSpecs.p1.equals(newSpecs.p1)){
-						var sign = p.minus(oldSpecs.p1).dot(oldSpecs.p2.minus(oldSpecs.p1)) >=0 ? 1: -1;
-						return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).unit().scale(sign * p.minus(newSpecs.p1).mod()));
-					}
-					if(!oldSpecs.p2.equals(newSpecs.p2)){
-						return p.plus(newSpecs.p2.minus(oldSpecs.p2));
-					}
-					var sign = p.minus(oldSpecs.p2).dot(oldSpecs.p1.minus(oldSpecs.p2)) >=0 ? 1: -1;
-					return newSpecs.p2.plus(newSpecs.p1.minus(newSpecs.p2).unit().scale(sign * p.minus(newSpecs.p2).mod()));
-				};
-
-				
+				logic = getNewShapeLogic(_specs);
 			});
 			this.extend('point',function(_specs){
-				var loc = _specs.location || point(0,0);
 				
 				draw = this.override(draw, function(ctx){
 					this(ctx);
+					var sp = logic.getSpecs();
 					ctx.fillStyle = ctx.strokeStyle;
 					ctx.strokeStyle = 'transparent';
 					ctx.beginPath();
-					ctx.arc(loc.x, loc.y, 2*thickness, 0, 2*Math.PI);
+					ctx.arc(sp.location.x, sp.location.y, 2*thickness, 0, 2*Math.PI);
 					ctx.closePath();
 					ctx.fill();
 				});
 
-				distance = function(p){
-					return loc.minus(p).mod();
-				};
-
-				closestPointTo = function(p){return loc;};
-
 				passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
-
-				changer = {
-					setLocation: function(l){loc = l;}
-				};
-
-				getSpecs = function(){
-					return {
-						location: loc
-					};
-				};
+				getNewShapeLogic = function(sp){return shapeLogic.point(sp);}
+				logic = getNewShapeLogic(_specs);
 				
 			});
 		});
@@ -486,7 +508,7 @@
 				onmouseover:function(f){s.onmouseover.add(f);},
 				onmouseout: function(f){s.onmouseout.add(f);},
 				onclick: function(f){s.onclick.add(f);},
-				onchange: function(f){s.onchange.add(f);},
+				onchange: function(f){s.onchange(f);},
 				onchangeavailability: function(f){onchangeavailability.add(f);},
 				ondrag: function(f){s.ondrag.add(f);},
 				onremove: function(f){onremove.add(f);},
