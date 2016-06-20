@@ -181,14 +181,16 @@
 				return o;
 			},
 			distance = function(p){return Infinity;},
-			onchange = sender();
+			onchange = sender(),
+			passesFilter = function(f){return true;};
 		this.expose({
 			getSpecs: function(){return getSpecs();},
 			getChanger: getChanger,
 			closestPointTo: function(p){return closestPointTo(p);},
 			repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
 			onchange: function(f){onchange.add(f);},
-			distance:function(p){return distance(p);}
+			distance:function(p){return distance(p);},
+			passesFilter: function(f){return passesFilter(f);}
 		});
 		this.extend('circle',function(){
 			var center = specs.center || point(0,0);
@@ -208,6 +210,8 @@
 					center = c_;
 				}
 			};
+
+			passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL;};
 
 			getSpecs = function(){
 				return {
@@ -266,6 +270,8 @@
 				}
 			};
 
+			passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL;};
+
 			repositionPoint = function(p, oldSpecs, newSpecs){
 				if(oldSpecs.p1.equals(newSpecs.p1)){
 					var sign = p.minus(oldSpecs.p1).dot(oldSpecs.p2.minus(oldSpecs.p1)) >=0 ? 1: -1;
@@ -293,6 +299,8 @@
 				setLocation: function(l){loc = l;}
 			};
 
+			passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
+
 			getSpecs = function(){
 				return {
 					location: loc
@@ -301,6 +309,78 @@
 		});
 	});
 
+	var shapeFilter = {
+		ALL: 0,
+		POINT: 1,
+		NONE:2,
+		LINE:3,
+		CIRCLE:4
+	};
+
+	var intersectionSet = function(){
+		var all = [];
+		var intersection = function(s1, s2, calculate){
+			return {
+				s1:s1,
+				s2:s2,
+				calculate:function(){
+					return calculate(s1.getSpecs(), s2.getSpecs());
+				}
+			};
+		};
+		var getForShapes = function(s1, s2, p){
+			var candidates = all.filter(function(i){return i.s1 == s1 && i.s2 == s2 || i.s2 == s1 && i.s1 == s2;});
+			var smallestDistance = Math.min.apply(null, candidates.map(function(c){
+				return (c.calculate()||point(0,0)).minus(p).mod();
+			}));
+			var result = candidates.filter(function(c){return (c.calculate()||point(0,0)).minus(p).mod() == smallestDistance;})[0];
+			if(result.calculate()){
+				return result;
+			}
+			return null;
+		};
+		var makeForShapes = function(s1, s2){
+			if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.LINE)){
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
+				}));
+			}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.CIRCLE)){
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 0);
+				}));
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 1);
+				}));
+			}else if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.CIRCLE)){
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 0);
+				}));
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 1);
+				}));
+			}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.LINE)){
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 0);
+				}));
+				all.push(intersection(s1, s2, function(s1specs, s2specs){
+					return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 1);
+				}));
+			}
+			else{
+				all.push(intersection(s1, s2, function(){return null;}));
+			}
+			
+		};
+		var removeForShape = function(s){
+			all = all.filter(function(i){return i.s1 != s && i.s2 != s;});
+		};
+		return {
+			getForShapes:getForShapes,
+			makeForShapes:makeForShapes,
+			removeForShape: removeForShape
+		};
+	};
+
 	var canvas = (function(){
 		var context, c = document.createElement('canvas');
 		c.setAttribute('width', w);
@@ -308,13 +388,7 @@
 		document.body.appendChild(c);
 		context = c.getContext('2d');
 
-		var shapeFilter = {
-			ALL: 0,
-			POINT: 1,
-			NONE:2,
-			LINE:3,
-			CIRCLE:4
-		};
+		
 
 		var showHidden = false;
 
@@ -323,6 +397,7 @@
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
+			var changedStroke = stroke;
 			var thickness = specs.thickness || 1.5;
 			var name = specs.name || 'shape';
 			var selected = false;
@@ -334,7 +409,7 @@
 					ctx.strokeStyle = '#00f';
 				}else{
 					ctx.setLineDash([]);
-					ctx.strokeStyle = stroke;
+					ctx.strokeStyle = changedStroke;
 				}
 				if(hidden){
 					ctx.strokeStyle = '#bbb';
@@ -345,12 +420,11 @@
 			var logic;
 			var contains = function(p){return logic.distance(p) < 10;};
 			var onmouseover = sender().add(function(e){
-				stroke = '#f00';
+				changedStroke = '#f00';
 			});
-			var passesFilter = function(){return true;};
 			var ondrag = sender();
 			var onmouseout = sender().add(function(e){
-				stroke = 'black';
+				changedStroke = stroke;
 			});
 			var onclick = sender();
 			var hideUnhide = function(){
@@ -379,7 +453,7 @@
 				getChanger: function(){return logic.getChanger();},
 				dragTo: function(p){ondrag(p);},
 				repositionPoint: function(p, oldSpecs, newSpecs){return logic.repositionPoint(p, oldSpecs, newSpecs);},
-				passesFilter: function(f){return passesFilter(f);},
+				passesFilter: function(f){return logic.passesFilter(f);},
 				setSelected: function(b){selected = b;},
 				hideUnhide: hideUnhide,
 				closestPointTo:function(p){return logic.closestPointTo(p);}
@@ -395,7 +469,7 @@
 					ctx.stroke();
 				});
 
-				passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL;};
+				
 
 				getNewShapeLogic = function(sp){return shapeLogic.circle(sp);};
 
@@ -419,7 +493,7 @@
 					
 				});
 
-				passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL;};
+				
 
 				getNewShapeLogic = function(sp){return shapeLogic.line(sp);};
 
@@ -438,14 +512,14 @@
 					ctx.fill();
 				});
 
-				passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
+				
 				getNewShapeLogic = function(sp){return shapeLogic.point(sp);}
 				logic = getNewShapeLogic(_specs);
 				
 			});
 		});
 
-
+		var intersections = intersectionSet();
 
 		var shapes = [];
 
@@ -528,69 +602,7 @@
 			return wrapper;
 		};
 
-		var intersections = (function(){
-			var all = [];
-			var intersection = function(s1, s2, calculate){
-				return {
-					s1:s1,
-					s2:s2,
-					calculate:function(){
-						return calculate(s1.getSpecs(), s2.getSpecs());
-					}
-				};
-			};
-			var getForShapes = function(s1, s2, p){
-				var candidates = all.filter(function(i){return i.s1 == s1 && i.s2 == s2 || i.s2 == s1 && i.s1 == s2;});
-				var smallestDistance = Math.min.apply(null, candidates.map(function(c){
-					return (c.calculate()||point(0,0)).minus(p).mod();
-				}));
-				var result = candidates.filter(function(c){return (c.calculate()||point(0,0)).minus(p).mod() == smallestDistance;})[0];
-				if(result.calculate()){
-					return result;
-				}
-				return null;
-			};
-			var makeForShapes = function(s1, s2){
-				if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.LINE)){
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
-					}));
-				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.CIRCLE)){
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 0);
-					}));
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, 1);
-					}));
-				}else if(s1.passesFilter(shapeFilter.LINE) && s2.passesFilter(shapeFilter.CIRCLE)){
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 0);
-					}));
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, 1);
-					}));
-				}else if(s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.LINE)){
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 0);
-					}));
-					all.push(intersection(s1, s2, function(s1specs, s2specs){
-						return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, 1);
-					}));
-				}
-				else{
-					all.push(intersection(s1, s2, function(){return null;}));
-				}
-				
-			};
-			var removeForShape = function(s){
-				all = all.filter(function(i){return i.s1 != s && i.s2 != s;});
-			};
-			return {
-				getForShapes:getForShapes,
-				makeForShapes:makeForShapes,
-				removeForShape: removeForShape
-			};
-		})();
+		
 
 		var selection = (function(){
 			var all = [];
@@ -729,13 +741,13 @@
 
 		return {
 			addCircle: function(specs, toBeExcludedFromMouseEvents){
-				return addShape(shape.circle({}, specs), toBeExcludedFromMouseEvents);
+				return addShape(shape.circle({stroke:'#d66'}, specs), toBeExcludedFromMouseEvents);
 			},
 			addPoint: function(specs, toBeExcludedFromMouseEvents){
-				return addShape(shape.point({}, specs), toBeExcludedFromMouseEvents);
+				return addShape(shape.point({stroke:'#66d'}, specs), toBeExcludedFromMouseEvents);
 			},
 			addLine: function(specs, toBeExcludedFromMouseEvents){
-				return addShape(shape.line({}, specs), toBeExcludedFromMouseEvents);
+				return addShape(shape.line({stroke:'#6d6'}, specs), toBeExcludedFromMouseEvents);
 			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
 			onmousedownonshape: function(f){onmousedownonshape = f || function(){};},
