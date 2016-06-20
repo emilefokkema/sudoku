@@ -182,8 +182,13 @@
 			},
 			distance = function(p){return Infinity;},
 			onchange = sender(),
-			passesFilter = function(f){return true;};
+			passesFilter = function(f){return true;},
+			available = true,
+			onchangeavailability = sender();
 		this.expose({
+			isAvailable: function(){return available;},
+			makeAvailable: function(b){available = b;onchangeavailability(b);},
+			onchangeavailability:function(f){onchangeavailability.add(f);},
 			getSpecs: function(){return getSpecs();},
 			getChanger: getChanger,
 			closestPointTo: function(p){return closestPointTo(p);},
@@ -388,8 +393,6 @@
 		document.body.appendChild(c);
 		context = c.getContext('2d');
 
-		
-
 		var showHidden = false;
 
 		var currentMouseFilter = shapeFilter.ALL;
@@ -402,7 +405,6 @@
 			var name = specs.name || 'shape';
 			var selected = false;
 			var hidden = false;
-			var available = true;
 			var draw = function(ctx){
 				if(selected){
 					ctx.setLineDash([5]);
@@ -433,15 +435,16 @@
 			var getNewShapeLogic = function(sp){};
 			this.expose({
 				draw: function(ctx){
-					if(available && (!hidden || showHidden)){
+					if(logic.isAvailable() && (!hidden || showHidden)){
 						draw(ctx);
 					}
 				},
 				getNewShapeLogic: function(){return getNewShapeLogic(logic.getSpecs());},
 				isHidden:function(){return hidden;},
-				isAvailable: function(){return available;},
+				isAvailable: function(){return logic.isAvailable();},
 				contains: contains,
-				makeAvailable: function(b){available = b;},
+				makeAvailable: function(b){logic.makeAvailable(b);},
+				onchangeavailability:function(f){logic.onchangeavailability(f);},
 				onmouseover: onmouseover,
 				onmouseout: onmouseout,
 				onclick: onclick,
@@ -564,7 +567,6 @@
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
 			var onremove = sender();
-			var onchangeavailability = sender();
 			var shapeWrapperPair;
 			var wrapper = {
 				remove: function(){
@@ -578,12 +580,12 @@
 						draw();
 					}
 				},
-				makeAvailable: function(b){s.makeAvailable(b);onchangeavailability(b);},
+				makeAvailable: function(b){s.makeAvailable(b)},
 				onmouseover:function(f){s.onmouseover.add(f);},
 				onmouseout: function(f){s.onmouseout.add(f);},
 				onclick: function(f){s.onclick.add(f);},
 				onchange: function(f){s.onchange(f);},
-				onchangeavailability: function(f){onchangeavailability.add(f);},
+				onchangeavailability: function(f){s.onchangeavailability(f);},
 				ondrag: function(f){s.ondrag.add(f);},
 				onremove: function(f){onremove.add(f);},
 				dragTo: function(p){s.dragTo(p);},
