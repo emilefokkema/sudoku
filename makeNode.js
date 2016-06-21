@@ -225,6 +225,22 @@
 		});
 	};
 
+	var makeOneJQueryObjectIfItIsAnArrayOfJQueryObjects = function(node){
+		if(!window.jQuery || (!node.length && node.length !== 0)){
+			return node;
+		}
+		for(var i=0;i<node.length;i++){
+			if(!(node[i] instanceof window.jQuery)){
+				return node;
+			}
+		}
+		var result = window.jQuery();
+		for(var i=0;i<node.length;i++){
+			result = result.add(node[i]);
+		}
+		return result;
+	};
+
 	var getNumberedNode=function(node){
 		var result,idN,idString,match,wrap=false;
 		if(match=new RegExp("^(\\d+)\\$?$","g").exec(idString=node.getAttribute('id'))){
@@ -268,7 +284,7 @@
 					appendFromThingsToNode(node, offspringIds, things);
 				}
 			}
-			nodesToPass=groupNodesById(nodesToPass).sort(function(a,b){return a.n-b.n;}).map(function(o){return o.node;});
+			nodesToPass=groupNodesById(nodesToPass).sort(function(a,b){return a.n-b.n;}).map(function(o){return makeOneJQueryObjectIfItIsAnArrayOfJQueryObjects(o.node);});
 			if(f&&'function'===typeof f&&(toReturn=f.apply(things?things:null, nodesToPass))){
 				return toReturn;
 			}else{
