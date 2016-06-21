@@ -777,17 +777,33 @@
 	})(w,h);
 
 	var structure = (function(){
-		var linkExistence = function(s, ss){
+		var linkExistence;
+		var allLinks = [];
+		var changeLink = function(dependent, independent, howToChange, constants){
+			var apply = function(){
+				independent.onchange(function(oldSpecs, newSpecs){
+					howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : []);
+				});
+				linkExistence(dependent, [independent]);
+			};
+			return {
+				dependent: dependent,
+				independent: independent,
+				howToChange: howToChange,
+				constants: constants,
+				apply:apply
+			};
+		};
+		linkExistence = function(s, ss){
 			ss.map(function(s_){
 				s_.onremove(function(){s.remove();});
 				s_.onchangeavailability(function(b){s.makeAvailable(b);});
 			});
 		};
 		var linkChange = function(dependent, independent, howToChange, constants){
-			independent.onchange(function(oldSpecs, newSpecs){
-				howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : []);
-			});
-			linkExistence(dependent, [independent]);
+			var link = changeLink(dependent, independent, howToChange, constants);
+			allLinks.push(link);
+			link.apply();
 		};
 		var linkToIntersection = function(dependentPoint, i){
 			linkExistence(dependentPoint, [i.s1, i.s2]);
