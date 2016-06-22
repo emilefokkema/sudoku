@@ -804,6 +804,16 @@
 			});
 			return soFar;
 		};
+		var getAllLinksFromShape = function(dependent, soFar){
+			soFar = soFar || [];
+			getLinksForDependentShape(dependent).map(function(l){
+				if(soFar.indexOf(l) == -1){
+					soFar.push(l);
+				}
+				getAllLinksFromShape(l.independent, soFar);
+			});
+			return soFar;
+		};
 		var changeLink = function(dependent, independent, howToChange, constants){
 			var apply = function(){
 				independent.onchange(function(oldSpecs, newSpecs){
@@ -947,6 +957,7 @@
 			},
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
 				console.log(getAllLinkedShapes(canvasPoint1));
+				console.log(getAllLinksFromShape(canvasPoint1));
 			}
 		};
 	})();
