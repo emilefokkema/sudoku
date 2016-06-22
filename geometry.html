@@ -163,10 +163,11 @@
 	var shapeLogic = makeModule(function(specs){
 		var getSpecs = function(){return {};},
 			changer = {},
+			useSpecs = function(_specs){},
 			closestPointTo = function(p){return point(0,0);},
 			repositionPoint = function(){},
 			getChanger = function(){
-				var o = {};
+				var o = {useSpecs:useSpecs};
 				for(var f in changer){
 					if(changer.hasOwnProperty(f)){
 						o[f] = (function(f_){
@@ -198,8 +199,12 @@
 			passesFilter: function(f){return passesFilter(f);}
 		});
 		this.extend('circle',function(){
-			var center = specs.center || point(0,0);
-			var r = specs.r || 1;
+			var center, r;
+			useSpecs = function(_specs){
+				center = _specs.center || point(0,0);
+				r = _specs.r || 1;
+			};
+			useSpecs(specs);
 
 			distance = function(p){
 				return Math.abs(center.minus(p).mod() - r);
@@ -235,9 +240,12 @@
 			};
 		});
 		this.extend('line',function(){
-			var p1 = specs.p1 || point(0,0);
-			var p2 = specs.p2 || point(1,0);
-
+			var p1, p2;
+			useSpecs = function(_specs){
+				p1 = _specs.p1 || point(0,0);
+				p2 = _specs.p2 || point(1,0);
+			};
+			useSpecs(specs);
 			var p1ToClosestPoint = function(p){
 				var x = p.minus(p1), y = p2.minus(p1);
 				var dot = x.dot(y);
@@ -290,8 +298,11 @@
 			};
 		});
 		this.extend('point',function(){
-			var loc = specs.location || point(0,0);
-
+			var loc;
+			useSpecs = function(_specs){
+				loc = _specs.location || point(0,0);
+			};
+			useSpecs(specs);
 			distance = function(p){
 				return loc.minus(p).mod();
 			};
@@ -594,7 +605,8 @@
 				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
 				closestPointTo: s.closestPointTo,
 				repositionPoint: s.repositionPoint,
-				hideUnhide:s.hideUnhide
+				hideUnhide:s.hideUnhide,
+				getNewShapeLogic: s.getNewShapeLogic
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -779,10 +791,23 @@
 	var structure = (function(){
 		var linkExistence;
 		var allLinks = [];
+		var getLinksForDependentShape = function(s){
+			return allLinks.filter(function(l){return l.dependent == s;});
+		};
+		var getAllLinkedShapes = function(dependent, soFar){
+			soFar = soFar || [dependent];
+			getLinksForDependentShape(dependent).map(function(l){
+				if(soFar.indexOf(l.independent) == -1){
+					soFar.push(l.independent);
+				}
+				getAllLinkedShapes(l.independent, soFar);
+			});
+			return soFar;
+		};
 		var changeLink = function(dependent, independent, howToChange, constants){
 			var apply = function(){
 				independent.onchange(function(oldSpecs, newSpecs){
-					howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : []);
+					howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : [], dependent, independent);
 				});
 				linkExistence(dependent, [independent]);
 			};
@@ -821,10 +846,9 @@
 					};
 					canvasPoint.ondrag(putOnShapeClosestTo);
 					putOnShapeClosestTo(canvasPoint.getSpecs().location);
-					canvasShape.onchange(function(oldSpecs, newSpecs){
-						canvasPoint.getChanger().setLocation(canvasShape.repositionPoint(canvasPoint.getSpecs().location, oldSpecs, newSpecs));
+					linkChange(canvasPoint, canvasShape, function(oldSpecs, newSpecs, changer, constants, dependent, independent){
+						changer.setLocation(independent.repositionPoint(dependent.getSpecs().location, oldSpecs, newSpecs));
 					});
-					linkExistence(canvasPoint, [canvasShape]);
 				}
 				
 				return {
@@ -920,6 +944,9 @@
 					changer.setP1(constants[0].location.plus(newSpecs.location).scale(1/2));
 					changer.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
 				}, [canvasPoint1]);
+			},
+			locus: function(canvasPoint1, locusShape, canvasPoint2){
+				console.log(getAllLinkedShapes(canvasPoint1));
 			}
 		};
 	})();
@@ -1158,6 +1185,16 @@
 				return function(){
 					revert();
 				};
+			},
+			makeLocus: function(res, stop){
+				
+				selectPoint(function(point1){
+					selectPoint(function(point2){
+						res(structure.locus(point1, null, point2));
+						stop();
+					});
+				});
+				return stop;
 			}
 		};
 	})();
@@ -1243,6 +1280,13 @@
 			deactivateButton();
 		})
 	},"bisect");
+
+	button(function(deactivateButton){
+		return action.makeLocus(function(){},function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	});
 
 	button(function(deactivateButton){
 		return action.select(function(){
