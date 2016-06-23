@@ -483,7 +483,7 @@
 					ctx.stroke();
 				});
 
-				
+				name = specs.name || 'circle';
 
 				getNewShapeLogic = function(sp){return shapeLogic.circle(sp);};
 
@@ -507,7 +507,7 @@
 					
 				});
 
-				
+				name = specs.name || 'line';
 
 				getNewShapeLogic = function(sp){return shapeLogic.line(sp);};
 
@@ -526,7 +526,7 @@
 					ctx.fill();
 				});
 
-				
+				name = specs.name || 'point';
 				getNewShapeLogic = function(sp){return shapeLogic.point(sp);}
 				logic = getNewShapeLogic(_specs);
 				
@@ -574,7 +574,7 @@
 			shapes.map(function(ss){
 				intersections.makeForShapes(s, ss);
 			});
-			s.setName('shape'+(shapes.length));
+			//s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
 			var onremove = sender();
@@ -606,7 +606,8 @@
 				closestPointTo: s.closestPointTo,
 				repositionPoint: s.repositionPoint,
 				hideUnhide:s.hideUnhide,
-				getNewShapeLogic: s.getNewShapeLogic
+				getNewShapeLogic: s.getNewShapeLogic,
+				toString:s.toString
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -791,8 +792,12 @@
 	var structure = (function(){
 		var linkExistence;
 		var allLinks = [];
+		var intersectionLinks = [];
 		var getLinksForDependentShape = function(s){
 			return allLinks.filter(function(l){return l.dependent == s;});
+		};
+		var getIntersectionLinksForDependentShape = function(s){
+			return intersectionLinks.filter(function(l){return l.p == s;});
 		};
 		var getAllLinkedShapes = function(dependent, soFar){
 			soFar = soFar || [dependent];
@@ -802,18 +807,19 @@
 				}
 				getAllLinkedShapes(l.independent, soFar);
 			});
-			return soFar;
-		};
-		var getAllLinksFromShape = function(dependent, soFar){
-			soFar = soFar || [];
-			getLinksForDependentShape(dependent).map(function(l){
-				if(soFar.indexOf(l) == -1){
-					soFar.push(l);
+			getIntersectionLinksForDependentShape(dependent).map(function(l){
+				if(soFar.indexOf(l.s1) == -1){
+					soFar.push(l.s1);
 				}
-				getAllLinksFromShape(l.independent, soFar);
+				if(soFar.indexOf(l.s2) == -1){
+					soFar.push(l.s2);
+				}
+				getAllLinkedShapes(l.s1, soFar);
+				getAllLinkedShapes(l.s2, soFar);
 			});
 			return soFar;
 		};
+		
 		var changeLink = function(dependent, independent, howToChange, constants){
 			var apply = function(){
 				independent.onchange(function(oldSpecs, newSpecs){
@@ -829,6 +835,27 @@
 				apply:apply
 			};
 		};
+		var intersectionLink = function(pointShape, s1, s2, i){
+			var apply = function(){
+				var setLocation = function(){
+					var loc = i.calculate();
+					if(loc){
+						pointShape.makeAvailable(true);
+						pointShape.getChanger().setLocation(loc);
+					}else{
+						pointShape.makeAvailable(false);
+					}
+				};
+				i.s1.onchange(setLocation);
+				i.s2.onchange(setLocation);
+			};
+			return {
+				s1:s1,
+				s2:s2,
+				p: pointShape,
+				apply: apply
+			};
+		};
 		linkExistence = function(s, ss){
 			ss.map(function(s_){
 				s_.onremove(function(){s.remove();});
@@ -840,8 +867,10 @@
 			allLinks.push(link);
 			link.apply();
 		};
-		var linkToIntersection = function(dependentPoint, i){
-			linkExistence(dependentPoint, [i.s1, i.s2]);
+		var linkToIntersection = function(dependentPoint, s1, s2, i){
+			var link = intersectionLink(dependentPoint, s1, s2, i);
+			intersectionLinks.push(link);
+			link.apply();
 		};
 		return {
 			point: function(canvasPoint, canvasShape){
@@ -866,19 +895,8 @@
 				};
 			},
 			pointOnIntersection: function(canvasPoint, i){
-				var setLocation = function(){
-					var loc = i.calculate();
-					if(loc){
-						canvasPoint.makeAvailable(true);
-						canvasPoint.getChanger().setLocation(loc);
-					}else{
-						canvasPoint.makeAvailable(false);
-					}
-				};
 				
-				i.s1.onchange(setLocation);
-				i.s2.onchange(setLocation);
-				linkToIntersection(canvasPoint, i);
+				linkToIntersection(canvasPoint, i.s1, i.s2, i);
 			},
 			circle: function(canvasPointCenter, canvasCircle, canvasPointBoundary){
 				if(!canvasPointBoundary){
@@ -956,8 +974,7 @@
 				}, [canvasPoint1]);
 			},
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
-				console.log(getAllLinkedShapes(canvasPoint1));
-				console.log(getAllLinksFromShape(canvasPoint1));
+				console.log(getAllLinkedShapes(canvasPoint1).map(function(s){return s.toString();}));
 			}
 		};
 	})();
