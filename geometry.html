@@ -91,6 +91,22 @@
 			dot:function(p){return x*p.x + y*p.y;}
 		};
 	};
+	var copySet = function(origArray, mapper){
+		var all = origArray.map(function(o){return {
+			orig:o,
+			copy: mapper(o)
+		};});
+		return {
+			copyOf: function(o){
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						return all[i].copy;
+					}
+				}
+				return null;
+			}
+		};
+	};
 	var distinctArray = function(arr){
 		return {
 			arr:arr,
@@ -809,6 +825,9 @@
 		var isDependentShape = function(s){
 			return getLinksForDependentShape(s).length > 0 || getIntersectionLinksForDependentShape(s).length > 0;
 		};
+		var isMovableShape = function(s){
+			return !isDependentShape(s) || (getIntersectionLinksForDependentShape(s).length == 0 && !getLinksForDependentShape(s).some(function(l){return l.freedom == 0;}));
+		};
 		var getIntersectionLinksForDependentShape = function(s){
 			return intersectionLinks.filter(function(l){return l.p == s;});
 		};
@@ -827,7 +846,7 @@
 			return soFar.arr;
 		};
 		
-		var changeLink = function(dependent, independent, howToChange, constants){
+		var changeLink = function(dependent, independent, howToChange, constants, freedom){
 			var apply = function(){
 				independent.onchange(function(oldSpecs, newSpecs){
 					howToChange(oldSpecs, newSpecs, dependent.getChanger(), constants ? constants.map(function(s){return s.getSpecs();}) : [], dependent, independent);
@@ -839,6 +858,7 @@
 				independent: independent,
 				howToChange: howToChange,
 				constants: constants,
+				freedom:freedom,
 				apply:apply
 			};
 		};
@@ -869,8 +889,9 @@
 				s_.onchangeavailability(function(b){s.makeAvailable(b);});
 			});
 		};
-		var linkChange = function(dependent, independent, howToChange, constants){
-			var link = changeLink(dependent, independent, howToChange, constants);
+		var linkChange = function(dependent, independent, howToChange, constants, freedom){
+			freedom = freedom || 0;
+			var link = changeLink(dependent, independent, howToChange, constants, freedom);
 			allLinks.push(link);
 			link.apply();
 		};
@@ -894,7 +915,7 @@
 					putOnShapeClosestTo(canvasPoint.getSpecs().location);
 					linkChange(canvasPoint, canvasShape, function(oldSpecs, newSpecs, changer, constants, dependent, independent){
 						changer.setLocation(independent.repositionPoint(dependent.getSpecs().location, oldSpecs, newSpecs));
-					});
+					}, null, 1);
 				}
 				
 				return {
@@ -909,7 +930,7 @@
 				if(!canvasPointBoundary){
 					linkChange(canvasCircle, canvasPointCenter, function(oldSpecs, newSpecs, changer){
 						changer.setCenter(newSpecs.location);
-					});
+					}, null, 1);
 					canvasCircle.ondrag(function(p){
 						var center = canvasCircle.getSpecs().center;
 						var changer = canvasCircle.getChanger();
@@ -923,7 +944,7 @@
 						function(oldSpecs, newSpecs, changer, constants){
 							changer.setR(newSpecs.location.minus(constants[0].location).mod());
 						},
-						[canvasPointCenter]);
+						[canvasPointCenter], 0);
 					linkChange(
 						canvasCircle,
 						canvasPointCenter,
@@ -931,7 +952,7 @@
 							changer.setCenter(newSpecs.location);
 							changer.setR(newSpecs.location.minus(constants[0].location).mod());
 						},
-						[canvasPointBoundary]);
+						[canvasPointBoundary], 0);
 				}
 			},
 			line: function(canvasPoint1, canvasLine, canvasPoint2){
@@ -943,7 +964,7 @@
 					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
 						var diff = newSpecs.location.minus(oldSpecs.location);
 						changer.translateBy(diff);
-					});
+					}, null, 1);
 				}else{
 					var changer = canvasLine.getChanger();
 					changer.setP1(canvasPoint1.getSpecs().location);
@@ -953,37 +974,41 @@
 
 					linkChange(canvasLine, canvasPoint2, function(oldSpecs, newSpecs, changer){
 						changer.setP2(newSpecs.location);
-					});
+					}, null, 0);
 
 					linkChange(canvasLine, canvasPoint1, function(oldSpecs, newSpecs, changer){
 						changer.setP1(newSpecs.location);
-					});
+					}, null, 0);
 				}
 			},
 			perpendicularLine: function(canvasPoint, canvasPerpendicularLine, canvasLine){
 				linkChange(canvasPerpendicularLine, canvasPoint, function(oldSpecs, newSpecs, changer){
 					changer.translateBy(newSpecs.location.minus(oldSpecs.location));
-				});
+				}, null, 0);
 
 				linkChange(canvasPerpendicularLine, canvasLine, function(oldSpecs, newSpecs, changer){
 					changer.setFromP1(newSpecs.p2.minus(newSpecs.p1).matrix(0, -1, 1, 0));
-				});
+				}, null, 0);
 			},
 			perpendicularBisector: function(canvasPoint1, perpBis, canvasPoint2){
 				linkChange(perpBis, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
 					changer.setP1(newSpecs.location.plus(constants[0].location).scale(1/2));
 					changer.setFromP1(constants[0].location.minus(newSpecs.location).matrix(0, -1, 1, 0));
-				}, [canvasPoint2]);
+				}, [canvasPoint2], 0);
 
 				linkChange(perpBis, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
 					changer.setP1(constants[0].location.plus(newSpecs.location).scale(1/2));
 					changer.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
-				}, [canvasPoint1]);
+				}, [canvasPoint1], 0);
 			},
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
-				console.log(getAllLinkedShapes(canvasPoint1)
-					.filter(function(s){return !isDependentShape(s);})
-					.map(function(s){return s.toString();}));
+				var allShapesInvolved = getAllLinkedShapes(canvasPoint1);
+				var shapesToWatch = allShapesInvolved.filter(function(s){return isMovableShape(s);});
+				if(shapesToWatch.some(function(s){return s == canvasPoint2;}) && isDependentShape(canvasPoint2)){
+					console.log("ok");
+				}else{
+					console.log("not ok");
+				}
 			}
 		};
 	})();
