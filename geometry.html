@@ -104,7 +104,8 @@
 					}
 				}
 				return null;
-			}
+			},
+			allCopies: function(){return all.map(function(o){return o.copy;});}
 		};
 	};
 	var distinctArray = function(arr){
@@ -220,7 +221,10 @@
 			getChanger: getChanger,
 			closestPointTo: function(p){return closestPointTo(p);},
 			repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
-			onchange: function(f){onchange.add(f);},
+			onchange: function(f){
+				console.log("onchange");
+				onchange.add(f);
+			},
 			distance:function(p){return distance(p);},
 			passesFilter: function(f){return passesFilter(f);}
 		});
@@ -442,7 +446,13 @@
 		};
 		return {
 			getForShapes:getForShapes,
-			makeForShapes:makeForShapes,
+			makeForShapes:function(sarr){
+				for(var i=0;i<sarr.length;i++){
+					for(var j=i+1;j<sarr.length;j++){
+						makeForShapes(sarr[i], sarr[j]);
+					}
+				}
+			},
 			removeForShape: removeForShape
 		};
 	};
@@ -622,7 +632,7 @@
 
 		var addShape = function(s, toBeExcludedFromMouseEvents){
 			shapes.map(function(ss){
-				intersections.makeForShapes(s, ss);
+				intersections.makeForShapes([s, ss]);
 			});
 			//s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
@@ -657,7 +667,8 @@
 				repositionPoint: s.repositionPoint,
 				hideUnhide:s.hideUnhide,
 				getNewShapeLogic: s.getNewShapeLogic,
-				toString:s.toString
+				toString:s.toString,
+				passesFilter:s.passesFilter
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -925,7 +936,7 @@
 					getIntersectionForShapes(
 						getCopyFor(s1),
 						getCopyFor(s2),
-						getCopyFor(pointShape)
+						getCopyFor(pointShape).getSpecs().location
 						)
 					);
 			};
@@ -939,7 +950,9 @@
 		};
 		linkExistence = function(s, ss){
 			ss.map(function(s_){
-				s_.onremove(function(){s.remove();});
+				if(s_.onremove){
+					s_.onremove(function(){s.remove();});
+				}
 				s_.onchangeavailability(function(b){s.makeAvailable(b);});
 			});
 		};
@@ -1059,8 +1072,20 @@
 				var allShapesInvolved = getAllLinkedShapes(canvasPoint1);
 				var shapesToWatch = allShapesInvolved.filter(function(s){return isMovableShape(s);});
 				if(shapesToWatch.some(function(s){return s == canvasPoint2;}) && isDependentShape(canvasPoint2)){
-					console.log("ok", getAllLinksForShape(canvasPoint1));
-					
+					console.log("ok");
+					var allLinks = getAllLinksForShape(canvasPoint1);
+					var intersections = intersectionSet();
+					var copies = copySet(allShapesInvolved, function(s){return s.getNewShapeLogic();});
+					intersections.makeForShapes(copies.allCopies());
+					allLinks.map(function(l){
+						l.clone(copies.copyOf, intersections.getForShapes).apply();
+					});
+					shapesToWatch.map(function(o){
+						var c = copies.copyOf(o);
+						o.onchange(function(oldSpecs, newSpecs){
+							c.getChanger().useSpecs(newSpecs);
+						});
+					});
 				}else{
 					console.log("not ok");
 				}
