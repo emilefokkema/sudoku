@@ -50,6 +50,17 @@
 <script src="makeNode.js"></script>
 <script>
 (function(document, w,h){
+	Array.prototype.lastMin = function(amount){
+		var result, m, min = Infinity;
+		for(var i = 0; i<this.length;i++){
+			m = amount(this[i]);
+			if(m <= min){
+				min = m;
+				result = this[i];
+			}
+		}
+		return result;
+	};
 	var throttle = function(f, interval){
 		var going = false;
 		return function(){
@@ -353,6 +364,31 @@
 				};
 			};
 		});
+		this.extend('locus',function(){
+			var pointSets = [], allPoints = [];
+			useSpecs = function(_specs){};
+			distance = function(p){
+				return Math.min.apply(null, allPoints.map(function(pp){return pp.minus(p).mod();}));
+			};
+			closestPointTo = function(p){
+				return allPoints.lastMin(function(pp){return pp.minus(p).mod();});
+			};
+
+			passesFilter = function(f){return f == shapeFilter.LOCUS || f == shapeFilter.ALL;};
+
+			changer = {
+				setPointSets: function(ps){
+					pointSets = ps;
+					allPoints = ps.reduce(function(a,b){return a.concat(b);},[]);
+				}
+			};
+
+			getSpecs = function(){
+				return {
+					pointSets: pointSets
+				};
+			};
+		});
 	});
 
 	var shapeFilter = {
@@ -360,7 +396,8 @@
 		POINT: 1,
 		NONE:2,
 		LINE:3,
-		CIRCLE:4
+		CIRCLE:4,
+		LOCUS: 5
 	};
 
 	var intersectionSet = function(){
@@ -590,6 +627,27 @@
 				getNewShapeLogic = function(sp){return shapeLogic.point(sp);}
 				logic = getNewShapeLogic(_specs);
 				
+			});
+			this.extend('locus', function(_specs){
+				draw = this.override(draw, function(ctx){
+					this(ctx);
+					var ps = logic.getSpecs().pointSets;
+					ps.map(function(s){
+						ctx.beginPath();
+						s.map(function(p, i){
+							if(i==0){
+								ctx.moveTo(p.x, p.y);
+							}else{
+								ctx.lineTo(p.x, p.y);
+							}
+						});
+						ctx.closePath();
+						ctx.stroke();
+					});
+				});
+				name = specs.name || 'point';
+				getNewShapeLogic = function(sp){return shapeLogic.locus(sp);}
+				logic = getNewShapeLogic(_specs);
 			});
 		});
 
@@ -824,6 +882,9 @@
 			},
 			addLine: function(specs, toBeExcludedFromMouseEvents){
 				return addShape(shape.line({stroke:'#6d6'}, specs), toBeExcludedFromMouseEvents);
+			},
+			addLocus: function(specs, toBeExcludedFromMouseEvents){
+				return addShape(shape.locus({stroke:'#dd6'}, specs), toBeExcludedFromMouseEvents);
 			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
 			onmousedownonshape: function(f){onmousedownonshape = f || function(){};},
@@ -1332,7 +1393,7 @@
 				
 				selectPoint(function(point1){
 					selectPoint(function(point2){
-						res(structure.locus(point1, null, point2));
+						res(structure.locus(point1, canvas.addLocus({}), point2));
 						stop();
 					});
 				});
