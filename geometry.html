@@ -264,6 +264,13 @@
 				}
 			};
 
+			movePointAround = function(p){
+				return Array.apply(null, new Array(100)).map(function(x,t){
+					var cos = Math.cos(t*2*Math.PI / 100), sin = Math.sin(t*2*Math.PI / 100);
+					return center.plus(p.minus(center).matrix(cos, -sin, sin, cos));
+				});
+			};
+
 			passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL;};
 
 			getSpecs = function(){
@@ -641,7 +648,6 @@
 								ctx.lineTo(p.x, p.y);
 							}
 						});
-						ctx.closePath();
 						ctx.stroke();
 					});
 				});
@@ -1147,14 +1153,21 @@
 						l.clone(copies.copyOf, intersections.getForShapes).apply();
 					});
 					var createPoints = function(){
-						var originalPoints = movePointAround(canvasPoint2), newPoints = [], p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
+						var originalPoints = movePointAround(canvasPoint2), pointSets = [], newPoints = [], p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
+						pointSets.push(newPoints);
 						originalPoints.map(function(p){
 							p2Copy.getChanger().setLocation(p);
-							newPoints.push(p1Copy.getSpecs().location);
+							if(p1Copy.isAvailable()){
+								newPoints.push(p1Copy.getSpecs().location);
+							}else{
+								newPoints = [];
+								pointSets.push(newPoints);
+							}
+							locusShape.getChanger().setPointSets(pointSets);
 						});
 						
 					};
-					shapesToWatch.map(function(o){
+					allShapesInvolved.map(function(o){
 						var c = copies.copyOf(o);
 						o.onchange(function(oldSpecs, newSpecs){
 							c.getChanger().useSpecs(newSpecs);
