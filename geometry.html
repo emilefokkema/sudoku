@@ -1152,8 +1152,9 @@
 					allLinks.map(function(l){
 						l.clone(copies.copyOf, intersections.getForShapes).apply();
 					});
+					var p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
 					var createPoints = function(){
-						var originalPoints = movePointAround(canvasPoint2), pointSets = [], newPoints = [], p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
+						var originalPoints = movePointAround(canvasPoint2), pointSets = [], newPoints = [];
 						pointSets.push(newPoints);
 						originalPoints.map(function(p){
 							p2Copy.getChanger().setLocation(p);
@@ -1163,8 +1164,9 @@
 								newPoints = [];
 								pointSets.push(newPoints);
 							}
-							locusShape.getChanger().setPointSets(pointSets);
+							
 						});
+						locusShape.getChanger().setPointSets(pointSets);
 						
 					};
 					allShapesInvolved.map(function(o){
@@ -1174,6 +1176,7 @@
 							createPoints();
 						});
 					});
+					locusShape.onremove(function(){createPoints = function(){};});
 					createPoints();
 				}else{
 					console.log("not ok");
