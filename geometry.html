@@ -288,6 +288,7 @@
 					return p.plus(newSpecs.center.minus(oldSpecs.center));
 				}
 			};
+			this.expose({changer:getChanger()});
 		});
 		this.extend('line',function(){
 			var p1, p2;
@@ -346,6 +347,7 @@
 				var sign = p.minus(oldSpecs.p2).dot(oldSpecs.p1.minus(oldSpecs.p2)) >=0 ? 1: -1;
 				return newSpecs.p2.plus(newSpecs.p1.minus(newSpecs.p2).unit().scale(sign * p.minus(newSpecs.p2).mod()));
 			};
+			this.expose({changer:getChanger()});
 		});
 		this.extend('point',function(){
 			var loc;
@@ -372,6 +374,7 @@
 					location: loc
 				};
 			};
+			this.expose({changer:getChanger()});
 		});
 		this.extend('locus',function(){
 			var pointSets = [], allPoints = [];
@@ -397,6 +400,7 @@
 					pointSets: pointSets
 				};
 			};
+			this.expose({changer:getChanger()});
 		});
 	});
 
@@ -567,7 +571,7 @@
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
 				getSpecs: function(){return logic.getSpecs();},
-				getChanger: function(){return logic.getChanger();},
+				getChanger: function(){return logic.changer;},
 				dragTo: function(p){ondrag(p);},
 				repositionPoint: function(p, oldSpecs, newSpecs){return logic.repositionPoint(p, oldSpecs, newSpecs);},
 				passesFilter: function(f){return logic.passesFilter(f);},
@@ -676,7 +680,7 @@
 			shapes.map(function(s){
 				s.draw(context);
 			});
-		}, 2);
+		}, 5);
 
 		var onmouseovershape = function(s, e){};
 
@@ -1143,6 +1147,7 @@
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
 				var allShapesInvolved = getAllLinkedShapes(canvasPoint1);
 				var shapesToWatch = allShapesInvolved.filter(function(s){return isMovableShape(s);});
+
 				if(shapesToWatch.some(function(s){return s == canvasPoint2;}) && isDependentShape(canvasPoint2)){
 					console.log("ok");
 					var allLinks = getAllLinksForShape(canvasPoint1);
@@ -1153,6 +1158,11 @@
 						l.clone(copies.copyOf, intersections.getForShapes).apply();
 					});
 					var p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
+					var setAllCopies = function(){
+						allShapesInvolved.map(function(o){
+							copies.copyOf(o).getChanger().useSpecs(o.getSpecs());
+						});
+					};
 					var createPoints = function(){
 						var originalPoints = movePointAround(canvasPoint2), pointSets = [], newPoints = [];
 						pointSets.push(newPoints);
@@ -1169,13 +1179,11 @@
 						locusShape.getChanger().setPointSets(pointSets);
 						
 					};
-					allShapesInvolved.map(function(o){
-						var c = copies.copyOf(o);
-						o.onchange(function(oldSpecs, newSpecs){
-							c.getChanger().useSpecs(newSpecs);
-							createPoints();
-						});
+					canvasPoint1.onchange(function(){
+						setAllCopies();
+						createPoints();
 					});
+					
 					locusShape.onremove(function(){createPoints = function(){};});
 					createPoints();
 				}else{
