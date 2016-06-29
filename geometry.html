@@ -159,7 +159,7 @@
 		var cross, dot = x.dot(y);
 		var closestToCenter = p1.plus(y.unit().scale(dot/y.mod()));
 		var d = closestToCenter.minus(c).mod();
-		if(d == 0){
+		if(d < 0.0000001){
 			return c.plus(y.unit().scale(r * (index == 0 ? 1 : -1)));
 		}else if(d > r){
 			return null;
@@ -234,7 +234,6 @@
 			closestPointTo: function(p){return closestPointTo(p);},
 			repositionPoint: function(p, oldSpecs, newSpecs){return repositionPoint(p, oldSpecs, newSpecs);},
 			onchange: function(f){
-				console.log("onchange");
 				onchange.add(f);
 			},
 			distance:function(p){return distance(p);},
@@ -997,6 +996,7 @@
 						pointShape.makeAvailable(false);
 					}
 				};
+				linkExistence(pointShape, [i.s1, i.s2]);
 				i.s1.onchange(setLocation);
 				i.s2.onchange(setLocation);
 			};
@@ -1158,12 +1158,19 @@
 						l.clone(copies.copyOf, intersections.getForShapes).apply();
 					});
 					var p1Copy = copies.copyOf(canvasPoint1), p2Copy = copies.copyOf(canvasPoint2);
-					var setAllCopies = function(){
+					var setAllCopies = (function(){
+						var result = sender();
 						allShapesInvolved.map(function(o){
-							copies.copyOf(o).getChanger().useSpecs(o.getSpecs());
+							var c = copies.copyOf(o);
+							result.add(function(){
+								c.getChanger().useSpecs(o.getSpecs());
+							});
 						});
-					};
-					var createPoints = function(){
+						return result;
+					})();
+					
+					var createPoints = throttle(function(){
+						console.log("create points");
 						var originalPoints = movePointAround(canvasPoint2), pointSets = [], newPoints = [];
 						pointSets.push(newPoints);
 						originalPoints.map(function(p){
@@ -1178,12 +1185,14 @@
 						});
 						locusShape.getChanger().setPointSets(pointSets);
 						
-					};
-					canvasPoint1.onchange(function(){
+					}, 2);
+					canvasPoint1.onchange(function(oldSpecs, newSpecs){
 						setAllCopies();
 						createPoints();
 					});
-					
+					canvasPoint1.onremove(function(){
+						locusShape.remove();
+					});
 					locusShape.onremove(function(){createPoints = function(){};});
 					createPoints();
 				}else{
