@@ -35,10 +35,22 @@
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"4\" y1=\"26\" x2=\"26\" y2=\"4\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"4\" y1=\"4\" x2=\"26\" y2=\"26\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
 }
 .perpendicular {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"11\" y1=\"2\" x2=\"24\" y2=\"28\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"2\" y1=\"29\" x2=\"28\" y2=\"14\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"14\" cy=\"8\" r=\"3\" fill=\"black\" /></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"11\" y1=\"2\" x2=\"24\" y2=\"28\" stroke=\"red\" fill=\"transparent\" stroke-width=\"2\"/><line x1=\"2\" y1=\"29\" x2=\"28\" y2=\"14\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"14\" cy=\"8\" r=\"3\" fill=\"black\" /></svg>");
 }
 .bisect {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"5\" y1=\"0\" x2=\"20\" y2=\"30\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"8\" cy=\"21\" r=\"3\" fill=\"black\" /><circle cx=\"20\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"5\" y1=\"0\" x2=\"20\" y2=\"30\" stroke=\"red\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"8\" cy=\"21\" r=\"3\" fill=\"black\" /><circle cx=\"20\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
+}
+.label:before {
+	position: absolute;
+	left: 0px;
+	top:0px;
+	font-family: Verdana;
+	font-size: 20px;
+	color: #000;
+	content: "A";
+}
+.reflect-line {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"5\" y1=\"0\" x2=\"20\" y2=\"30\" stroke=\"black\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"8\" cy=\"21\" r=\"3\" fill=\"red\" /><circle cx=\"20\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
 }
 .select {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"6\" width=\"26\" height=\"18\" stroke=\"black\" stroke-dasharray=\"3,2\" fill=\"transparent\" stroke-width=\"2\"/></svg>");
@@ -174,6 +186,11 @@
 		}
 	};
 
+	var reflectPointInLine = function(p1, p2, p3){
+		var x = p2.minus(p1), y = p3.minus(p1), along = x.unit().scale(x.dot(y) / x.mod()), perp = y.minus(along);
+		return p1.plus(along).plus(perp.scale(-1));
+	};
+
 	var intersectWithBox = (function(){
 		
 		var sides = [
@@ -224,6 +241,7 @@
 			passesFilter = function(f){return true;},
 			available = true,
 			onchangeavailability = sender(),
+			getLabelLocation = function(){return point(0,0);},
 			movePointAround = function(p){return [p];};
 		this.expose({
 			isAvailable: function(){return available;},
@@ -238,7 +256,8 @@
 			},
 			distance:function(p){return distance(p);},
 			passesFilter: function(f){return passesFilter(f);},
-			movePointAround: function(p){return movePointAround(p);}
+			movePointAround: function(p){return movePointAround(p);},
+			getLabelLocation:function(){return getLabelLocation();}
 		});
 		this.extend('circle',function(){
 			var center, r;
@@ -277,6 +296,11 @@
 					center:center,
 					r:r
 				};
+			};
+
+			getLabelLocation = function(){
+				var d = Math.sqrt(2) / 2;
+				return center.plus(point(1,0).scale(r+2).matrix(d, d, -d, d));
 			};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
@@ -373,6 +397,8 @@
 					location: loc
 				};
 			};
+
+			getLabelLocation = function(){return loc;};
 			this.expose({changer:getChanger()});
 		});
 		this.extend('locus',function(){
@@ -520,6 +546,7 @@
 			var changedStroke = stroke;
 			var thickness = specs.thickness || 1.5;
 			var name = specs.name || 'shape';
+			var label = '';
 			var selected = false;
 			var hidden = false;
 			var draw = function(ctx){
@@ -533,8 +560,13 @@
 				if(hidden){
 					ctx.strokeStyle = '#bbb';
 				}
+				ctx.fillStyle = stroke;
+				var labelloc = logic.getLabelLocation();
+				ctx.font = "12px Verdana";
+				ctx.fillText(label, labelloc.x + 5, labelloc.y - 5);
 				ctx.lineWidth = thickness;
 				ctx.fillStyle = fill;
+
 			};
 			var logic;
 			var contains = function(p){return logic.distance(p) < 10;};
@@ -577,7 +609,9 @@
 				setSelected: function(b){selected = b;},
 				hideUnhide: hideUnhide,
 				closestPointTo:function(p){return logic.closestPointTo(p);},
-				movePointAround: function(p){return logic.movePointAround(p);}
+				movePointAround: function(p){return logic.movePointAround(p);},
+				setLabel:function(txt){label = txt;},
+				getLabelLocation:function(){return logic.getLabelLocation();}
 			});
 			this.extend('circle', function(_specs){
 				
@@ -736,7 +770,9 @@
 				getNewShapeLogic: s.getNewShapeLogic,
 				toString:s.toString,
 				passesFilter:s.passesFilter,
-				movePointAround: s.movePointAround
+				movePointAround: s.movePointAround,
+				setLabel:s.setLabel,
+				getLabelLocation:s.getLabelLocation
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -1144,6 +1180,15 @@
 					changer.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
 				}, [canvasPoint1], 0);
 			},
+			pointLineReflection: function(canvasPoint, line, canvasPointReflection){
+				linkChange(canvasPointReflection, line, function(oldSpecs, newSpecs, changer, constants){
+					changer.setLocation(reflectPointInLine(newSpecs.p1, newSpecs.p2, constants[0].location));
+				}, [canvasPoint], 0);
+
+				linkChange(canvasPointReflection, canvasPoint, function(oldSpecs, newSpecs, changer, constants){
+					changer.setLocation(reflectPointInLine(constants[0].p1, constants[0].p2, newSpecs.location));
+				}, [line], 0);
+			},
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
 				var allShapesInvolved = getAllLinkedShapes(canvasPoint1);
 				var shapesToWatch = allShapesInvolved.filter(function(s){return isMovableShape(s);});
@@ -1264,6 +1309,18 @@
 			canvas.onclickshape(function(s, e){
 				send(s);
 			});
+		};
+		var selectShape = function(send){
+			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+			canvas.setShapeCursor(canvas.cursor.pointer);
+			canvas.setNoShapeCursor(canvas.cursor.none);
+			canvas.onmousedownonshape();
+			canvas.onmouseovershape();
+			canvas.onmouseovernotshape();
+			canvas.onclickshape(function(s, e){
+				send(s);
+			});
+
 		};
 		return {
 			doNothing: function(){
@@ -1446,6 +1503,44 @@
 					});
 				});
 				return stop;
+			},
+			makePointLineReflection: function(res, stop){
+				selectPoint(function(p){
+					selectLine(function(l){
+						var lSpecs = l.getSpecs();
+						var refl = canvas.addPoint({location: reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
+						res(structure.pointLineReflection(p, l, refl));
+						stop();
+					});
+				});
+				return stop;
+			},
+			setLabel:function(res, stop){
+				var revert = stop;
+				selectShape(function(s){
+					var labelloc = s.getLabelLocation();
+					makeNode("<input type='text' style='width:30px;position:absolute;left:"+(labelloc.x + 5)+"px;top:"+(labelloc.y - 15)+"px' id='1'>", function(input){
+						var remove = function(){
+							document.body.removeChild(input);
+						};
+						document.body.appendChild(input);
+						input.focus();
+						input.addEventListener('blur',function(){
+							s.setLabel(input.value);
+							remove();
+							res();
+							stop();
+						});
+						
+						revert = function(){
+							remove();
+							stop();
+						};
+					});
+				});
+				return function(){
+					revert();
+				};
 			}
 		};
 	})();
@@ -1533,11 +1628,25 @@
 	},"bisect");
 
 	button(function(deactivateButton){
+		return action.makePointLineReflection(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "reflect-line");
+
+	button(function(deactivateButton){
 		return action.makeLocus(function(){},function(){
 			action.doNothing();
 			deactivateButton();
 		});
 	});
+
+	button(function(deactivateButton){
+		return action.setLabel(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "label");
 
 	button(function(deactivateButton){
 		return action.select(function(){
