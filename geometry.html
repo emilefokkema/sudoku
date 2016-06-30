@@ -960,6 +960,23 @@
 	var structure = (function(){
 		var linkExistence;
 		var allLinks = [];
+		var log = (function(){
+			var allCalls = [];
+			var call = function(f, args){
+				return {
+					f:f,
+					args:args,
+					apply:function(){
+						f.apply(null, args);
+					}
+				};
+			};
+			return {
+				addCall: function(f, args){
+					allCalls.push(call(f, args));
+				}
+			};
+		})();
 		var intersectionLinks = [];
 		var getLinksForDependentShape = function(s){
 			return allLinks.filter(function(l){return l.dependent == s;});
@@ -1056,6 +1073,7 @@
 				clone: clone
 			};
 		};
+
 		var movePointAround = function(pointShape){
 			var independent = getLinksForDependentShape(pointShape)[0].independent;
 			return independent.movePointAround(pointShape.getSpecs().location);
@@ -1079,7 +1097,7 @@
 			intersectionLinks.push(link);
 			link.apply();
 		};
-		return {
+		var maker = {
 			point: function(canvasPoint, canvasShape){
 				var putOnShapeClosestTo;
 				if(!canvasShape){
@@ -1245,6 +1263,17 @@
 				}
 			}
 		};
+		for(var m in maker){
+			if(maker.hasOwnProperty(m)){
+				maker[m] = (function(orig){
+					return function(){
+						log.addCall(orig, Array.prototype.slice.apply(arguments));
+						orig.apply(maker, arguments);
+					};
+				})(maker[m]);
+			}
+		}
+		return maker;
 	})();
 
 	var action = (function(){
