@@ -115,9 +115,9 @@
 		};
 	};
 	var copySet = function(origArray, mapper){
-		var all = origArray.map(function(o){return {
+		var all = origArray.map(function(o, i){return {
 			orig:o,
-			copy: mapper(o)
+			copy: mapper(o, i)
 		};});
 		return {
 			copyOf: function(o){
@@ -242,6 +242,7 @@
 			available = true,
 			onchangeavailability = sender(),
 			getLabelLocation = function(){return point(0,0);},
+			toString = function(){return '';},
 			movePointAround = function(p){return [p];};
 		this.expose({
 			isAvailable: function(){return available;},
@@ -257,7 +258,8 @@
 			distance:function(p){return distance(p);},
 			passesFilter: function(f){return passesFilter(f);},
 			movePointAround: function(p){return movePointAround(p);},
-			getLabelLocation:function(){return getLabelLocation();}
+			getLabelLocation:function(){return getLabelLocation();},
+			toString:function(){return toString();}
 		});
 		this.extend('circle',function(){
 			var center, r;
@@ -266,7 +268,7 @@
 				r = _specs.r || 1;
 			};
 			useSpecs(specs);
-
+			toString = function(){return 'circle('+center.toString()+','+r+')';};
 			distance = function(p){
 				return Math.abs(center.minus(p).mod() - r);
 			};
@@ -319,6 +321,7 @@
 				p1 = _specs.p1 || point(0,0);
 				p2 = _specs.p2 || point(1,0);
 			};
+			toString = function(){return 'line('+p1.toString()+','+p2.toString()+')';};
 			useSpecs(specs);
 			var p1ToClosestPoint = function(p){
 				var x = p.minus(p1), y = p2.minus(p1);
@@ -377,6 +380,7 @@
 			useSpecs = function(_specs){
 				loc = _specs.location || point(0,0);
 			};
+			toString = function(){return 'point'+loc.toString();};
 			useSpecs(specs);
 			distance = function(p){
 				return loc.minus(p).mod();
@@ -601,6 +605,7 @@
 				onchange: function(f){logic.onchange(f);},
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
+				toConstructionString:function(){return logic.toString();},
 				getSpecs: function(){return logic.getSpecs();},
 				getChanger: function(){return logic.changer;},
 				dragTo: function(p){ondrag(p);},
@@ -772,7 +777,8 @@
 				passesFilter:s.passesFilter,
 				movePointAround: s.movePointAround,
 				setLabel:s.setLabel,
-				getLabelLocation:s.getLabelLocation
+				getLabelLocation:s.getLabelLocation,
+				toConstructionString:s.toConstructionString
 			};
 			shapeWrapperPair = {
 				shape: s,
@@ -837,7 +843,8 @@
 									return {
 										s1: wrapperBelongingTo(i.s1),
 										s2: wrapperBelongingTo(i.s2),
-										calculate: i.calculate
+										calculate: i.calculate,
+										toConstructionString:function(getShapeName){return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+')';}
 									};
 								})(hitIntersection), e);
 							}else{
@@ -957,26 +964,67 @@
 
 	})(w,h);
 
+	var log = (function(){
+		var allCalls = [];
+		var call = function(f, name, args){
+			var toString = function(getShapeName){
+				return name+'('+args.map(getShapeName).join(',')+')';
+			};
+			return {
+				f:f,
+				name:name,
+				args:args,
+				apply:function(){
+					f.apply(null, args);
+				},
+				toString:toString
+			};
+		};
+		var addCall = function(f, name, args){
+			allCalls.push(call(f, name, args));
+		};
+		var register = function(maker){
+			for(var m in maker){
+				if(maker.hasOwnProperty(m)){
+					maker[m] = (function(orig, m){
+						return function(){
+							addCall(orig, m, Array.prototype.slice.apply(arguments));
+							orig.apply(maker, arguments);
+						};
+					})(maker[m], m);
+				}
+			}
+		};
+		var toString = function(){
+			var allShapes = distinctArray([]);
+			allCalls.map(function(c){
+				c.args.map(function(a){allShapes.push(a);});
+			});
+			var shapeNames = copySet(allShapes.arr, function(s, i){return i.toString();});
+			return allCalls
+				.map(function(c){
+					return c.toString(shapeNames.copyOf);
+				}).join(';')+
+				';['+
+				allShapes.arr.map(function(s){
+					return shapeNames.copyOf(s)+'='+s.toConstructionString(shapeNames.copyOf);
+				}).join(',')+
+				']';
+		};
+		return {
+			addCall: addCall,
+			register:register,
+			toString:toString
+		};
+	})();
+
+	window.logToString = log.toString;
+
 	var structure = (function(){
 		var linkExistence;
 		var allLinks = [];
-		var log = (function(){
-			var allCalls = [];
-			var call = function(f, args){
-				return {
-					f:f,
-					args:args,
-					apply:function(){
-						f.apply(null, args);
-					}
-				};
-			};
-			return {
-				addCall: function(f, args){
-					allCalls.push(call(f, args));
-				}
-			};
-		})();
+		
+		
 		var intersectionLinks = [];
 		var getLinksForDependentShape = function(s){
 			return allLinks.filter(function(l){return l.dependent == s;});
@@ -1263,16 +1311,7 @@
 				}
 			}
 		};
-		for(var m in maker){
-			if(maker.hasOwnProperty(m)){
-				maker[m] = (function(orig){
-					return function(){
-						log.addCall(orig, Array.prototype.slice.apply(arguments));
-						orig.apply(maker, arguments);
-					};
-				})(maker[m]);
-			}
-		}
+		log.register(maker);
 		return maker;
 	})();
 
