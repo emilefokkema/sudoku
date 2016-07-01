@@ -115,10 +115,13 @@
 		};
 	};
 	var copySet = function(origArray, mapper){
-		var all = origArray.map(function(o, i){return {
-			orig:o,
-			copy: mapper(o, i)
-		};});
+		var set = function(o, i){
+			return {
+				orig: o,
+				copy:mapper(o,i)
+			};
+		};
+		var all = origArray.map(set);
 		return {
 			copyOf: function(o){
 				for(var i=0;i<all.length;i++){
@@ -128,7 +131,36 @@
 				}
 				return null;
 			},
-			allCopies: function(){return all.map(function(o){return o.copy;});}
+			originalOf:function(c){
+				for(var i=0;i<all.length;i++){
+					if(all[i].copy == c){
+						return all[i].orig;
+					}
+				}
+				return null;
+			},
+			allCopies: function(){return all.map(function(o){return o.copy;});},
+			addFor: function(o){
+				var filtered = all.filter(function(s){return s.orig == o;});
+				if(filtered.length == 0){
+					newSet = set(o, all.length);
+					all.push(newSet);
+					return newSet.copy;
+				}else{
+					return filtered[0].copy;
+				}
+			},
+			removeFor:function(o){
+				var index = -1;
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						index = i;
+					}
+				}
+				if(index != -1){
+					all.splice(index, 1);
+				}
+			}
 		};
 	};
 	var distinctArray = function(arr){
@@ -704,14 +736,63 @@
 
 		var shapes = [];
 
-		var shapeWrappers = [];
+		var wrapperSet = copySet([], function(s){
+			var onremove = sender();
+			return {
+				remove: function(){
+					var index = shapes.indexOf(s);
+					if(index != -1){
+						shapes.splice(index, 1);
+						intersections.removeForShape(s);
+						wrapperSet.removeFor(s);
+						onremove();
+						draw();
+					}
+				},
+				makeAvailable: function(b){s.makeAvailable(b)},
+				onmouseover:function(f){s.onmouseover.add(f);},
+				onmouseout: function(f){s.onmouseout.add(f);},
+				onclick: function(f){s.onclick.add(f);},
+				onchange: function(f){s.onchange(f);},
+				onchangeavailability: function(f){s.onchangeavailability(f);},
+				ondrag: function(f){s.ondrag.add(f);},
+				onremove: function(f){onremove.add(f);},
+				dragTo: function(p){s.dragTo(p);},
+				getChanger: s.getChanger,
+				getSpecs: s.getSpecs,
+				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
+				closestPointTo: s.closestPointTo,
+				repositionPoint: s.repositionPoint,
+				hideUnhide:s.hideUnhide,
+				getNewShapeLogic: s.getNewShapeLogic,
+				toString:s.toString,
+				passesFilter:s.passesFilter,
+				movePointAround: s.movePointAround,
+				setLabel:s.setLabel,
+				getLabelLocation:s.getLabelLocation,
+				toConstructionString:s.toConstructionString
+			};
+		});
+
+		var intersectionWrapperSet = copySet([], function(i){
+			return {
+				s1: wrapperBelongingTo(i.s1),
+				s2: wrapperBelongingTo(i.s2),
+				calculate: i.calculate,
+				toConstructionString:function(getShapeName){return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+')';}
+			};
+		});
 
 		var wrapperBelongingTo = function(s){
-			return shapeWrappers.filter(function(w){return w.shape == s;})[0].wrapper;
+			return wrapperSet.copyOf(s);
 		};
 
 		var shapeBelongingTo = function(w){
-			return shapeWrappers.filter(function(w_){return w_.wrapper == w;})[0].shape;
+			return wrapperSet.originalOf(w);
+		};
+
+		var getIntersectionForShapes = function(w1, w2, p){
+			return intersectionWrapperSet.copyOf(intersections.getForShapes(shapeBelongingTo(w1), shapeBelongingTo(w2), p));
 		};
 
 		var draw = throttle(function(){
@@ -744,48 +825,7 @@
 			//s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
-			var onremove = sender();
-			var shapeWrapperPair;
-			var wrapper = {
-				remove: function(){
-					var index = shapes.indexOf(s);
-					var index2 = shapeWrappers.indexOf(shapeWrapperPair);
-					if(index != -1){
-						shapes.splice(index, 1);
-						shapeWrappers.splice(index2, 1);
-						intersections.removeForShape(s);
-						onremove();
-						draw();
-					}
-				},
-				makeAvailable: function(b){s.makeAvailable(b)},
-				onmouseover:function(f){s.onmouseover.add(f);},
-				onmouseout: function(f){s.onmouseout.add(f);},
-				onclick: function(f){s.onclick.add(f);},
-				onchange: function(f){s.onchange(f);},
-				onchangeavailability: function(f){s.onchangeavailability(f);},
-				ondrag: function(f){s.ondrag.add(f);},
-				onremove: function(f){onremove.add(f);},
-				dragTo: function(p){s.dragTo(p);},
-				getChanger: s.getChanger,
-				getSpecs: s.getSpecs,
-				exclude: function(b){s.toBeExcludedFromMouseEvents = b;},
-				closestPointTo: s.closestPointTo,
-				repositionPoint: s.repositionPoint,
-				hideUnhide:s.hideUnhide,
-				getNewShapeLogic: s.getNewShapeLogic,
-				toString:s.toString,
-				passesFilter:s.passesFilter,
-				movePointAround: s.movePointAround,
-				setLabel:s.setLabel,
-				getLabelLocation:s.getLabelLocation,
-				toConstructionString:s.toConstructionString
-			};
-			shapeWrapperPair = {
-				shape: s,
-				wrapper: wrapper
-			};
-			shapeWrappers.push(shapeWrapperPair);
+			var wrapper = wrapperSet.addFor(s);
 			return wrapper;
 		};
 
@@ -841,12 +881,7 @@
 							hitIntersection = intersections.getForShapes(hitShapes[hitShapes.length - 2], hitShapes[hitShapes.length - 1], point(e.clientX, e.clientY));
 							if(hitIntersection){
 								doToHitIntersection((function(i){
-									return {
-										s1: wrapperBelongingTo(i.s1),
-										s2: wrapperBelongingTo(i.s2),
-										calculate: i.calculate,
-										toConstructionString:function(getShapeName){return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+')';}
-									};
+									return intersectionWrapperSet.addFor(i);
 								})(hitIntersection), e);
 							}else{
 								doToHitShape(hitShapes[hitShapes.length - 1], e);
@@ -996,6 +1031,7 @@
 				}
 			}
 		};
+		
 		var toString = function(){
 			var allShapes = distinctArray([]);
 			allCalls.map(function(c){
@@ -1005,21 +1041,44 @@
 			return allCalls
 				.map(function(c){
 					return c.toString(shapeNames.copyOf);
-				}).join(';')+
+				}).join('')+
 				';['+
 				allShapes.arr.map(function(s){
-					return shapeNames.copyOf(s)+'='+s.toConstructionString(shapeNames.copyOf);
-				}).join(',')+
+					return s.toConstructionString(shapeNames.copyOf);
+				}).join(';')+";"+
 				']';
+		};
+		var backFromString = function(s){
+			var match = s.match(/^((?:\w+\([^)]+\))+);\[([^\]]+)\]$/);
+			if(match){
+				var commands = match[1].match(/\w+\([^)]+\)/g);
+				var shapes = match[2].match(/.*?;/g);
+				
+			}
 		};
 		return {
 			addCall: addCall,
 			register:register,
-			toString:toString
+			toString:toString,
+			backFromString:backFromString
 		};
 	})();
 
 	window.logToString = log.toString;
+	log.backFromString(
+		"point(0)"+
+		"circle(0,1)"+
+		"point(2,1)"+
+		"line(2,3)"+
+		"pointOnIntersection(4,5)"+
+		";["+
+		"point(121,185);"+
+		"circle((121,185),102.08329931972223);"+
+		"point(67.16505913099654,98.26592859993886);"+
+		"line((67.16505913099654,98.26592859993886),(-164.6698817380069,37.53185719987772));"+
+		"point(210.44542075319305,135.8012530008714);"+
+		"intersection(3,1);"+
+		"]");
 
 	var structure = (function(){
 		var linkExistence;
