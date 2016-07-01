@@ -411,6 +411,7 @@
 			distance = function(p){
 				return Math.min.apply(null, allPoints.map(function(pp){return pp.minus(p).mod();}));
 			};
+			toString = function(){return 'locus';};
 			closestPointTo = function(p){
 				return allPoints.lastMin(function(pp){return pp.minus(p).mod();});
 			};
