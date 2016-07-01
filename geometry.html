@@ -576,7 +576,7 @@
 		c.setAttribute('height', h);
 		document.body.appendChild(c);
 		context = c.getContext('2d');
-
+		var ondraw = sender();
 		var showHidden = false;
 
 		var currentMouseFilter = shapeFilter.ALL;
@@ -811,6 +811,7 @@
 			shapes.map(function(s){
 				s.draw(context);
 			});
+			ondraw();
 		}, 5);
 
 		var onmouseovershape = function(s, e){};
@@ -837,6 +838,7 @@
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
 			var wrapper = wrapperSet.addFor(s);
+			draw();
 			return wrapper;
 		};
 
@@ -991,6 +993,7 @@
 			onmouseovernotshape: function(f){
 				onmouseovernotshape = f || function(){};
 			},
+			ondraw:function(f){ondraw.add(f);},
 			getIntersectionForShapes:getIntersectionForShapes,
 			onmouseoverintersection: function(f){onmouseoverintersection = f || function(){};},
 			onclickintersection: function(f){onclickintersection = f || function(){};},
@@ -1749,6 +1752,18 @@
 
 	window.logToString = log.toString;
 	window.backFromString = log.backFromString;
+
+	var hash = (function(){
+		var read = function(){
+			log.backFromString(decodeURI(window.location.hash.substr(1)));
+		};
+		var write = throttle(function(){
+			window.location.hash = encodeURI(log.toString());
+		}, 500);
+		canvas.ondraw(write);
+		read();
+		return {write:write};
+	})();
 	// log.backFromString(
 	// 	"point(0)circle(0,1)point(2)line(2,3)pointOnIntersection(4,5);[point(303,280);circle((303,280),120.9297316626478);point(143,153);line((143,153),(-234,60));point(239.82353343462987,176.88485042286626);intersection(3,1,(239.82353343462987,176.88485042286626));]");
 	
