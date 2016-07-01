@@ -164,13 +164,17 @@
 		};
 	};
 	var distinctArray = function(arr){
+		var arr2 = arr.slice();
+		var push = function(o){
+			if(arr.indexOf(o) == -1){
+				arr.push(o);
+			}
+		};
+		arr.splice(0,arr.length);
+		arr2.map(function(o){push(o);});
 		return {
 			arr:arr,
-			push:function(o){
-				if(arr.indexOf(o) == -1){
-					arr.push(o);
-				}
-			}
+			push:push
 		};
 	};
 
@@ -783,7 +787,10 @@
 				s1: wrapperBelongingTo(i.s1),
 				s2: wrapperBelongingTo(i.s2),
 				calculate: i.calculate,
-				toConstructionString:function(getShapeName){return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+')';}
+				toConstructionString:function(getShapeName){
+					var currentLoc = i.calculate();
+					return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+','+(currentLoc ? currentLoc.toString() : 'null')+')';
+				}
 			};
 		});
 
@@ -796,7 +803,7 @@
 		};
 
 		var getIntersectionForShapes = function(w1, w2, p){
-			return intersectionWrapperSet.copyOf(intersections.getForShapes(shapeBelongingTo(w1), shapeBelongingTo(w2), p));
+			return intersectionWrapperSet.addFor(intersections.getForShapes(shapeBelongingTo(w1), shapeBelongingTo(w2), p));
 		};
 
 		var draw = throttle(function(){
@@ -984,6 +991,7 @@
 			onmouseovernotshape: function(f){
 				onmouseovernotshape = f || function(){};
 			},
+			getIntersectionForShapes:getIntersectionForShapes,
 			onmouseoverintersection: function(f){onmouseoverintersection = f || function(){};},
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
@@ -1055,48 +1063,73 @@
 		};
 		var argumentMakers = [
 			{
+				level:0,
 				matches:function(kind){return kind == "point";},
 				make:function(info){
-					var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
-					return canvas.addPoint({location:point(parseFloat(match[1]), parseFloat(match[2]))});
+					return function(){
+						var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
+						var p = point(parseFloat(match[1]), parseFloat(match[2]));
+						console.log("making point", p.toString());
+						return canvas.addPoint({location:p});
+					};
 				}
 			},{
+				level:0,
 				matches:function(kind){return kind == "circle";},
 				make:function(info){
-					var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),("+floatPattern+")"));
-					return canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+					return function(){
+						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),("+floatPattern+")"));
+						return canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+					};
 				}
 			},{
+				level:0,
 				matches:function(kind){return kind == "line";},
 				make:function(info){
-					var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
-					return canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+					return function(){
+						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
+						return canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+					};
 				}
 			},{
+				level:1,
 				matches:function(kind){return kind == "intersection";},
 				make:function(info){
-					console.log(info);
+					return function(argByIndex){
+						var match = info.match(new RegExp("(\\d+),(\\d+),\\(("+floatPattern+"),("+floatPattern+")\\)"));
+						return canvas.getIntersectionForShapes(argByIndex(match[1]), argByIndex(match[2]), point(parseFloat(match[3]), parseFloat(match[4])));
+					};
 				}
 			},{
+				level:0,
 				matches:function(kind){return kind == "locus";},
 				make:function(info){
-					return canvas.addLocus({});
+					return function(){
+						return canvas.addLocus({});
+					};
 				}
 			}
 		];
-		var makeArgument = function(s){
-			var kind, match = s.match(/(\w+)\((.*)\);/);
-			kind = match[1];
-			return argumentMakers.filter(function(m){return m.matches(kind);})[0].make(match[2])
-		};
+		
 		var backFromString = function(s){
 			var match = s.match(/^((?:\w+\([^)]+\))+);\[([^\]]+)\]$/);
 			if(match){
 				var commands = match[1].match(/\w+\([^)]+\)/g);
-				var args = match[2].match(/.*?;/g).map(function(s){
-					return makeArgument(s);
+				var argsStrings = match[2].match(/.*?;/g);
+				var makers = argsStrings.map(function(s){
+					var match = s.match(/(\w+)\((.*)\);/);
+					var maker = argumentMakers.filter(function(m){return m.matches(match[1])})[0];
+					return {level:maker.level,make:maker.make(match[2])};
 				});
-				console.log(args);
+				var argsArr = Array.apply(null, new Array(argsStrings.length));
+				var argByIndex = function(i){return argsArr[i];};
+				var levels = distinctArray(makers.map(function(m){return m.level;})).arr.sort(function(a,b){return a-b;});
+				levels.map(function(l){
+					makers.filter(function(m){return m.level == l}).map(function(m){
+						argsArr[makers.indexOf(m)] = m.make(argByIndex);
+					});
+				});
+				console.log(argsArr);
 			}
 		};
 		var removeCallsWithArgument = function(a){
@@ -1115,19 +1148,7 @@
 
 	window.logToString = log.toString;
 	log.backFromString(
-		"point(0)"+
-		"circle(0,1)"+
-		"point(2,1)"+
-		"line(2,3)"+
-		"pointOnIntersection(4,5)"+
-		";["+
-		"point(121,185);"+
-		"circle((121,185),102.08329931972223);"+
-		"point(67.16505913099654,98.26592859993886);"+
-		"line((67.16505913099654,98.26592859993886),(-164.6698817380069,37.53185719987772));"+
-		"point(210.44542075319305,135.8012530008714);"+
-		"intersection(3,1);"+
-		"]");
+		"point(0)circle(0,1)point(2)line(2,3)pointOnIntersection(4,5);[point(303,280);circle((303,280),120.9297316626478);point(143,153);line((143,153),(-234,60));point(239.82353343462987,176.88485042286626);intersection(3,1,(239.82353343462987,176.88485042286626));]");
 
 	var structure = (function(){
 		var linkExistence;
