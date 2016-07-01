@@ -443,7 +443,7 @@
 			distance = function(p){
 				return Math.min.apply(null, allPoints.map(function(pp){return pp.minus(p).mod();}));
 			};
-			toString = function(){return 'locus';};
+			toString = function(){return 'locus()';};
 			closestPointTo = function(p){
 				return allPoints.lastMin(function(pp){return pp.minus(p).mod();});
 			};
@@ -737,8 +737,11 @@
 		var shapes = [];
 
 		var wrapperSet = copySet([], function(s){
-			var onremove = sender();
-			return {
+			var wrapper, onremove = sender();
+			onremove.add(function(){
+				log.removeCallsWithArgument(wrapper);
+			});
+			wrapper = {
 				remove: function(){
 					var index = shapes.indexOf(s);
 					if(index != -1){
@@ -772,6 +775,7 @@
 				getLabelLocation:s.getLabelLocation,
 				toConstructionString:s.toConstructionString
 			};
+			return wrapper;
 		});
 
 		var intersectionWrapperSet = copySet([], function(i){
@@ -1001,6 +1005,7 @@
 	})(w,h);
 
 	var log = (function(){
+		var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
 		var allCalls = [];
 		var call = function(f, name, args){
 			var toString = function(getShapeName){
@@ -1048,19 +1053,63 @@
 				}).join(';')+";"+
 				']';
 		};
+		var argumentMakers = [
+			{
+				matches:function(kind){return kind == "point";},
+				make:function(info){
+					var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
+					return canvas.addPoint({location:point(parseFloat(match[1]), parseFloat(match[2]))});
+				}
+			},{
+				matches:function(kind){return kind == "circle";},
+				make:function(info){
+					var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),("+floatPattern+")"));
+					return canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+				}
+			},{
+				matches:function(kind){return kind == "line";},
+				make:function(info){
+					var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
+					return canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+				}
+			},{
+				matches:function(kind){return kind == "intersection";},
+				make:function(info){
+					console.log(info);
+				}
+			},{
+				matches:function(kind){return kind == "locus";},
+				make:function(info){
+					return canvas.addLocus({});
+				}
+			}
+		];
+		var makeArgument = function(s){
+			var kind, match = s.match(/(\w+)\((.*)\);/);
+			kind = match[1];
+			return argumentMakers.filter(function(m){return m.matches(kind);})[0].make(match[2])
+		};
 		var backFromString = function(s){
 			var match = s.match(/^((?:\w+\([^)]+\))+);\[([^\]]+)\]$/);
 			if(match){
 				var commands = match[1].match(/\w+\([^)]+\)/g);
-				var shapes = match[2].match(/.*?;/g);
-				
+				var args = match[2].match(/.*?;/g).map(function(s){
+					return makeArgument(s);
+				});
+				console.log(args);
 			}
+		};
+		var removeCallsWithArgument = function(a){
+			allCalls = allCalls.filter(function(c){
+				return !c.args.some(function(aa){return aa == a;});
+			});
 		};
 		return {
 			addCall: addCall,
 			register:register,
 			toString:toString,
-			backFromString:backFromString
+			backFromString:backFromString,
+			removeCallsWithArgument:removeCallsWithArgument
 		};
 	})();
 
