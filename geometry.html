@@ -1032,7 +1032,9 @@
 		var addCall = function(f, name, args){
 			allCalls.push(call(f, name, args));
 		};
+		var registeredMaker;
 		var register = function(maker){
+			registeredMaker = maker;
 			for(var m in maker){
 				if(maker.hasOwnProperty(m)){
 					maker[m] = (function(orig, m){
@@ -1069,7 +1071,6 @@
 					return function(){
 						var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
 						var p = point(parseFloat(match[1]), parseFloat(match[2]));
-						console.log("making point", p.toString());
 						return canvas.addPoint({location:p});
 					};
 				}
@@ -1129,7 +1130,12 @@
 						argsArr[makers.indexOf(m)] = m.make(argByIndex);
 					});
 				});
-				console.log(argsArr);
+				commands.map(function(c){
+					var match = c.match(/(\w+)\(([^)]+)\)/);
+					var methodName = match[1];
+					var args = match[2].match(/\d+/g).map(function(i){return argsArr[parseInt(i)];});
+					registeredMaker[methodName].apply(null, args);
+				});
 			}
 		};
 		var removeCallsWithArgument = function(a){
@@ -1146,9 +1152,7 @@
 		};
 	})();
 
-	window.logToString = log.toString;
-	log.backFromString(
-		"point(0)circle(0,1)point(2)line(2,3)pointOnIntersection(4,5);[point(303,280);circle((303,280),120.9297316626478);point(143,153);line((143,153),(-234,60));point(239.82353343462987,176.88485042286626);intersection(3,1,(239.82353343462987,176.88485042286626));]");
+	
 
 	var structure = (function(){
 		var linkExistence;
@@ -1742,6 +1746,11 @@
 			}
 		};
 	})();
+
+	window.logToString = log.toString;
+	window.backFromString = log.backFromString;
+	// log.backFromString(
+	// 	"point(0)circle(0,1)point(2)line(2,3)pointOnIntersection(4,5);[point(303,280);circle((303,280),120.9297316626478);point(143,153);line((143,153),(-234,60));point(239.82353343462987,176.88485042286626);intersection(3,1,(239.82353343462987,176.88485042286626));]");
 	
 
 	
