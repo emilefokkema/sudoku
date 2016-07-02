@@ -4,7 +4,6 @@
 .button {
 	width: 30px;
 	height: 30px;
-	top:20px;
 	background-color: #ddd;
 	position: absolute;
 	border-radius: 3px;
@@ -908,6 +907,10 @@
 			//s.setName('shape'+(shapes.length));
 			s.toBeExcludedFromMouseEvents = toBeExcludedFromMouseEvents || false;
 			shapes.push(s);
+			shapes.sort((function(){
+				var pointness = function(s){return s.passesFilter(shapeFilter.POINT)?1:0;};
+				return function(a,b){return pointness(a) - pointness(b);};
+			})());
 			var wrapper = wrapperSet.addFor(s);
 			draw();
 			return wrapper;
@@ -1852,7 +1855,17 @@
 	})();
 
 	var button = (function(){
-		var xl=20, xr = 20;
+		var positionProvider = function(){
+			var x = 20, y = 20;
+			return {
+				next:function(){
+					var p = {x:x,y:y};
+					x += 40;
+					return p;
+				}
+			};
+		};
+		var leftPosition = positionProvider(), rightPosition = positionProvider();
 		var addClass = function(el, name){
 			el.setAttribute('class', el.getAttribute('class') + " "+name);
 		};
@@ -1860,7 +1873,8 @@
 			el.setAttribute('class', el.getAttribute('class').split(/[\s]+/g).filter(function(c){return c!=name;}).join(' '));
 		};
 		var button = function(a, className, right){
-			var b = makeNode("<div id='1' class='button"+(className?" "+className:"")+"' style='"+(right ? "right:"+xr+"px" : "left:"+xl+"px")+"'></div>", function(div){
+			var p = (right ? rightPosition : leftPosition).next();
+			var b = makeNode("<div id='1' class='button"+(className?" "+className:"")+"' style='"+(right ? "right:"+p.x+"px" : "left:"+p.x+"px")+";top:"+p.y+"px'></div>", function(div){
 				var makeActive = function(){addClass(div, 'active');};
 				var makeNonActive = function(){removeClass(div, 'active');};
 				var normalOnClick = function(e){
@@ -1883,12 +1897,6 @@
 				div.onclick = normalOnClick;
 				document.body.appendChild(div);
 			});
-			if(right){
-				xr += 40;
-			}else{
-				xl+=40;
-			}
-			
 		};
 		return button;
 	})();
