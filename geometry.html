@@ -491,8 +491,9 @@
 	};
 
 	var intersectionSet = function(){
-		var intersection = function(s1, s2, calculate){
+		var intersection = function(s1, s2, calculate, id){
 			return {
+				id:id,
 				s1:s1,
 				s2:s2,
 				calculate:function(){
@@ -509,7 +510,7 @@
 					return [
 						intersection(s1, s2, function(s1specs, s2specs){
 							return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
-						})
+						}, 0)
 					];
 				}
 			},{
@@ -520,7 +521,7 @@
 					return [0,1].map(function(i){
 						return intersection(s1, s2, function(s1specs, s2specs){
 							return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, i);
-						});
+						}, i);
 					});
 				}
 			},{
@@ -532,13 +533,13 @@
 						return [0,1].map(function(i){
 							return intersection(s1, s2, function(s1specs, s2specs){
 								return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, i);
-							});
+							}, i);
 						});
 					}else{
 						return [0,1].map(function(i){
 							return intersection(s1, s2, function(s1specs, s2specs){
 								return intersectLineAndCircle(s2specs.p1, s2specs.p2, s1specs.center, s1specs.r, i);
-							});
+							}, i);
 						});
 					}
 				}
@@ -553,6 +554,10 @@
 				return result;
 			}
 			return null;
+		};
+		var getForShapesAndId = function(s1, s2, id){
+			var candidates = all.filter(function(i){return i.s1 == s1 && i.s2 == s2 || i.s2 == s1 && i.s1 == s2;});
+			return candidates.filter(function(i){return i.id == id;})[0];
 		};
 		var makeForShapes = function(s1, s2){
 			for(var i=0;i<intersectionKinds.length;i++){
@@ -570,6 +575,7 @@
 		};
 		return {
 			getForShapes:getForShapes,
+			getForShapesAndId:getForShapesAndId,
 			makeForShapes:function(sarr){
 				for(var i=0;i<sarr.length;i++){
 					for(var j=i+1;j<sarr.length;j++){
@@ -859,7 +865,7 @@
 				calculate: i.calculate,
 				toConstructionString:function(getShapeName){
 					var currentLoc = i.calculate();
-					return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+','+(currentLoc ? currentLoc.toString() : 'null')+')';
+					return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+','+(currentLoc ? currentLoc.toString() : i.id.toString())+')';
 				}
 			};
 		});
@@ -872,8 +878,12 @@
 			return wrapperSet.originalOf(w);
 		};
 
-		var getIntersectionForShapes = function(w1, w2, p){
+		var getIntersectionForShapesAndPoint = function(w1, w2, p){
 			return intersectionWrapperSet.addFor(intersections.getForShapes(shapeBelongingTo(w1), shapeBelongingTo(w2), p));
+		};
+
+		var getIntersectionForShapesAndId = function(w1, w2, id){
+			return intersectionWrapperSet.addFor(intersections.getForShapesAndId(shapeBelongingTo(w1), shapeBelongingTo(w2), id));
 		};
 
 		var draw = throttle(function(){
@@ -1084,7 +1094,8 @@
 				onmouseovernotshape = f || function(){};
 			},
 			ondraw:function(f){ondraw.add(f);},
-			getIntersectionForShapes:getIntersectionForShapes,
+			getIntersectionForShapesAndPoint:getIntersectionForShapesAndPoint,
+			getIntersectionForShapesAndId:getIntersectionForShapesAndId,
 			onmouseoverintersection: function(f){onmouseoverintersection = f || function(){};},
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
@@ -1192,8 +1203,14 @@
 				matches:function(kind){return kind == "intersection";},
 				make:function(info){
 					return function(argByIndex){
-						var match = info.match(new RegExp("(\\d+),(\\d+),\\(("+floatPattern+"),("+floatPattern+")\\)"));
-						return canvas.getIntersectionForShapes(argByIndex(match[1]), argByIndex(match[2]), point(parseFloat(match[3]), parseFloat(match[4])));
+						var matchWithId, matchWithPoint = info.match(new RegExp("(\\d+),(\\d+),\\(("+floatPattern+"),("+floatPattern+")\\)"));
+						if(matchWithPoint){
+							return canvas.getIntersectionForShapesAndPoint(argByIndex(matchWithPoint[1]), argByIndex(matchWithPoint[2]), point(parseFloat(matchWithPoint[3]), parseFloat(matchWithPoint[4])));
+						}
+						else{
+							matchWithId = info.match(new RegExp("(\\d+),(\\d+),(\\d+)"));
+							return canvas.getIntersectionForShapesAndId(argByIndex(matchWithId[1]), argByIndex(matchWithId[2]), parseInt(matchWithId[3]));
+						}
 					};
 				}
 			},{
@@ -1329,6 +1346,7 @@
 				linkExistence(pointShape, [i.s1, i.s2]);
 				i.s1.onchange(setLocation);
 				i.s2.onchange(setLocation);
+				setLocation();
 			};
 			var clone = function(getCopyFor, getIntersectionForShapes){
 				return intersectionLink(
