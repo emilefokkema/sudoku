@@ -679,7 +679,9 @@
 				onchange: function(f){logic.onchange(f);},
 				setName: function(n){name = n;},
 				toString:function(){return '['+name+']';},
-				toConstructionString:function(){return logic.toString();},
+				toConstructionString:function(){
+					return logic.toString() + (label ? '.{'+label+'}' : '');
+				},
 				getSpecs: function(){return logic.getSpecs();},
 				getChanger: function(){return logic.changer;},
 				dragTo: function(p){ondrag(p);},
@@ -1193,29 +1195,42 @@
 			{
 				level:0,
 				matches:function(kind){return kind == "point";},
-				make:function(info){
+				make:function(info, label){
+					console.log(label);
 					return function(){
 						var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
 						var p = point(parseFloat(match[1]), parseFloat(match[2]));
-						return canvas.addPoint({location:p});
+						p = canvas.addPoint({location:p});
+						if(label){
+							p.setLabel(label);
+						}
+						return p;
 					};
 				}
 			},{
 				level:0,
 				matches:function(kind){return kind == "circle";},
-				make:function(info){
+				make:function(info, label){
 					return function(){
 						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),("+floatPattern+")"));
-						return canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+						var c = canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+						if(label){
+							c.setLabel(label);
+						}
+						return c;
 					};
 				}
 			},{
 				level:0,
 				matches:function(kind){return kind == "line";},
-				make:function(info){
+				make:function(info, label){
 					return function(){
 						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
-						return canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+						var l = canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+						if(label){
+							l.setLabel(label);
+						}
+						return l;
 					};
 				}
 			},{
@@ -1247,12 +1262,12 @@
 		var backFromString = function(s){
 			var match = s.match(/^((?:\w+\([^)]+\))+);\[([^\]]+)\]$/);
 			if(match){
-				var commands = match[1].match(/\w+\([^)]+\)/g);
+				var commands = match[1].match(/\w+\([^)]+\)(?:\.\{[^}]+\})?/g);
 				var argsStrings = match[2].match(/.*?;/g);
 				var makers = argsStrings.map(function(s){
-					var match = s.match(/(\w+)\((.*)\);/);
+					var match = s.match(/(\w+)\((.*)\)(?:\.\{([^}]+)\})?;/);
 					var maker = argumentMakers.filter(function(m){return m.matches(match[1])})[0];
-					return {level:maker.level,make:maker.make(match[2])};
+					return {level:maker.level,make:maker.make(match[2], match[3])};
 				});
 				var argsArr = Array.apply(null, new Array(argsStrings.length));
 				var argByIndex = function(i){return argsArr[i];};
