@@ -646,6 +646,20 @@
 				svgEl.setAttribute('stroke-width',thickness);
 				svgEl.setAttribute('fill',fill);
 			};
+			var getLabelSvg = function(){
+				if(label){
+					var text = document.createElementNS('http://www.w3.org/2000/svg','text');
+					text.setAttribute('font-family','Verdana');
+					text.setAttribute('font-size','12px');
+					text.setAttribute('fill', stroke);
+					var loc = logic.getLabelLocation();
+					text.setAttribute('x',loc.x + 5);
+					text.setAttribute('y', loc.y - 5);
+					text.appendChild(document.createTextNode(label));
+					return text;
+				}
+				return null;
+			};
 			this.expose({
 				draw: function(ctx){
 					if(logic.isAvailable() && (!hidden || showHidden)){
@@ -677,7 +691,13 @@
 				movePointAround: function(p){return logic.movePointAround(p);},
 				setLabel:function(txt){label = txt;},
 				getLabelLocation:function(){return logic.getLabelLocation();},
-				toSvg:function(){return toSvg();}
+				toSvg:function(){
+					var svg = toSvg();
+					if(label){
+						svg.push(getLabelSvg());
+					}
+					return svg;
+				}
 			});
 			this.extend('circle', function(_specs){
 				
