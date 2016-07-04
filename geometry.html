@@ -42,6 +42,9 @@
 .bisect {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"5\" y1=\"0\" x2=\"20\" y2=\"30\" stroke=\"red\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"8\" cy=\"21\" r=\"3\" fill=\"black\" /><circle cx=\"20\" cy=\"15\" r=\"3\" fill=\"black\" /></svg>");
 }
+.midpoint {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"7\" cy=\"19\" r=\"3\" fill=\"black\" /><circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"red\" /><circle cx=\"23\" cy=\"11\" r=\"3\" fill=\"black\" /></svg>");
+}
 .label:before {
 	position: absolute;
 	left: 0px;
@@ -1591,6 +1594,15 @@
 				}else{
 					console.log("not ok");
 				}
+			},
+			midpoint: function(canvasPoint1, canvasPoint2, canvasPoint3){
+				linkChange(canvasPoint2, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
+					changer.setLocation(newSpecs.location.plus(constants[0].location).scale(0.5));
+				}, [canvasPoint3], 0);
+
+				linkChange(canvasPoint2, canvasPoint3, function(oldSpecs, newSpecs, changer, constants){
+					changer.setLocation(newSpecs.location.plus(constants[0].location).scale(0.5));
+				}, [canvasPoint1], 0);
 			}
 		};
 		log.register(maker);
@@ -1865,6 +1877,16 @@
 				});
 				return stop;
 			},
+			makeMidpoint: function(res, stop){
+				selectPoint(function(p1){
+					selectPoint(function(p2){
+						var p = canvas.addPoint({location:p1.getSpecs().location.plus(p2.getSpecs().location).scale(0.5)});
+						res(structure.midpoint(p1, p, p2));
+						stop();
+					});
+				});
+				return stop;
+			},
 			setLabel:function(res, stop){
 				var revert = stop;
 				selectShape(function(s){
@@ -1997,6 +2019,13 @@
 			deactivateButton();
 		});
 	}, "reflect-line");
+
+	button(function(deactivateButton){
+		return action.makeMidpoint(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "midpoint");
 
 	button(function(deactivateButton){
 		return action.makeLocus(function(){},function(){
