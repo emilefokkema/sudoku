@@ -76,6 +76,7 @@
 <script src="makeNode.js"></script>
 <script>
 (function(document, w,h){
+	var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
 	Array.prototype.lastMin = function(amount){
 		var result, m, min = Infinity;
 		for(var i = 0; i<this.length;i++){
@@ -1144,7 +1145,7 @@
 
 
 	var log = (function(){
-		var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
+		
 		var allCalls = [];
 		var call = function(f, name, args){
 			var toString = function(getShapeName){
@@ -1927,11 +1928,48 @@
 	})();
 
 	var hash = (function(){
+		var shorten = function(h){
+			var rgx = new RegExp("\\(("+floatPattern + ","+floatPattern+")\\)", "g");
+			h = h.match(/([^\]]*)(\[[^\]]*\])/);
+			var replacer = (function(){
+				var seen = [];
+				return function(m, p1){
+					var index = seen.indexOf(p1);
+					if(index == -1){
+						seen.push(p1);
+						return "("+p1+"="+seen.indexOf(p1)+")";
+					}else{
+						return "("+index.toString()+")";
+					}
+				};
+			})();
+			return h[1]+h[2].replace(rgx, replacer);
+		};
+		var longen = function(h){
+			var rgx = new RegExp("\\(("+floatPattern+","+floatPattern+"=\\d+|\\d+)\\)","g");
+			h = h.match(/([^\]]*)(\[[^\]]*\])/);
+			var replacer = (function(){
+				var seen = [];
+				return function(m, p1){
+					if(p1.indexOf("=") != -1){
+						var pair = p1.match(new RegExp(floatPattern+","+floatPattern))[0];
+						seen.push(pair);
+						return "("+pair+")";
+					}else{
+						return "("+seen[parseInt(p1.match(/\d+/)[0])]+")";
+					}
+				}
+			})();
+			return h[1]+h[2].replace(rgx, replacer);
+		};
 		var read = function(){
-			log.backFromString(decodeURI(window.location.hash.substr(1)));
+			var s = window.location.hash.substr(1);
+			if(s){
+				log.backFromString(longen(decodeURI(s)));
+			}
 		};
 		var write = throttle(function(){
-			window.location.hash = encodeURI(log.toString());
+			window.location.hash = encodeURI(shorten(log.toString()));
 		}, 500);
 		canvas.ondraw(write);
 		read();
