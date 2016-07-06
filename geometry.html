@@ -54,6 +54,15 @@
 	color: #000;
 	content: "A";
 }
+.clear:before {
+	position: absolute;
+	left: 0px;
+	top:0px;
+	font-family: Verdana;
+	font-size: 20px;
+	color: #000;
+	content: "C";
+}
 .svg:before {
 	position: absolute;
 	left: 0px;
@@ -992,6 +1001,13 @@
 			};
 		})();
 
+		var clear = function(){
+			var all;
+			while((all = wrapperSet.allCopies()).length > 0){
+				all[0].remove();
+			}
+		};
+
 		var mouseActionHandler = function(doToHitShape, doToNotHitShape, doIfNotHitShape, doToHitIntersection, drawAfter){
 			doToHitShape = doToHitShape || function(){};
 			doToNotHitShape = doToNotHitShape || function(){};
@@ -1119,6 +1135,7 @@
 			onmouseovernotshape: function(f){
 				onmouseovernotshape = f || function(){};
 			},
+			clear:clear,
 			ondraw:function(f){ondraw.add(f);},
 			getIntersectionForShapesAndPoint:getIntersectionForShapesAndPoint,
 			getIntersectionForShapesAndId:getIntersectionForShapesAndId,
@@ -1937,7 +1954,7 @@
 					var index = seen.indexOf(p1);
 					if(index == -1){
 						seen.push(p1);
-						return "("+p1+"="+seen.indexOf(p1)+")";
+						return "("+p1+")";
 					}else{
 						return "("+index.toString()+")";
 					}
@@ -1946,12 +1963,12 @@
 			return h[1]+h[2].replace(rgx, replacer);
 		};
 		var longen = function(h){
-			var rgx = new RegExp("\\(("+floatPattern+","+floatPattern+"=\\d+|\\d+)\\)","g");
+			var rgx = new RegExp("\\(("+floatPattern+","+floatPattern+"|\\d+)\\)","g");
 			h = h.match(/([^\]]*)(\[[^\]]*\])/);
 			var replacer = (function(){
 				var seen = [];
 				return function(m, p1){
-					if(p1.indexOf("=") != -1){
+					if(p1.indexOf(",") != -1){
 						var pair = p1.match(new RegExp(floatPattern+","+floatPattern))[0];
 						seen.push(pair);
 						return "("+pair+")";
@@ -2116,6 +2133,11 @@
 		});
 		deactivateButton();
 	}, "svg", true);
+
+	button(function(deactivateButton){
+		canvas.clear();
+		deactivateButton();
+	}, "clear", true);
 
 	action.doNothing();
 
