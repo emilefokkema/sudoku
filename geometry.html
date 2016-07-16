@@ -251,6 +251,18 @@
 		return p1.plus(along).plus(perp.scale(-1));
 	};
 
+	var getPointOnAngleBisector = function(p1, p2, p3){
+		var x = p1.minus(p2), y = p3.minus(p2), dot = x.dot(y), along = x.unit().scale(dot / x.mod()), perp = y.minus(along), cross = x.cross(y);
+		var cosx = dot / (x.mod() * y.mod()),
+			sinSq = (1 - cosx) / 2,
+			cosSq = 1 - sinSq,
+			sin = Math.sqrt(sinSq),
+			cos = Math.sqrt(cosSq) * (cross > 0 ? 1 : -1);
+		return p2.plus(x.matrix(cos, -sin, sin, cos));
+	};
+
+	console.log(getPointOnAngleBisector(point(1,0), point(0,0), point(0,1)));
+
 	var intersectWithBox = (function(){
 		
 		var sides = [
@@ -1630,6 +1642,22 @@
 				linkChange(canvasPoint2, canvasPoint3, function(oldSpecs, newSpecs, changer, constants){
 					changer.setLocation(newSpecs.location.plus(constants[0].location).scale(0.5));
 				}, [canvasPoint1], 0);
+			},
+			angleBisector: function(canvasPoint1, canvasPoint2, canvasPoint3, line){
+				linkChange(line, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
+					changer.setP1(constants[0].location);
+					changer.setP2(getPointOnAngleBisector(newSpecs.location, constants[0].location, constants[1].location));
+				}, [canvasPoint2, canvasPoint3], 0);
+
+				linkChange(line, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
+					changer.setP1(newSpecs.location);
+					changer.setP2(getPointOnAngleBisector(constants[0].location, newSpecs.location, constants[1].location));
+				}, [canvasPoint1, canvasPoint3], 0);
+
+				linkChange(line, canvasPoint3, function(oldSpecs, newSpecs, changer, constants){
+					changer.setP1(constants[1].location);
+					changer.setP2(getPointOnAngleBisector(constants[0].location, constants[1].location, newSpecs.location));
+				}, [canvasPoint1, canvasPoint2], 0);
 			}
 		};
 		log.register(maker);
@@ -1914,6 +1942,20 @@
 				});
 				return stop;
 			},
+			makeAngleBisector: function(res, stop){
+				selectPoint(function(p1){
+					selectPoint(function(p2){
+						selectPoint(function(p3){
+							var p1Loc = p1.getSpecs().location, p2loc = p2.getSpecs().location, p3Loc = p3.getSpecs().location;
+							var p = getPointOnAngleBisector(p1Loc, p2loc, p3Loc);
+							var l = canvas.addLine({p1: p2loc, p2: p});
+							res(structure.angleBisector(p1, p2, p3, l));
+							stop();
+						});
+					});
+				});
+				return stop;
+			},
 			setLabel:function(res, stop){
 				var revert = stop;
 				selectShape(function(s){
@@ -2101,6 +2143,13 @@
 			deactivateButton();
 		});
 	}, "locus");
+
+	button(function(deactivateButton){
+		return action.makeAngleBisector(function(){},function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	});
 
 	button(function(deactivateButton){
 		return action.setLabel(function(){}, function(){
