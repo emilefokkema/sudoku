@@ -45,6 +45,9 @@
 .midpoint {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"7\" cy=\"19\" r=\"3\" fill=\"black\" /><circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"red\" /><circle cx=\"23\" cy=\"11\" r=\"3\" fill=\"black\" /></svg>");
 }
+.segment {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"7\" y1=\"19\" x2=\"23\" y2=\"11\" stroke=\"red\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"7\" cy=\"19\" r=\"3\" fill=\"black\" /><circle cx=\"23\" cy=\"11\" r=\"3\" fill=\"black\" /></svg>");
+}
 .label:before {
 	position: absolute;
 	left: 0px;
@@ -211,6 +214,15 @@
 		}
 		var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
 		return p1.plus(p2.minus(p1).scale(st.x));
+	};
+
+	var intersectSegments = function(p1, p2, q1, q2){
+		var i = intersectLines(p1, p2, q1, q2);
+		var onFirst = i.minus(p1).dot(i.minus(p2)) <= 0, onSecond = i.minus(q1).dot(i.minus(q2)) <= 0;
+		if(onFirst && onSecond){
+			return i;
+		}
+		return null;
 	};
 
 	var intersectCircles = function(p1, r1, p2, r2, index){
@@ -601,7 +613,20 @@
 						}, 0)
 					];
 				}
-			},{
+			},
+			{
+				matches: function(s1, s2){
+					return s1.passesFilter(shapeFilter.SEGMENT) && s2.passesFilter(shapeFilter.SEGMENT);
+				},
+				makeForShapes: function(s1, s2){
+					return [
+						intersection(s1, s2, function(s1specs, s2specs){
+							return intersectSegments(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
+						}, 0)
+					];
+				}
+			},
+			{
 				matches:function(s1, s2){
 					return s1.passesFilter(shapeFilter.CIRCLE) && s2.passesFilter(shapeFilter.CIRCLE);
 				},
@@ -1670,6 +1695,15 @@
 					}, null, 0);
 				}
 			},
+			segment: function(canvasPoint1, s, canvasPoint2){
+				linkChange(s, canvasPoint2, function(oldSpecs, newSpecs, changer){
+					changer.setP2(newSpecs.location);
+				}, null, 0);
+
+				linkChange(s, canvasPoint1, function(oldSpecs, newSpecs, changer){
+					changer.setP1(newSpecs.location);
+				}, null, 0);
+			},
 			perpendicularLine: function(canvasPoint, canvasPerpendicularLine, canvasLine){
 				linkChange(canvasPerpendicularLine, canvasPoint, function(oldSpecs, newSpecs, changer){
 					changer.translateBy(newSpecs.location.minus(oldSpecs.location));
@@ -1825,15 +1859,20 @@
 				send(null, null, i);
 			});
 		};
-		var selectPoint = function(send){
+		var selectPoint = function(send, suggest){
+			suggest = suggest || function(){};
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
-			canvas.onmouseovershape();
-			canvas.onmouseovernotshape();
 			canvas.onclickshape(function(s, e){
 				send(s);
+			});
+			canvas.onmouseovernotshape(function(e){
+				suggest(point(e.clientX, e.clientY));
+			});
+			canvas.onmouseovershape(function(s, e){
+				suggest(s.closestPointTo(point(e.clientX, e.clientY)));
 			});
 		};
 		var selectLine = function(send){
@@ -1992,6 +2031,27 @@
 					
 					revert = function(){
 						line.remove();
+						stop();
+					};
+				});
+				return function(){
+					revert();
+				};
+			},
+			makeSegmentStructure: function(res, stop){
+				var revert = stop;
+				var moveSegment, segment;
+				selectPoint(function(p1){
+					segment = canvas.addSegment({p1:p1.getSpecs().location, p2:p1.getSpecs().location.plus(point(100,0))});
+					moveSegment = function(p){segment.getChanger().setP2(p);};
+					selectPoint(function(p2){
+						res(structure.segment(p1, segment, p2));
+						stop();
+					},function(l){
+						moveSegment(l);
+					});
+					revert = function(){
+						segment.remove();
 						stop();
 					};
 				});
@@ -2228,6 +2288,13 @@
 			deactivateButton();
 		});
 	}, "line");
+
+	button(function(deactivateButton){
+		return action.makeSegmentStructure(function(){}, function(){
+			action.doNothing();
+			deactivateButton();
+		});
+	}, "segment");
 
 	button(function(deactivateButton){
 		return action.makePerpendicularLine(function(){}, function(){
