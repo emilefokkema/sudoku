@@ -251,6 +251,11 @@
 		return p1.plus(along).plus(perp.scale(-1));
 	};
 
+	var projectPointOnLine = function(p1, p2, p3){
+		var x = p2.minus(p1), y = p3.minus(p1), along = x.unit().scale(x.dot(y) / x.mod());
+		return p1.plus(along);
+	};
+
 	var getPointOnAngleBisector = function(p1, p2, p3){
 		var x = p1.minus(p2), y = p3.minus(p2), dot = x.dot(y), along = x.unit().scale(dot / x.mod()), perp = y.minus(along), cross = x.cross(y);
 		var cosx = dot / (x.mod() * y.mod()),
@@ -260,8 +265,6 @@
 			cos = Math.sqrt(cosSq) * (cross > 0 ? 1 : -1);
 		return p2.plus(x.matrix(cos, -sin, sin, cos));
 	};
-
-	console.log(getPointOnAngleBisector(point(1,0), point(0,0), point(0,1)));
 
 	var intersectWithBox = (function(){
 		
@@ -395,13 +398,9 @@
 			};
 			toString = function(){return 'line('+p1.toString()+','+p2.toString()+')';};
 			useSpecs(specs);
-			var p1ToClosestPoint = function(p){
-				var x = p.minus(p1), y = p2.minus(p1);
-				var dot = x.dot(y);
-				return y.unit().scale(dot/y.mod());
-			};
+			
 			closestPointTo = function(p){
-				return p1.plus(p1ToClosestPoint(p));
+				return projectPointOnLine(p1, p2, p);
 			};
 			distance = function(p){
 				return p.minus(closestPointTo(p)).mod();
@@ -447,6 +446,69 @@
 			};
 			this.expose({changer:getChanger()});
 		});
+		this.extend('segment',function(){
+			var p1, p2, x;
+			useSpecs = function(_specs){
+				p1 = _specs.p1 || point(0,0);
+				p2 = _specs.p2 || point(1,0);
+				x = p2.minus(p1);
+			};
+			toString = function(){return 'segment('+p1.toString()+','+p2.toString()+')';};
+			useSpecs(specs);
+			closestPointTo = function(p){
+				var dot1 = p.minus(p1).dot(x), dot2 = p.minus(p2).dot(x), sign = dot1 * dot2;
+				if(sign < 0){
+					return projectPointOnLine(p1, p2, p);
+				}else{
+					if(dot1 >= 0){
+						return p2;
+					}else{
+						return p1;
+					}
+				}
+			};
+			distance = function(p){
+				return p.minus(closestPointTo(p)).mod();
+			};
+			getSpecs = function(){
+				return {
+					p1:p1,
+					p2:p2
+				};
+			};
+			changer = {
+				setP1:function(p){p1 = p;},
+				setP2:function(p){p2 = p;},
+				translateBy: function(d){
+					p1 = p1.plus(d);
+					p2 = p2.plus(d);
+				},
+				moveTo: function(p){
+					if(p.minus(p1).dot(p2.minus(p1)) > 0){
+						p2 = p;
+					}else{
+						p2 = p1.plus(p1.minus(p));
+					}
+				},
+				setFromP1: function(d){
+					p2 = p1.plus(d);
+				}
+			};
+
+			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL;};
+
+			repositionPoint = function(p, oldSpecs, newSpecs){
+				if(p.equals(oldSpecs.p1)){
+					return newSpecs.p1;
+				}else if(p.equals(oldSpecs.p2)){
+					return newSpecs.p2;
+				}else{
+					var ratio = p.minus(oldSpecs.p1).mod() / oldSpecs.p2.minus(oldSpecs.p1).mod();
+					return newSpecs.p1.plus(newSpecs.p2.minus(newSpecs.p1).scale(ratio));
+				}
+			};
+			this.expose({changer:getChanger()});
+		})
 		this.extend('point',function(){
 			var loc;
 			useSpecs = function(_specs){
@@ -512,7 +574,8 @@
 		NONE:2,
 		LINE:3,
 		CIRCLE:4,
-		LOCUS: 5
+		LOCUS: 5,
+		SEGMENT: 6
 	};
 
 	var intersectionSet = function(){
@@ -791,6 +854,41 @@
 					}
 				};
 			});
+			this.extend('segment',function(_specs){
+				draw = this.override(draw, function(ctx){
+					this(ctx);
+					var sp = logic.getSpecs();
+					if(!sp.p1.equals(sp.p2)){
+						
+						
+						ctx.beginPath();
+						ctx.moveTo(sp.p1.x, sp.p1.y);
+						ctx.lineTo(sp.p2.x, sp.p2.y);
+						ctx.closePath();
+						ctx.stroke();
+					}
+					
+				});
+				name = specs.name || 'segment';
+
+				getNewShapeLogic = function(sp){return shapeLogic.segment(sp);};
+
+				logic = getNewShapeLogic(_specs);
+
+				toSvg = function(){
+					var sp = logic.getSpecs();
+					if(!sp.p1.equals(sp.p2)){
+						
+						var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+						setSvgAttributes(line);
+						line.setAttribute('x1',sp.p1.x);
+						line.setAttribute('y1',sp.p1.y);
+						line.setAttribute('x2',sp.p2.x);
+						line.setAttribute('y2',sp.p2.y);
+						return [line];
+					}
+				};
+			})
 			this.extend('point',function(_specs){
 				
 				draw = this.override(draw, function(ctx){
@@ -1142,6 +1240,9 @@
 			addLocus: function(specs, toBeExcludedFromMouseEvents){
 				return addShape(shape.locus({stroke:'#dd6'}, specs), toBeExcludedFromMouseEvents);
 			},
+			addSegment: function(specs, toBeExcludedFromMouseEvents){
+				return addShape(shape.segment({stroke:'#d6d'}, specs), toBeExcludedFromMouseEvents);
+			},
 			onmouseovershape: function(f){onmouseovershape = f || function(){};},
 			onmousedownonshape: function(f){onmousedownonshape = f || function(){};},
 			onmouseovernotshape: function(f){
@@ -1172,7 +1273,7 @@
 
 	})(w,h);
 
-
+	
 	var log = (function(){
 		
 		var allCalls = [];
@@ -1259,7 +1360,8 @@
 						return c;
 					};
 				}
-			},{
+			},
+			{
 				level:0,
 				matches:function(kind){return kind == "line";},
 				make:function(info, label, hidden){
@@ -1275,7 +1377,25 @@
 						return l;
 					};
 				}
-			},{
+			},
+			{
+				level:0,
+				matches:function(kind){return kind == "segment";},
+				make:function(info, label, hidden){
+					return function(){
+						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
+						var l = canvas.addSegment({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+						if(label){
+							l.setLabel(label);
+						}
+						if(hidden){
+							l.hideUnhide();
+						}
+						return l;
+					};
+				}
+			},
+			{
 				level:1,
 				matches:function(kind){return kind == "intersection";},
 				make:function(info){
