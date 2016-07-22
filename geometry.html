@@ -446,7 +446,7 @@
 				}
 			};
 
-			passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL;};
+			passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH;};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
 				if(oldSpecs.p1.equals(newSpecs.p1)){
@@ -510,7 +510,7 @@
 				}
 			};
 
-			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL;};
+			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH;};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
 				if(p.equals(oldSpecs.p1)){
@@ -584,13 +584,14 @@
 	});
 
 	var shapeFilter = {
-		ALL: 0,
-		POINT: 1,
-		NONE:2,
-		LINE:3,
-		CIRCLE:4,
-		LOCUS: 5,
-		SEGMENT: 6
+		ALL: 1,
+		POINT: 2,
+		NONE:3,
+		LINE:4,
+		CIRCLE:5,
+		LOCUS: 6,
+		SEGMENT: 7,
+		LINE_ISH: 8
 	};
 
 	var intersectionSet = function(){
@@ -1879,18 +1880,11 @@
 			});
 		};
 		var selectLine = function(send){
-			canvas.setMouseFilter(canvas.mouseFilter.LINE);
-			canvas.setShapeCursor(canvas.cursor.pointer);
-			canvas.setNoShapeCursor(canvas.cursor.none);
-			canvas.onmousedownonshape();
-			canvas.onmouseovershape();
-			canvas.onmouseovernotshape();
-			canvas.onclickshape(function(s, e){
-				send(s);
-			});
+			selectShape(send, canvas.mouseFilter.LINE);
 		};
-		var selectShape = function(send){
-			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+		var selectShape = function(send, mouseFilter){
+			mouseFilter = mouseFilter || canvas.mouseFilter.ALL;
+			canvas.setMouseFilter(mouseFilter);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
@@ -2066,12 +2060,12 @@
 				var chosenPoint, revert = stop;
 				selectPoint(function(s){
 					chosenPoint = s;
-					selectLine(function(l){
+					selectShape(function(l){
 						var lSpecs = l.getSpecs(), p1 = chosenPoint.getSpecs().location, p2 = p1.plus(lSpecs.p2.minus(lSpecs.p1).matrix(0,-1,1,0));
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.perpendicularLine(chosenPoint, perpLine, l));
 						stop();
-					});
+					}, canvas.mouseFilter.LINE_ISH);
 				});
 				return function(){
 					revert();
