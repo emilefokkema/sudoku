@@ -336,17 +336,27 @@
 			repositionPoint = function(){},
 			getChanger = function(){
 				var o = {useSpecs:useSpecs};
+				var inhibitPropagation = false;
 				for(var f in changer){
 					if(changer.hasOwnProperty(f)){
 						o[f] = (function(f_){
 							return function(){
 								var oldSpecs = getSpecs();
 								changer[f_].apply(null, arguments);
-								onchange(oldSpecs, getSpecs());
+								if(!inhibitPropagation){
+									onchange(oldSpecs, getSpecs());
+								}
 							};
 						})(f)
 					}
 				}
+				o.together = function(what){
+					var oldSpecs = getSpecs();
+					inhibitPropagation = true;
+					what.apply(o,[]);
+					onchange(oldSpecs, getSpecs());
+					inhibitPropagation = false;
+				};
 				return o;
 			},
 			distance = function(p){return Infinity;},
@@ -425,11 +435,10 @@
 			};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
-				if(oldSpecs.center.equals(newSpecs.center)){
-					return oldSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
-				}
-				else{
+				if(oldSpecs.r == newSpecs.r){
 					return p.plus(newSpecs.center.minus(oldSpecs.center));
+				}else{
+					return newSpecs.center.plus(p.minus(oldSpecs.center).scale(newSpecs.r/oldSpecs.r));
 				}
 			};
 			this.expose({changer:getChanger()});
@@ -1712,16 +1721,20 @@
 						canvasCircle,
 						canvasPointBoundary,
 						function(oldSpecs, newSpecs, changer, constants){
-							changer.setCenter(constants[0].location);
-							changer.setR(newSpecs.location.minus(constants[0].location).mod());
+							changer.together(function(){
+								this.setCenter(constants[0].location);
+								this.setR(newSpecs.location.minus(constants[0].location).mod());
+							});
 						},
 						[canvasPointCenter], 0);
 					linkChange(
 						canvasCircle,
 						canvasPointCenter,
 						function(oldSpecs, newSpecs, changer, constants){
-							changer.setCenter(newSpecs.location);
-							changer.setR(newSpecs.location.minus(constants[0].location).mod());
+							changer.together(function(){
+								this.setCenter(newSpecs.location);
+								this.setR(newSpecs.location.minus(constants[0].location).mod());
+							});
 						},
 						[canvasPointBoundary], 0);
 				}
@@ -1772,13 +1785,17 @@
 			},
 			perpendicularBisector: function(canvasPoint1, perpBis, canvasPoint2){
 				linkChange(perpBis, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
-					changer.setP1(newSpecs.location.plus(constants[0].location).scale(1/2));
-					changer.setFromP1(constants[0].location.minus(newSpecs.location).matrix(0, -1, 1, 0));
+					changer.together(function(){
+						this.setP1(newSpecs.location.plus(constants[0].location).scale(1/2));
+						this.setFromP1(constants[0].location.minus(newSpecs.location).matrix(0, -1, 1, 0));
+					});
 				}, [canvasPoint2], 0);
 
 				linkChange(perpBis, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
-					changer.setP1(constants[0].location.plus(newSpecs.location).scale(1/2));
-					changer.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
+					changer.together(function(){
+						this.setP1(constants[0].location.plus(newSpecs.location).scale(1/2));
+						this.setFromP1(newSpecs.location.minus(constants[0].location).matrix(0, -1, 1, 0));
+					});
 				}, [canvasPoint1], 0);
 			},
 			pointLineReflection: function(canvasPoint, line, canvasPointReflection){
@@ -1856,18 +1873,24 @@
 			},
 			angleBisector: function(canvasPoint1, canvasPoint2, canvasPoint3, line){
 				linkChange(line, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
-					changer.setP1(constants[0].location);
-					changer.setP2(getPointOnAngleBisector(newSpecs.location, constants[0].location, constants[1].location));
+					changer.together(function(){
+						this.setP1(constants[0].location);
+						this.setP2(getPointOnAngleBisector(newSpecs.location, constants[0].location, constants[1].location));
+					});
 				}, [canvasPoint2, canvasPoint3], 0);
 
 				linkChange(line, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
-					changer.setP1(newSpecs.location);
-					changer.setP2(getPointOnAngleBisector(constants[0].location, newSpecs.location, constants[1].location));
+					changer.together(function(){
+						this.setP1(newSpecs.location);
+						this.setP2(getPointOnAngleBisector(constants[0].location, newSpecs.location, constants[1].location));
+					});
 				}, [canvasPoint1, canvasPoint3], 0);
 
 				linkChange(line, canvasPoint3, function(oldSpecs, newSpecs, changer, constants){
-					changer.setP1(constants[1].location);
-					changer.setP2(getPointOnAngleBisector(constants[0].location, constants[1].location, newSpecs.location));
+					changer.together(function(){
+						this.setP1(constants[1].location);
+						this.setP2(getPointOnAngleBisector(constants[0].location, constants[1].location, newSpecs.location));
+					});
 				}, [canvasPoint1, canvasPoint2], 0);
 			}
 		};
