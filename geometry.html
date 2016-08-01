@@ -507,11 +507,11 @@
 			useSpecs = function(_specs){
 				p1 = _specs.p1 || point(0,0);
 				p2 = _specs.p2 || point(1,0);
-				x = p2.minus(p1);
 			};
 			toString = function(){return 'segment('+p1.toString()+','+p2.toString()+')';};
 			useSpecs(specs);
 			closestPointTo = function(p){
+				var x = p2.minus(p1);
 				var dot1 = p.minus(p1).dot(x), dot2 = p.minus(p2).dot(x), sign = dot1 * dot2;
 				if(sign < 0){
 					return projectPointOnLine(p1, p2, p);
@@ -550,6 +550,16 @@
 					p2 = p1.plus(d);
 				}
 			};
+
+			movePointAround = (function(){
+				var arr = Array.apply(null, new Array(101));
+				return function(p){
+					var  d = p2.minus(p1).scale(1/100);
+					return arr.map(function(x,t){
+						return p1.plus(d.scale(t));
+					});
+				};
+			})();
 
 			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH;};
 
@@ -1859,7 +1869,6 @@
 								newPoints = [];
 								pointSets.push(newPoints);
 							}
-							
 						});
 						locusShape.getChanger().setPointSets(pointSets);
 						
