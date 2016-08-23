@@ -2514,6 +2514,7 @@
 		return action.setLabel(function(){}, function(){
 			action.doNothing();
 			deactivateButton();
+			hash.write();
 		});
 	}, "label");
 
