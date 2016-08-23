@@ -783,6 +783,8 @@
 		context = c.getContext('2d');
 		var ondraw = sender();
 		var onshapechange = sender();
+		var onmouseup = sender();
+		var onmousedown = sender();
 		var onclear = sender();
 		var showHidden = false;
 
@@ -1154,7 +1156,7 @@
 
 		var onclickintersection = function(i, e){};
 
-		var onmouseup = function(e){};
+		var onmouseupSingle = function(e){};
 
 		var onclicknotshape = function(e){};
 
@@ -1322,9 +1324,10 @@
 
 		c.addEventListener('mousemove', moveHandler);
 
-		c.addEventListener('mousedown', downHandler);
+		c.addEventListener('mousedown', function(e){onmousedown(e);downHandler(e);});
 
 		c.addEventListener('mouseup', function(e){
+			onmouseupSingle(e);
 			onmouseup(e);
 			draw();
 		});
@@ -1362,7 +1365,9 @@
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
 			onclicknotshape: function(f){onclicknotshape = f || function(){};},
-			onmouseup: function(f){onmouseup = f || function(){};},
+			onmouseupSingle: function(f){onmouseupSingle = f || function(){};},
+			onmouseup:function(f){onmouseup.add(f);},
+			onmousedown:function(f){onmousedown.add(f);},
 			setMouseFilter: function(f){currentMouseFilter = f;},
 			mouseFilter: shapeFilter,
 			selectShape: function(s){selection.addShape(s);},
@@ -2007,7 +2012,7 @@
 				canvas.onmouseoverintersection();
 				canvas.onclickintersection();
 				canvas.onmouseovernotshape();
-				canvas.onmouseup();
+				canvas.onmouseupSingle();
 			},
 			select: function(stop){
 				canvas.setMouseFilter(canvas.mouseFilter.ALL);
@@ -2047,7 +2052,7 @@
 					s.dragTo(point(e.clientX, e.clientY));
 				};
 
-				canvas.onmouseup(action.doNothing);
+				canvas.onmouseupSingle(action.doNothing);
 				canvas.onmouseovershape(function(s, e){doMove(e);});
 				canvas.onmouseovernotshape(doMove);
 				canvas.onmouseoverintersection(function(i,e){doMove(e);});
@@ -2314,19 +2319,55 @@
 			return h[1]+h[2].replace(rgx, replacer);
 		};
 		var read = function(){
-			var s = window.location.hash.substr(1);
+			var state, s = window.location.hash.substr(1);
 			if(s){
-				log.backFromString(longen(decodeURI(s)));
+				state = longen(decodeURI(s));
+				log.backFromString(state);
+				history.push(state);
 			}
 		};
-		var write = throttle(function(){
-			window.location.hash = encodeURI(shorten(log.toString()));
-		}, 500);
-		canvas.onshapechange(write);
-		canvas.onclear(write);
-		read();
-		return {write:write};
+		var history = (function(){
+			var states = [];
+			window.states = states;
+			var push = function(s){
+				if(s != states[states.length-1]){
+					states.push(s);
+				}
+			};
+			var nextToLast = function(){
+				if(states.length > 1){
+					states.splice(states.length - 1, 1);
+					return states[states.length - 1];
+				}
+			};
+			return {
+				push:push,
+				nextToLast:nextToLast
+			};
+		})();
+		var write = function(){
+			console.log("writing state");
+			var newState = log.toString();
+			window.location.hash = encodeURI(shorten(newState));
+			history.push(newState);
+		};
+		var nextToLast = function(){
+			var oldState = history.nextToLast();
+			if(oldState){
+				canvas.clear();
+				log.backFromString(oldState);
+				window.location.hash = encodeURI(shorten(oldState));
+			}
+		};
+		return {
+			write:write,
+			nextToLast:nextToLast,
+			read:read
+		};
 	})();
+
+	canvas.onmouseup(function(){console.log("mouseup");hash.write();});
+	hash.read();
 
 	var button = (function(){
 		var positionProvider = function(){
@@ -2384,6 +2425,7 @@
 			
 		}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "point");
@@ -2391,6 +2433,7 @@
 	button(function(deactivateButton){
 		return action.makeCircleStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "circle");
@@ -2398,6 +2441,7 @@
 	button(function(deactivateButton){
 		return action.makeLineStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "line");
@@ -2405,6 +2449,7 @@
 	button(function(deactivateButton){
 		return action.makeSegmentStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "segment");
@@ -2412,6 +2457,7 @@
 	button(function(deactivateButton){
 		return action.makePerpendicularLine(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "perpendicular");
@@ -2419,6 +2465,7 @@
 	button(function(deactivateButton){
 		return action.makeParellelLine(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "parallel");
@@ -2426,6 +2473,7 @@
 	button(function(deactivateButton){
 		return action.makePerpendicularBisector(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		})
 	},"bisect");
@@ -2433,6 +2481,7 @@
 	button(function(deactivateButton){
 		return action.makePointLineReflection(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "reflect-line");
@@ -2440,6 +2489,7 @@
 	button(function(deactivateButton){
 		return action.makeMidpoint(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "midpoint");
@@ -2447,6 +2497,7 @@
 	button(function(deactivateButton){
 		return action.makeLocus(function(){},function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "locus");
@@ -2454,6 +2505,7 @@
 	button(function(deactivateButton){
 		return action.makeAngleBisector(function(){},function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "angle-bisector");
@@ -2483,6 +2535,7 @@
 	button(function(deactivateButton){
 		canvas.removeSelection();
 		deactivateButton();
+		hash.write();
 	}, "remove", true);
 
 	button(function(deactivateButton){
@@ -2496,8 +2549,14 @@
 
 	button(function(deactivateButton){
 		canvas.clear();
+		hash.write();
 		deactivateButton();
 	}, "clear", true);
+
+	button(function(deactivateButton){
+		hash.nextToLast();
+		deactivateButton();
+	}, "", true);
 
 	action.doNothing();
 
