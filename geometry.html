@@ -51,6 +51,9 @@
 .midpoint {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"7\" cy=\"19\" r=\"3\" fill=\"black\" /><circle cx=\"15\" cy=\"15\" r=\"3\" fill=\"red\" /><circle cx=\"23\" cy=\"11\" r=\"3\" fill=\"black\" /></svg>");
 }
+.undo {
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" x=\"0px\" y=\"0px\" viewBox=\"0 0 1000 1000\" enable-background=\"new 0 0 1000 1000\" xml:space=\"preserve\" width=\"30\"><g><g><g><g><path d=\"M55.9,546c0-12.7,10.3-22.9,22.9-22.9h116.9c12.6,0,22.9,10.1,22.9,22.9c0,155,126.3,281.3,281.3,281.3S781.4,701,781.4,546c0-155.2-126.2-281.3-281.3-281.3c-16.4,0-32.8,1.4-49.1,4.3v79.5c0,9.3-5.6,17.7-14,21.2c-8.7,3.5-18.5,1.5-25.2-5l-233.3-158c-8.9-8.9-8.9-23.3,0-32.2L411.8,16.7c6.6-6.6,16.3-8.5,25.1-5c8.4,3.6,14,11.9,14,21.1v71.8c16.4-1.8,32.8-2.8,49.1-2.8c244.8,0,444.1,199.3,444.1,444.1c0,244.8-199.3,444-444.1,444C255.2,990,55.9,790.8,55.9,546z\"/></g></g></g><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/><g/></g></svg>");
+}
 .segment {
 	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"30\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"7\" y1=\"19\" x2=\"23\" y2=\"11\" stroke=\"red\" fill=\"transparent\" stroke-width=\"2\"/><circle cx=\"7\" cy=\"19\" r=\"3\" fill=\"black\" /><circle cx=\"23\" cy=\"11\" r=\"3\" fill=\"black\" /></svg>");
 }
@@ -783,6 +786,8 @@
 		context = c.getContext('2d');
 		var ondraw = sender();
 		var onshapechange = sender();
+		var onmouseup = sender();
+		var onmousedown = sender();
 		var onclear = sender();
 		var showHidden = false;
 
@@ -1154,7 +1159,7 @@
 
 		var onclickintersection = function(i, e){};
 
-		var onmouseup = function(e){};
+		var onmouseupSingle = function(e){};
 
 		var onclicknotshape = function(e){};
 
@@ -1322,9 +1327,10 @@
 
 		c.addEventListener('mousemove', moveHandler);
 
-		c.addEventListener('mousedown', downHandler);
+		c.addEventListener('mousedown', function(e){onmousedown(e);downHandler(e);});
 
 		c.addEventListener('mouseup', function(e){
+			onmouseupSingle(e);
 			onmouseup(e);
 			draw();
 		});
@@ -1362,7 +1368,9 @@
 			onclickintersection: function(f){onclickintersection = f || function(){};},
 			onclickshape: function(f){onclickshape = f || function(){};},
 			onclicknotshape: function(f){onclicknotshape = f || function(){};},
-			onmouseup: function(f){onmouseup = f || function(){};},
+			onmouseupSingle: function(f){onmouseupSingle = f || function(){};},
+			onmouseup:function(f){onmouseup.add(f);},
+			onmousedown:function(f){onmousedown.add(f);},
 			setMouseFilter: function(f){currentMouseFilter = f;},
 			mouseFilter: shapeFilter,
 			selectShape: function(s){selection.addShape(s);},
@@ -2007,7 +2015,7 @@
 				canvas.onmouseoverintersection();
 				canvas.onclickintersection();
 				canvas.onmouseovernotshape();
-				canvas.onmouseup();
+				canvas.onmouseupSingle();
 			},
 			select: function(stop){
 				canvas.setMouseFilter(canvas.mouseFilter.ALL);
@@ -2047,7 +2055,7 @@
 					s.dragTo(point(e.clientX, e.clientY));
 				};
 
-				canvas.onmouseup(action.doNothing);
+				canvas.onmouseupSingle(action.doNothing);
 				canvas.onmouseovershape(function(s, e){doMove(e);});
 				canvas.onmouseovernotshape(doMove);
 				canvas.onmouseoverintersection(function(i,e){doMove(e);});
@@ -2314,19 +2322,55 @@
 			return h[1]+h[2].replace(rgx, replacer);
 		};
 		var read = function(){
-			var s = window.location.hash.substr(1);
+			var state, s = window.location.hash.substr(1);
 			if(s){
-				log.backFromString(longen(decodeURI(s)));
+				state = longen(decodeURI(s));
+				log.backFromString(state);
+				history.push(state);
 			}
 		};
-		var write = throttle(function(){
-			window.location.hash = encodeURI(shorten(log.toString()));
-		}, 500);
-		canvas.onshapechange(write);
-		canvas.onclear(write);
-		read();
-		return {write:write};
+		var history = (function(){
+			var states = [];
+			window.states = states;
+			var push = function(s){
+				if(s != states[states.length-1]){
+					states.push(s);
+				}
+			};
+			var nextToLast = function(){
+				if(states.length > 1){
+					states.splice(states.length - 1, 1);
+					return states[states.length - 1];
+				}
+			};
+			return {
+				push:push,
+				nextToLast:nextToLast
+			};
+		})();
+		var write = function(){
+			console.log("writing state");
+			var newState = log.toString();
+			window.location.hash = encodeURI(shorten(newState));
+			history.push(newState);
+		};
+		var nextToLast = function(){
+			var oldState = history.nextToLast();
+			if(oldState){
+				canvas.clear();
+				log.backFromString(oldState);
+				window.location.hash = encodeURI(shorten(oldState));
+			}
+		};
+		return {
+			write:write,
+			nextToLast:nextToLast,
+			read:read
+		};
 	})();
+
+	canvas.onmouseup(function(){console.log("mouseup");hash.write();});
+	hash.read();
 
 	var button = (function(){
 		var positionProvider = function(){
@@ -2384,6 +2428,7 @@
 			
 		}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "point");
@@ -2391,6 +2436,7 @@
 	button(function(deactivateButton){
 		return action.makeCircleStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "circle");
@@ -2398,6 +2444,7 @@
 	button(function(deactivateButton){
 		return action.makeLineStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "line");
@@ -2405,6 +2452,7 @@
 	button(function(deactivateButton){
 		return action.makeSegmentStructure(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "segment");
@@ -2412,6 +2460,7 @@
 	button(function(deactivateButton){
 		return action.makePerpendicularLine(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "perpendicular");
@@ -2419,6 +2468,7 @@
 	button(function(deactivateButton){
 		return action.makeParellelLine(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "parallel");
@@ -2426,6 +2476,7 @@
 	button(function(deactivateButton){
 		return action.makePerpendicularBisector(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		})
 	},"bisect");
@@ -2433,6 +2484,7 @@
 	button(function(deactivateButton){
 		return action.makePointLineReflection(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "reflect-line");
@@ -2440,6 +2492,7 @@
 	button(function(deactivateButton){
 		return action.makeMidpoint(function(){}, function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "midpoint");
@@ -2447,6 +2500,7 @@
 	button(function(deactivateButton){
 		return action.makeLocus(function(){},function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "locus");
@@ -2454,6 +2508,7 @@
 	button(function(deactivateButton){
 		return action.makeAngleBisector(function(){},function(){
 			action.doNothing();
+			hash.write();
 			deactivateButton();
 		});
 	}, "angle-bisector");
@@ -2484,6 +2539,7 @@
 	button(function(deactivateButton){
 		canvas.removeSelection();
 		deactivateButton();
+		hash.write();
 	}, "remove", true);
 
 	button(function(deactivateButton){
@@ -2497,8 +2553,14 @@
 
 	button(function(deactivateButton){
 		canvas.clear();
+		hash.write();
 		deactivateButton();
 	}, "clear", true);
+
+	button(function(deactivateButton){
+		hash.nextToLast();
+		deactivateButton();
+	}, "undo", true);
 
 	action.doNothing();
 
