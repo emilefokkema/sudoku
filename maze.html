@@ -1,0 +1,94 @@
+<html><body style="white-space:pre;font-family:monospace;letter-spacing:0.5em"></body><script>
+(function(w, h, body){
+	var maxY = 20, maxX = Math.floor(maxY * w / h);
+	var stringPicture = function(w,h){
+		var rows = Array.apply(null, new Array(h)).map(function(){
+			return Array.apply(null, new Array(w)).map(function(){return " ";}).join("");
+		});
+		var put = function(x,y,str){
+			rows[y] = rows[y].substr(0,x) + str + rows[y].substr(x+1);
+		};
+		var toString = function(){
+			return rows.join("\n");
+		};
+		return {
+			put:function(x,y,str){
+				put(x,y,str);
+				return this;
+			},
+			toString:toString
+		};
+	};
+	var maze = (function(maxX, maxY){
+		var x, y, direction = {TOP:0,LEFT:1,RIGHT:2,BOTTOM:3}, allBorderParts = [];
+		var borderPart = function(x,y,direction){
+			return {
+				x:x,
+				y:y,
+				direction:direction
+			};
+		};
+		var removeBorderParts = function(test){
+			var partsToRemove = allBorderParts.filter(test);
+			while(partsToRemove.length > 0){
+				allBorderParts.splice(allBorderParts.indexOf(partsToRemove[0]),1);
+				partsToRemove.splice(0,1);
+			}
+		};
+		for(x = 0; x < maxX; x++){
+			allBorderParts.push(borderPart(x,0,direction.TOP));
+			for(y = 0; y < maxY; y++){
+				allBorderParts.push(borderPart(x,y,direction.BOTTOM));
+				allBorderParts.push(borderPart(x,y,direction.RIGHT));
+			}
+		}
+		for(y = 0; y < maxY; y++){
+			allBorderParts.push(borderPart(0,y,direction.LEFT));
+		}
+		var connectPositions = function(x1, y1, x2, y2){
+			if(x1 == x2 && Math.abs(y1 - y2) == 1){
+				if(y1 > y2){
+					removeBorderParts(function(p){return p.x == x1 && (p.y == y1 && p.direction == direction.TOP || p.y == y2 && p.direction == direction.BOTTOM);});
+				}else{
+					removeBorderParts(function(p){return p.x == x1 && (p.y == y2 && p.direction == direction.TOP || p.y == y1 && p.direction == direction.BOTTOM);});
+				}
+			}else if(y1 == y2 && Math.abs(x1 - x2) == 1){
+				if(x1 > x2){
+					removeBorderParts(function(p){return p.y == y1 && (p.x == x1 && p.direction == direction.LEFT || p.x == x2 && p.direction == direction.RIGHT);});
+				}else{
+					removeBorderParts(function(p){return p.y == y1 && (p.x == x2 && p.direction == direction.LEFT || p.x == x1 && p.direction == direction.RIGHT);});
+				}
+			}
+		};
+		var toString = function(){
+			var pic = stringPicture(2*maxX + 1, 2*maxY + 1);
+			allBorderParts.map(function(p){
+				var x,y,str = p.direction == direction.LEFT || p.direction == direction.RIGHT ? "\u2502" : "\u2500";
+				if(p.direction == direction.LEFT){
+					x = 2*p.x;
+					y = 1 + 2*p.y;
+				}else if(p.direction == direction.RIGHT){
+					x = 2*p.x + 2;
+					y = 1 + 2*p.y;
+				}else if(p.direction == direction.TOP){
+					x = 1 + 2*p.x;
+					y = 2*p.y;
+				}else if(p.direction == direction.BOTTOM){
+					x = 1 + 2*p.x;
+					y = 2*p.y + 2;
+				}
+				pic.put(x,y,str);
+			});
+			return pic.toString();
+		};
+		return {
+			connectPositions:connectPositions,
+			toString:toString
+		};
+	})(maxX, maxY);
+	maze.connectPositions(0,0,1,0);
+	maze.connectPositions(1,0,1,1);
+	body.appendChild(document.createTextNode(maze.toString()));
+
+})(document.body.offsetWidth, document.body.offsetHeight, document.body);
+</script></html>
