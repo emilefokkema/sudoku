@@ -1,6 +1,21 @@
 <html><body style="white-space:pre;font-family:monospace;font-size:5px;font-weight:bold;letter-spacing:0.5em"></body><script>
 (function(w, h, body){
-	var maxY = 10, maxX = maxY;
+	var maxY = 50, maxX = maxY;
+
+	var chooseRandom = function(arr, p){
+		if(!p){
+			return arr[Math.floor(Math.random() * arr.length)];
+		}
+		arr = arr.map(function(v){return {
+			v:v,
+			p:p(v)
+		};});
+		var currentI = 0, currentP = arr[0].p, total = arr.map(function(a){return a.p;}).reduce(function(a,b){return a+b;}), thres = Math.random() * total;
+		while(currentP < thres){
+			currentP += arr[++currentI].p;
+		}
+		return arr[currentI].v;
+	};
 
 	var direction = {TOP:0,LEFT:1,RIGHT:2,BOTTOM:3};
 
@@ -81,6 +96,12 @@
 
 	var mazeDrawer = (function(){
 		var draw = function(m, ctx, boxSize){
+			m.paths.map(function(p, i){
+				ctx.fillStyle = 'hsl('+(i*20)+',40%,80%)';
+				p.map(function(pp){
+					ctx.fillRect(pp.x * boxSize, pp.y * boxSize, boxSize, boxSize);
+				});
+			});
 			m.borderParts.map(function(p){
 				var x1, y1, x2, y2;
 				if(p.direction == direction.TOP){
@@ -103,7 +124,7 @@
 	})();
 	
 	var maze = (function(maxX, maxY){
-		var x, y, allBorderParts = [];
+		var paths, x, y, allBorderParts = [];
 		var borderPart = function(x,y,direction){
 			return {
 				x:x,
@@ -143,6 +164,60 @@
 				}
 			}
 		};
+		var pathMaker = (function(){
+			var position = function(x,y){
+				return {
+					x:x,
+					y:y
+				};
+			};
+			var positions = Array.apply(null, new Array(maxX)).map(function(o, x){
+				return Array.apply(null, new Array(maxY)).map(function(o, y){
+					return position(x,y);
+				});
+			}).reduce(function(a,b){return a.concat(b);});
+			var getNeighborsOf = function(p){
+				return positions.filter(function(pp){return pp.x == p.x && Math.abs(pp.y - p.y) == 1 || pp.y == p.y && Math.abs(pp.x - p.x) == 1;});
+			};
+			var make = function(){
+				var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [];
+				var visitPosition = function(p){
+					unvisitedPositions.splice(unvisitedPositions.indexOf(p), 1);
+					visited.push(p);
+					currentPath.push(p);
+				};
+				var getUnvisitedNeighborsOf = function(p){
+					return getNeighborsOf(p).filter(function(pp){return unvisitedPositions.indexOf(pp) != -1;})
+				};
+				var newPath = function(){
+					paths.push(currentPath);
+					currentPath = [];
+				};
+				currentPosition = chooseRandom(positions);
+				visitPosition(currentPosition);
+
+				while(unvisitedPositions.length > 0){
+					reachedEnd = false;
+					while((unvisitedNeighbors = getUnvisitedNeighborsOf(currentPosition)).length == 0){
+						reachedEnd = true;
+						currentPosition = visited.pop();
+					}
+					if(reachedEnd){
+						newPath();
+					}
+					nextPosition = chooseRandom(unvisitedNeighbors, function(p){return p.x == currentPosition.x ? Math.pow(1.05, currentPosition.x) : 1;});
+					visitPosition(nextPosition);
+					connectPositions(currentPosition.x, currentPosition.y, nextPosition.x, nextPosition.y);
+					currentPosition = nextPosition;
+				}
+				newPath();
+				return paths;
+			};
+			return {make:make};
+
+		})();
+
+		paths = pathMaker.make();
 		return {
 			connectPositions:connectPositions,
 			toString:toString,
@@ -150,82 +225,16 @@
 				return {
 					maxX:maxX,
 					maxY:maxY,
-					borderParts:allBorderParts.slice()
+					borderParts:allBorderParts.slice(),
+					paths:paths.slice()
 				};
 			}
 		};
 	})(maxX, maxY);
 
-	var chooseRandom = function(arr, p){
-		if(!p){
-			return arr[Math.floor(Math.random() * arr.length)];
-		}
-		arr = arr.map(function(v){return {
-			v:v,
-			p:p(v)
-		};});
-		var currentI = 0, currentP = arr[0].p, total = arr.map(function(a){return a.p;}).reduce(function(a,b){return a+b;}), thres = Math.random() * total;
-		while(currentP < thres){
-			currentP += arr[++currentI].p;
-		}
-		return arr[currentI].v;
-	};
+	
 
-	var pathMaker = (function(maze, maxX, maxY){
-		var position = function(x,y){
-			return {
-				x:x,
-				y:y
-			};
-		};
-		var positions = Array.apply(null, new Array(maxX)).map(function(o, x){
-			return Array.apply(null, new Array(maxY)).map(function(o, y){
-				return position(x,y);
-			});
-		}).reduce(function(a,b){return a.concat(b);});
-		var getNeighborsOf = function(p){
-			return positions.filter(function(pp){return pp.x == p.x && Math.abs(pp.y - p.y) == 1 || pp.y == p.y && Math.abs(pp.x - p.x) == 1;});
-		};
-		var make = function(){
-			var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [];
-			var visitPosition = function(p){
-				unvisitedPositions.splice(unvisitedPositions.indexOf(p), 1);
-				visited.push(p);
-				currentPath.push(p);
-			};
-			var getUnvisitedNeighborsOf = function(p){
-				return getNeighborsOf(p).filter(function(pp){return unvisitedPositions.indexOf(pp) != -1;})
-			};
-			var newPath = function(){
-				paths.push(currentPath);
-				currentPath = [];
-			};
-			currentPosition = chooseRandom(positions);
-			visitPosition(currentPosition);
-
-			while(unvisitedPositions.length > 0){
-				reachedEnd = false;
-				while((unvisitedNeighbors = getUnvisitedNeighborsOf(currentPosition)).length == 0){
-					reachedEnd = true;
-					currentPosition = visited.pop();
-				}
-				if(reachedEnd){
-					newPath();
-				}
-				nextPosition = chooseRandom(unvisitedNeighbors, function(p){
-					var desiredDirection = {x: maxY / 2 - currentPosition.y, y:currentPosition.x - maxX / 2};
-					return Math.pow(1.1, (p.x - currentPosition.x) * desiredDirection.x + (p.y - currentPosition.y) * desiredDirection.y);
-				});
-				visitPosition(nextPosition);
-				maze.connectPositions(currentPosition.x, currentPosition.y, nextPosition.x, nextPosition.y);
-				currentPosition = nextPosition;
-			}
-			return paths;
-		};
-		return {make:make};
-
-	})(maze, maxX, maxY);
-	console.log(pathMaker.make());
+	
 	var canvas = document.createElement('canvas');
 	canvas.setAttribute('height', h);
 	canvas.setAttribute('width', h);
