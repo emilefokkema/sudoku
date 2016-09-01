@@ -1,7 +1,7 @@
-<html><body></body><script>
+<html><body style="margin:0px;padding:0px;overflow:hidden"></body><script>
 (function(w, h, body){
-	var maze, boxSize = 7;
-	var maxY = Math.floor(h / boxSize), maxX = Math.floor(maxY * w / h);
+	var maze, boxSize = 8;
+	var maxY = Math.ceil(h / boxSize), maxX = Math.ceil(w / boxSize);
 
 	var chooseRandom = function(arr, p){
 		if(!p){
@@ -124,8 +124,9 @@
 	var mazeDrawer = (function(){
 		var draw = function(m, ctx, boxSize, drawPaths){
 			if(drawPaths){
+				var baseHue = Math.floor(Math.random() * 40);
 				m.paths.map(function(p, i){
-					ctx.fillStyle = 'hsl('+(i*20)+',40%,80%)';
+					ctx.fillStyle = 'hsl('+(baseHue + p[0].depth * 3)+',60%,'+Math.floor(10 + 70 / (1 + p[0].depth / 2))+'%)';
 					p.map(function(pp){
 						ctx.fillRect(pp.x * boxSize, pp.y * boxSize, boxSize, boxSize);
 					});
@@ -152,31 +153,7 @@
 		return {draw:draw};
 	})();
 
-	var getPositionsWithNeighbors = function(maxX, maxY, update, done){
-		var position = function(x,y){
-			return {
-				x:x,
-				y:y
-			};
-		};
-
-		var positions = Array.apply(null, new Array(maxX)).map(function(o, x){
-			return Array.apply(null, new Array(maxY)).map(function(o, y){
-				return position(x,y);
-			});
-		}).reduce(function(a,b){return a.concat(b);});
-
-		var getNeighborsOf = function(p){
-			return positions.filter(function(pp){return pp.x == p.x && Math.abs(pp.y - p.y) == 1 || pp.y == p.y && Math.abs(pp.x - p.x) == 1;});
-		};
-
-		timeoutForEach(positions, function(p){
-
-			p.neighbors = getNeighborsOf(p);
-		}, 30, function(){
-			done(positions);
-		}, update);
-	};
+	
 
 	var getPositionsWithNeighbors2 = function(maxX, maxY, update, done){
 		var position = function(x,y){
@@ -302,11 +279,12 @@
 			var positions;
 
 			var make = function(update, done){
-				var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [];
+				var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [], currentDepth = 0;
 				var visitPosition = function(p){
 					unvisitedPositions.splice(unvisitedPositions.indexOf(p), 1);
 					visited.push(p);
 					currentPath.push(p);
+					p.depth = currentDepth;
 					p.visited = true;
 				};
 				var getUnvisitedNeighborsOf = function(p){
@@ -326,6 +304,7 @@
 						currentPosition = visited.pop();
 					}
 					if(reachedEnd){
+						currentDepth = currentPosition.depth + 1;
 						newPath();
 					}
 					nextPosition = chooseRandom(unvisitedNeighbors, function(p){
@@ -409,7 +388,7 @@
 			canvas.setAttribute('height', boxSize*maxY);
 			canvas.setAttribute('width', boxSize*maxX);
 			body.appendChild(canvas);
-			mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
+			mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, true);
 		});
 	});
 	
