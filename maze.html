@@ -1,6 +1,6 @@
 <html><body></body><script>
 (function(w, h, body){
-	var boxSize = 7;
+	var maze, boxSize = 5;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(maxY * w / h);
 
 	var chooseRandom = function(arr, p){
@@ -36,7 +36,13 @@
 		step();
 	};
 
-	
+	var timeoutForEach = function(arr, toDo, batchSize, done, update){
+		var i = 0;
+		timeoutWhile(function(){return i<arr.length;},function(){
+			toDo(arr[i++]);
+			update(Math.floor(100 * i / arr.length) + "%");
+		}, batchSize, done);
+	};
 
 	var direction = {TOP:0,LEFT:1,RIGHT:2,BOTTOM:3};
 
@@ -146,14 +152,29 @@
 		return {draw:draw};
 	})();
 	
-	var maze = (function(maxX, maxY){
+	var makeMaze = function(maxX, maxY, update, done){
 		var paths, x, y, allBorderParts = [];
-		var borderPart = function(x,y,direction){
+		var borderPart = function(x,y,direction,length){
+			length = length || 1;
 			return {
 				x:x,
 				y:y,
-				direction:direction
+				direction:direction,
+				length: length
 			};
+		};
+		var isExtensionOf = function(borderPart1, borderPart2){
+			if(borderPart1.x != borderPart2.x && borderPart1.y != borderPart2.y){
+				return false;
+			}
+			if(borderPart1.x == borderPart2.x){
+				return (borderPart1.direction == direction.RIGHT && borderPart2.direction == direction.RIGHT && borderPart2.y == borderPart1.y + borderPart1.length) ||
+						(borderPart1.direction == direction.LEFT && borderPart2.direction == direction.LEFT && borderPart2.y == borderPart1.y - borderPart1.length);
+			}
+			if(borderPart1.y == borderPart2.y){
+				return (borderPart1.direction == direction.TOP && borderPart2.direction == direction.TOP && borderPart2.x == borderPart1.x + borderPart1.length) ||
+						(borderPart1.direction == direction.BOTTOM && borderPart2.direction == direction.BOTTOM && borderPart2.y == borderPart1.x - borderPart1.length);
+			}
 		};
 		var removeBorderParts = function(test){
 			var partsToRemove = allBorderParts.filter(test);
@@ -204,7 +225,7 @@
 			var getNeighborsOf = function(p){
 				return positions.filter(function(pp){return pp.x == p.x && Math.abs(pp.y - p.y) == 1 || pp.y == p.y && Math.abs(pp.x - p.x) == 1;});
 			};
-
+			
 			var make = function(update, done){
 				var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [];
 				var visitPosition = function(p){
@@ -213,7 +234,7 @@
 					currentPath.push(p);
 				};
 				var getUnvisitedNeighborsOf = function(p){
-					return getNeighborsOf(p).filter(function(pp){return unvisitedPositions.indexOf(pp) != -1;})
+					return p.neighbors.filter(function(pp){return unvisitedPositions.indexOf(pp) != -1;})
 				};
 				var newPath = function(){
 					paths.push(currentPath);
@@ -233,17 +254,21 @@
 					}
 					nextPosition = chooseRandom(unvisitedNeighbors, function(p){
 						var desiredDirection = visited.length >= 2 ? {x: currentPosition.x - visited[visited.length - 2].x, y: currentPosition.y - visited[visited.length - 2].y} : {x:0,y:0};
-						return Math.pow(Math.pow(4, 2 + Math.sin(currentPosition.x / 9) + Math.sin(currentPosition.y / 4)/2), (p.x - currentPosition.x) * desiredDirection.x + (p.y - currentPosition.y) * desiredDirection.y);
+						return Math.pow(3 + currentPath.length / 10, (p.x - currentPosition.x) * desiredDirection.x + (p.y - currentPosition.y) * desiredDirection.y);
 					});
 					visitPosition(nextPosition);
 					connectPositions(currentPosition.x, currentPosition.y, nextPosition.x, nextPosition.y);
 					currentPosition = nextPosition;
 					update(Math.floor(100 * (1 - unvisitedPositions.length / size))+"%");
-				}, 20, function(){
+				}, 30, function(){
 					newPath();
 					done(paths);
 				}, update);
 			};
+
+			timeoutForEach(positions, function(p){
+				p.neighbors = getNeighborsOf(p);
+			}, 30, done, update);
 			return {make:make};
 
 		})();
@@ -267,28 +292,50 @@
 				});
 			}
 		};
-	})(maxX, maxY);
+	};
 
 	
-	var progress = (function(){
+
+	var progressMaker = function(setup, done){
+		done = done || function(){};
+		setup = setup();
+		return {
+			update:function(x){
+				setup.update(x);
+			},
+			done:function(){setup.teardown();done();}
+		};
+	};
+
+	var progress1 = progressMaker(function(){
 		var a = document.createElement('a');
 		body.appendChild(a);
 		return {
-			update:function(x){
-				a.innerHTML = x.toString();
-			},
-			done:function(){body.removeChild(a);}
+			update: function(x){a.innerHTML = "initializing: " + x.toString();},
+			teardown:function(){body.removeChild(a)}
 		};
-	})();
-
-	maze.makePaths(progress.update, function(){
-		progress.done();
-		var canvas = document.createElement('canvas');
-		canvas.setAttribute('height', boxSize*maxY);
-		canvas.setAttribute('width', boxSize*maxX);
-		body.appendChild(canvas);
-		mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
 	});
+
+	var progress2 = progressMaker(function(){
+		var a = document.createElement('a');
+		body.appendChild(a);
+		return {
+			update: function(x){a.innerHTML = "making paths: " + x.toString();},
+			teardown:function(){body.removeChild(a)}
+		};
+	}, progress1.done);
+
+	maze = makeMaze(maxX, maxY, progress1.update, function(){
+		maze.makePaths(progress2.update, function(){
+			progress2.done();
+			var canvas = document.createElement('canvas');
+			canvas.setAttribute('height', boxSize*maxY);
+			canvas.setAttribute('width', boxSize*maxX);
+			body.appendChild(canvas);
+			mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
+		});
+	});
+	
 	
 
 })(document.body.offsetWidth, document.body.offsetHeight, document.body);
