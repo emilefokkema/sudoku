@@ -1,6 +1,18 @@
 <html><body style="margin:0px;padding:0px;overflow:hidden"></body><script>
 (function(w, h, body){
-	var maze, boxSize = 8;
+	Array.prototype.first = function(test){
+		var res, found = false;
+		for(var i=0;i<this.length;i++){
+			if(test(res = this[i])){
+				found = true;
+				break;
+			}
+		}
+		if(found){
+			return res;
+		}
+	};
+	var maze, boxSize = 6;
 	var maxY = Math.ceil(h / boxSize), maxX = Math.ceil(w / boxSize);
 
 	var chooseRandom = function(arr, p){
@@ -135,13 +147,13 @@
 			m.borderParts.map(function(p){
 				var x1, y1, x2, y2;
 				if(p.direction == direction.TOP){
-					x1 = p.x; x2 = p.x + 1; y1 = y2 = p.y;
+					x1 = p.x; x2 = p.x + p.length; y1 = y2 = p.y;
 				}else if(p.direction == direction.BOTTOM){
-					x1 = p.x; x2 = p.x + 1; y1 = y2 = p.y + 1;
+					x1 = p.x + 1 - p.length; x2 = p.x + 1; y1 = y2 = p.y + 1;
 				}else if(p.direction == direction.LEFT){
-					y1 = p.y; y2 = p.y + 1; x1 = x2 = p.x;
+					y1 = p.y + 1; y2 = p.y + 1 - p.length; x1 = x2 = p.x;
 				}else if(p.direction == direction.RIGHT){
-					y1 = p.y; y2 = p.y + 1; x1 = x2 = p.x + 1;
+					y1 = p.y; y2 = p.y + p.length; x1 = x2 = p.x + 1;
 				}
 				ctx.strokeStyle = '#000';
 				ctx.beginPath();
@@ -155,7 +167,7 @@
 
 	
 
-	var getPositionsWithNeighbors2 = function(maxX, maxY, update, done){
+	var getPositionsWithNeighbors = function(maxX, maxY, update, done){
 		var position = function(x,y){
 			return {
 				x:x,
@@ -243,12 +255,15 @@
 						(borderPart1.direction == direction.BOTTOM && borderPart2.direction == direction.BOTTOM && borderPart2.y == borderPart1.x - borderPart1.length);
 			}
 		};
-		var removeBorderParts = function(test){
-			var partsToRemove = allBorderParts.filter(test);
-			while(partsToRemove.length > 0){
-				allBorderParts.splice(allBorderParts.indexOf(partsToRemove[0]),1);
-				partsToRemove.splice(0,1);
+		var removeBorderPart = function(test){
+			var partToRemove = allBorderParts.first(test);
+			if(partToRemove){
+				allBorderParts.splice(allBorderParts.indexOf(partToRemove),1);
 			}
+		};
+		var mergeBorderParts = function(){
+			
+
 		};
 		for(x = 0; x < maxX; x++){
 			allBorderParts.push(borderPart(x,0,direction.TOP));
@@ -263,15 +278,15 @@
 		var connectPositions = function(x1, y1, x2, y2){
 			if(x1 == x2 && Math.abs(y1 - y2) == 1){
 				if(y1 > y2){
-					removeBorderParts(function(p){return p.x == x1 && (p.y == y1 && p.direction == direction.TOP || p.y == y2 && p.direction == direction.BOTTOM);});
+					removeBorderPart(function(p){return p.x == x1 && (p.y == y2 && p.direction == direction.BOTTOM || p.y == y1 && p.direction == direction.TOP);});
 				}else{
-					removeBorderParts(function(p){return p.x == x1 && (p.y == y2 && p.direction == direction.TOP || p.y == y1 && p.direction == direction.BOTTOM);});
+					removeBorderPart(function(p){return p.x == x1 && (p.y == y1 && p.direction == direction.BOTTOM || p.y == y2 && p.direction == direction.TOP);});
 				}
 			}else if(y1 == y2 && Math.abs(x1 - x2) == 1){
 				if(x1 > x2){
-					removeBorderParts(function(p){return p.y == y1 && (p.x == x1 && p.direction == direction.LEFT || p.x == x2 && p.direction == direction.RIGHT);});
+					removeBorderPart(function(p){return p.y == y1 && (p.x == x2 && p.direction == direction.RIGHT || p.x == x1 && p.direction == direction.LEFT);});
 				}else{
-					removeBorderParts(function(p){return p.y == y1 && (p.x == x2 && p.direction == direction.LEFT || p.x == x1 && p.direction == direction.RIGHT);});
+					removeBorderPart(function(p){return p.y == y1 && (p.x == x1 && p.direction == direction.RIGHT || p.x == x2 && p.direction == direction.LEFT);});
 				}
 			}
 		};
@@ -321,7 +336,7 @@
 				}, update);
 			};
 
-			getPositionsWithNeighbors2(maxX, maxY, update, function(p){
+			getPositionsWithNeighbors(maxX, maxY, update, function(p){
 				positions = p;
 				done();
 			});
@@ -388,7 +403,7 @@
 			canvas.setAttribute('height', boxSize*maxY);
 			canvas.setAttribute('width', boxSize*maxX);
 			body.appendChild(canvas);
-			mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, true);
+			mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
 		});
 	});
 	
