@@ -13,7 +13,7 @@
 		}
 		return null;
 	};
-	var maze, boxSize = 20;
+	var maze, boxSize = 30;
 	var maxY = Math.ceil(h / boxSize), maxX = Math.ceil(w / boxSize);
 
 	var chooseRandom = function(arr, p){
@@ -394,32 +394,22 @@
 		};
 	};
 
-	var progress1 = progressMaker(function(){
-		var a = document.createElement('a');
-		body.appendChild(a);
-		return {
-			update: function(x){a.innerHTML = "initializing: " + x.toString();},
-			teardown:function(){body.removeChild(a)}
-		};
-	});
+	var textProgressMaker = function(text){
+		return progressMaker(function(){
+			var a = document.createElement('div');
+			body.appendChild(a);
+			return {
+				update: function(x){a.innerHTML = text + x.toString();},
+				teardown:function(){body.removeChild(a)}
+			};
+		});
+	};
 
-	var progress2 = progressMaker(function(){
-		var a = document.createElement('a');
-		body.appendChild(a);
-		return {
-			update: function(x){a.innerHTML = "making paths: " + x.toString();},
-			teardown:function(){body.removeChild(a)}
-		};
-	}, progress1.done);
+	var progress1 = textProgressMaker("initializing: ");
 
-	var progress3 = progressMaker(function(){
-		var a = document.createElement('a');
-		body.appendChild(a);
-		return {
-			update: function(x){a.innerHTML = "merging borders: " + x.toString();},
-			teardown:function(){body.removeChild(a)}
-		};
-	}, progress1.done);
+	var progress2 = textProgressMaker("making paths: ");
+
+	var progress3 = textProgressMaker("merging borders: ");
 
 	var atTheEnd = function(){
 		var canvas = document.createElement('canvas');
@@ -431,6 +421,7 @@
 	maze = makeMaze(maxX, maxY, progress1.update, function(){
 		maze.makePaths(progress2.update, progress2.done, progress3.update, function(){
 			progress3.done();
+			progress1.done();
 			atTheEnd();
 		});
 	});
