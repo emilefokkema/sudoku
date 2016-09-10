@@ -18,7 +18,7 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var maze, boxSize = 20;
+	var maze, boxSize = 10;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
 	var chooseRandom = function(arr, p){
@@ -288,37 +288,48 @@ div{color:#fff;}
 			}
 		};
 
-		var mergeBorderParts = function(update, done){
-			var count = 0, part1, part2;
-			var findNextPair = function(){
-				part2 = null;
-				part1 = allBorderParts.first(function(p){
-					part2 = allBorderParts.first(function(pp){
-						return pp != p && (isExtensionOf(p, pp) || isExtensionOf(pp, p));
-					});
-					if(part2 != null){
-						return true;
+		var mergeBorderParts = (function(){
+			var findMemberForGroup = function(current, candidates, eq){
+				var result;
+				for(var i=0;i<candidates.length;i++){
+					if(
+						current.indexOf(candidates[i]) == -1 && 
+						(
+							current.some(function(c){return eq(c,candidates[i]);}) ||
+							current.length == 0
+						)
+					){
+						return candidates[i];
 					}
+				}
+			};
+			var mergeGroup = function(g){
+				var first = g.first(function(p){return !g.some(function(pp){return p!=pp && isExtensionOf(pp,p);});});
+				first.length = g.map(function(p){return p.length;}).reduce(function(a,b){return a+b;});
+				g.filter(function(p){return p!=first;}).map(function(p){
+					allBorderParts.splice(allBorderParts.indexOf(p),1);
 				});
-				if(part1 != null){
-					return true;
-				}
 			};
-			var merge = function(){
-				var part3;
-				if(isExtensionOf(part2,part1)){
-					part3 = part1;
-					part1 = part2;
-					part2 = part3;
-				}
-				allBorderParts.splice(allBorderParts.indexOf(part2),1);
-				part1.length += part2.length;
+			return function(update, done){
+				var left = allBorderParts.slice();
+				var leftLengthInitial = left.length;
+				var match, currentGroup = [];
+				var eq = function(p1,p2){return isExtensionOf(p1,p2) || isExtensionOf(p2,p1);};
+				timeoutWhile(function(){return left.length > 0;},function(update){
+					match = findMemberForGroup(currentGroup, left, eq);
+					if(match){
+						left.splice(left.indexOf(match),1);
+						currentGroup.push(match);
+					}else{
+						if(currentGroup.length > 1){
+							mergeGroup(currentGroup);
+						}
+						currentGroup = [];
+					}
+					update(Math.floor(100 * (1 - left.length / leftLengthInitial))+"%")
+				},30,done,update);
 			};
-			timeoutWhile(findNextPair, function(update){
-				merge();
-				update(count++);
-			}, 30, done, update);
-		};
+		})();
 
 		for(x = 0; x < maxX; x++){
 			allBorderParts.push(borderPart(x,0,direction.TOP));
