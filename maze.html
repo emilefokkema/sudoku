@@ -1,4 +1,9 @@
-<html><body style="margin:0px;padding:0px;overflow:hidden"></body><script>
+<html>
+<head><style>
+body{background-color:#000;}
+div{color:#fff;}
+</style></head>
+<body></body><script>
 (function(w, h, body){
 	Array.prototype.first = function(test){
 		var res, found = false;
@@ -13,8 +18,8 @@
 		}
 		return null;
 	};
-	var maze, boxSize = 30;
-	var maxY = Math.ceil(h / boxSize), maxX = Math.ceil(w / boxSize);
+	var maze, boxSize = 20;
+	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
 	var chooseRandom = function(arr, p){
 		if(!p){
@@ -149,7 +154,7 @@
 				}else if(p.direction == direction.RIGHT){
 					y1 = p.y; y2 = p.y + p.length; x1 = x2 = p.x + 1;
 				}
-				ctx.strokeStyle = p.length == 1? '#000':'#f00';
+				ctx.strokeStyle = '#000';
 				ctx.beginPath();
 				ctx.moveTo(x1 * boxSize, y1 * boxSize);
 				ctx.lineTo(x2 * boxSize, y2 * boxSize);
@@ -159,7 +164,34 @@
 		return {draw:draw};
 	})();
 
-	
+	var svgMazeDrawer = (function(){
+		var draw = function(m, boxSize, drawPaths){
+			var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+			svg.setAttribute('width',boxSize * m.maxX);
+			svg.setAttribute('height',boxSize * m.maxY);
+			m.borderParts.map(function(p){
+				var x1, y1, x2, y2;
+				if(p.direction == direction.TOP){
+					x1 = p.x; x2 = p.x + p.length; y1 = y2 = p.y;
+				}else if(p.direction == direction.BOTTOM){
+					x1 = p.x + 1 - p.length; x2 = p.x + 1; y1 = y2 = p.y + 1;
+				}else if(p.direction == direction.LEFT){
+					y1 = p.y + 1; y2 = p.y + 1 - p.length; x1 = x2 = p.x;
+				}else if(p.direction == direction.RIGHT){
+					y1 = p.y; y2 = p.y + p.length; x1 = x2 = p.x + 1;
+				}
+				var l = document.createElementNS('http://www.w3.org/2000/svg','line');
+				l.setAttribute('x1',x1*boxSize);
+				l.setAttribute('y1',y1*boxSize);
+				l.setAttribute('x2',x2*boxSize);
+				l.setAttribute('y2',y2*boxSize);
+				l.setAttribute('stroke','#999');
+				svg.appendChild(l);
+			});
+			return svg;
+		};
+		return {draw:draw}
+	})();
 
 	var getPositionsWithNeighbors = function(maxX, maxY, update, done){
 		var position = function(x,y){
@@ -257,12 +289,12 @@
 		};
 
 		var mergeBorderParts = function(update, done){
-			var part1, part2;
+			var count = 0, part1, part2;
 			var findNextPair = function(){
 				part2 = null;
 				part1 = allBorderParts.first(function(p){
 					part2 = allBorderParts.first(function(pp){
-						return pp != p && isExtensionOf(p, pp);
+						return pp != p && (isExtensionOf(p, pp) || isExtensionOf(pp, p));
 					});
 					if(part2 != null){
 						return true;
@@ -272,12 +304,22 @@
 					return true;
 				}
 			};
-			timeoutWhile(findNextPair, function(update){
+			var merge = function(){
+				var part3;
+				if(isExtensionOf(part2,part1)){
+					part3 = part1;
+					part1 = part2;
+					part2 = part3;
+				}
 				allBorderParts.splice(allBorderParts.indexOf(part2),1);
 				part1.length += part2.length;
-				update(Math.floor(Math.random() * 100)+"$");
+			};
+			timeoutWhile(findNextPair, function(update){
+				merge();
+				update(count++);
 			}, 30, done, update);
 		};
+
 		for(x = 0; x < maxX; x++){
 			allBorderParts.push(borderPart(x,0,direction.TOP));
 			for(y = 0; y < maxY; y++){
@@ -412,11 +454,12 @@
 	var progress3 = textProgressMaker("merging borders: ");
 
 	var atTheEnd = function(){
-		var canvas = document.createElement('canvas');
-		canvas.setAttribute('height', boxSize*maxY);
-		canvas.setAttribute('width', boxSize*maxX);
-		body.appendChild(canvas);
-		mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
+		// var canvas = document.createElement('canvas');
+		// canvas.setAttribute('height', boxSize*maxY);
+		// canvas.setAttribute('width', boxSize*maxX);
+		// body.appendChild(canvas);
+		// mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
+		body.appendChild(svgMazeDrawer.draw(maze.getModel(), boxSize));
 	};
 	maze = makeMaze(maxX, maxY, progress1.update, function(){
 		maze.makePaths(progress2.update, progress2.done, progress3.update, function(){
