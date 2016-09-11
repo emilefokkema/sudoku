@@ -193,6 +193,8 @@ div{color:#fff;}
 		return {draw:draw}
 	})();
 
+
+
 	var getPositionsWithNeighbors = function(maxX, maxY, update, done){
 		var position = function(x,y){
 			return {
@@ -258,7 +260,7 @@ div{color:#fff;}
 		}, update)
 	};
 	
-	var makeMaze = function(maxX, maxY, update, done){
+	var makeMaze = function(maxX, maxY, createProgress, done){
 		var paths, x, y, allBorderParts = [],positions;
 		var borderPart = function(x,y,direction,length){
 			length = length || 1;
@@ -419,9 +421,20 @@ div{color:#fff;}
 
 		})();
 
-		getPositionsWithNeighbors(maxX, maxY, update, function(p){
-			positions = p;
-			done();
+		var progress1 = createProgress("initializing");
+		getPositionsWithNeighbors(maxX, maxY, progress1.update, function(pos){
+			positions = pos;
+			var progress2 = createProgress("making paths");
+			pathMaker.make(progress2.update, function(p){
+				paths = p;
+				var progress3 = createProgress("merging borders");
+				mergeBorderParts(progress3.update, function(){
+					progress3.done();
+					progress2.done();
+					progress1.done();
+					done();
+				});
+			});
 		});
 		return {
 			connectPositions:connectPositions,
@@ -434,15 +447,6 @@ div{color:#fff;}
 					paths:paths.slice(),
 					positions:positions.slice()
 				};
-			},
-			makePaths:function(update1, done1, update2, done2){
-				pathMaker.make(update1, function(p){
-					paths = p;
-					mergeBorderParts(update2, function(){
-						done2();
-						done1();
-					});
-				});
 			}
 		};
 	};
@@ -471,29 +475,17 @@ div{color:#fff;}
 		});
 	};
 
-	var progress1 = textProgressMaker("initializing: ");
-
-	var progress2 = textProgressMaker("making paths: ");
-
-	var progress3 = textProgressMaker("merging borders: ");
+	var createProgress = function(t){
+		return textProgressMaker(t+": ");
+	};
 
 	var atTheEnd = function(){
-		// var canvas = document.createElement('canvas');
-		// canvas.setAttribute('height', boxSize*maxY);
-		// canvas.setAttribute('width', boxSize*maxX);
-		// body.appendChild(canvas);
-		// mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
 		var model = maze.getModel();
 		console.log(model);
 		body.appendChild(svgMazeDrawer.draw(model, boxSize));
 	};
-	maze = makeMaze(maxX, maxY, progress1.update, function(){
-		maze.makePaths(progress2.update, progress2.done, progress3.update, function(){
-			progress3.done();
-			progress1.done();
-			atTheEnd();
-		});
-	});
+
+	maze = makeMaze(maxX, maxY, createProgress, atTheEnd);
 
 	
 	
