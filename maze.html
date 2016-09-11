@@ -18,7 +18,7 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var maze, boxSize = 10;
+	var maze, boxSize = 15;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
 	var chooseRandom = function(arr, p){
@@ -198,7 +198,8 @@ div{color:#fff;}
 			return {
 				x:x,
 				y:y,
-				neighbors: []
+				neighbors: [],
+				freeDirections: []
 			};
 		};
 		var positionArray = Array.apply(null, new Array(maxX)).map(function(){
@@ -258,7 +259,7 @@ div{color:#fff;}
 	};
 	
 	var makeMaze = function(maxX, maxY, update, done){
-		var paths, x, y, allBorderParts = [];
+		var paths, x, y, allBorderParts = [],positions;
 		var borderPart = function(x,y,direction,length){
 			length = length || 1;
 			return {
@@ -341,23 +342,31 @@ div{color:#fff;}
 		for(y = 0; y < maxY; y++){
 			allBorderParts.push(borderPart(0,y,direction.LEFT));
 		}
-		var connectPositions = function(x1, y1, x2, y2){
+		var connectPositions = function(p1, p2){
+			var x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
 			if(x1 == x2 && Math.abs(y1 - y2) == 1){
 				if(y1 > y2){
 					removeBorderPart(function(p){return p.x == x1 && (p.y == y2 && p.direction == direction.BOTTOM || p.y == y1 && p.direction == direction.TOP);});
+					p2.freeDirections.push(direction.BOTTOM);
+					p1.freeDirections.push(direction.TOP);
 				}else{
 					removeBorderPart(function(p){return p.x == x1 && (p.y == y1 && p.direction == direction.BOTTOM || p.y == y2 && p.direction == direction.TOP);});
+					p2.freeDirections.push(direction.TOP);
+					p1.freeDirections.push(direction.BOTTOM);
 				}
 			}else if(y1 == y2 && Math.abs(x1 - x2) == 1){
 				if(x1 > x2){
 					removeBorderPart(function(p){return p.y == y1 && (p.x == x2 && p.direction == direction.RIGHT || p.x == x1 && p.direction == direction.LEFT);});
+					p2.freeDirections.push(direction.RIGHT);
+					p1.freeDirections.push(direction.LEFT);
 				}else{
 					removeBorderPart(function(p){return p.y == y1 && (p.x == x1 && p.direction == direction.RIGHT || p.x == x2 && p.direction == direction.LEFT);});
+					p2.freeDirections.push(direction.LEFT);
+					p1.freeDirections.push(direction.RIGHT);
 				}
 			}
 		};
 		var pathMaker = (function(){
-			var positions;
 
 			var make = function(update, done){
 				var reachedEnd, nextPosition, currentPosition, visited = [], unvisitedNeighbors, unvisitedPositions = positions.slice(), currentPath = [], paths = [], currentDepth = 0;
@@ -382,7 +391,8 @@ div{color:#fff;}
 					reachedEnd = false;
 					while((unvisitedNeighbors = getUnvisitedNeighborsOf(currentPosition)).length == 0){
 						reachedEnd = true;
-						currentPosition = visited.pop();
+						visited.pop();
+						currentPosition = visited[visited.length - 1];
 					}
 					if(reachedEnd){
 						currentDepth = currentPosition.depth + 1;
@@ -393,7 +403,7 @@ div{color:#fff;}
 						return Math.pow(3 + currentPath.length / 10, (p.x - currentPosition.x) * desiredDirection.x + (p.y - currentPosition.y) * desiredDirection.y);
 					});
 					visitPosition(nextPosition);
-					connectPositions(currentPosition.x, currentPosition.y, nextPosition.x, nextPosition.y);
+					connectPositions(currentPosition, nextPosition);
 					currentPosition = nextPosition;
 					update(Math.floor(100 * (1 - unvisitedPositions.length / size))+"%");
 				}, 30, function(){
@@ -402,15 +412,17 @@ div{color:#fff;}
 				}, update);
 			};
 
-			getPositionsWithNeighbors(maxX, maxY, update, function(p){
-				positions = p;
-				done();
-			});
-			return {make:make};
+			
+			return {
+				make:make
+			};
 
 		})();
 
-		
+		getPositionsWithNeighbors(maxX, maxY, update, function(p){
+			positions = p;
+			done();
+		});
 		return {
 			connectPositions:connectPositions,
 			toString:toString,
@@ -419,7 +431,8 @@ div{color:#fff;}
 					maxX:maxX,
 					maxY:maxY,
 					borderParts:allBorderParts.slice(),
-					paths:paths.slice()
+					paths:paths.slice(),
+					positions:positions.slice()
 				};
 			},
 			makePaths:function(update1, done1, update2, done2){
@@ -470,7 +483,9 @@ div{color:#fff;}
 		// canvas.setAttribute('width', boxSize*maxX);
 		// body.appendChild(canvas);
 		// mazeDrawer.draw(maze.getModel(), canvas.getContext('2d'), boxSize, false);
-		body.appendChild(svgMazeDrawer.draw(maze.getModel(), boxSize));
+		var model = maze.getModel();
+		console.log(model);
+		body.appendChild(svgMazeDrawer.draw(model, boxSize));
 	};
 	maze = makeMaze(maxX, maxY, progress1.update, function(){
 		maze.makePaths(progress2.update, progress2.done, progress3.update, function(){
