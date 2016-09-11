@@ -53,7 +53,13 @@
 				x:x,
 				y:y,
 				neighbors: [],
-				freeDirections: []
+				freeDirections: [],
+				minus:function(p){
+					return {
+						x: x - p.x,
+						y: y - p.y
+					};
+				}
 			};
 		};
 		var positionArray = Array.apply(null, new Array(maxX)).map(function(){
