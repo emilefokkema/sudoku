@@ -338,18 +338,20 @@ div{color:#fff;}
 		return textProgressMaker(t+": ");
 	};
 
-	
+	var mazePositionToScreenPosition = function(p){
+		return screenPosition(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
+	};
 
-	var walkerThing = makeModule(function(m, setPosition, easiness, maxSpeed){
+	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
 		var walker, makeWalker, makeEaser;
-		var firstPosition = chooseRandom(m.positions);
+		//var firstPosition = chooseRandom(m.positions);
 		
 		
 		setPosition(firstPosition);
 		
 		var getNextGoal = function(){
 			var p = walker.doStep();
-			return screenPosition(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
+			return mazePositionToScreenPosition(p);
 		};
 		var start = function(){
 			walker = makeWalker(m, firstPosition);
@@ -407,13 +409,16 @@ div{color:#fff;}
 		
 		var circle1 = circleThing('#f00');
 		var circle2 = circleThing('#0f0');
+		var circle3 = circleThing('#ff0');
+		circle3.setPosition(mazePositionToScreenPosition({x:0,y:0}));
 		
 		var walkers = [
-			walkerThing.controllableWalkerThing(model, circle1.setPosition, 2, 10),
-			walkerThing.autonomousWalkerThing(model, circle2.setPosition,2,5)
+			walkerThing.controllableWalkerThing(model, circle1.setPosition, chooseRandom(model.positions), 2, 10),
+			walkerThing.autonomousWalkerThing(model, circle2.setPosition,chooseRandom(model.positions), 2,5)
 			];
 		svg.appendChild(circle1.node);
 		svg.appendChild(circle2.node);
+		svg.appendChild(circle3.node);
 		walkers.map(function(w){
 			
 			w.start();
