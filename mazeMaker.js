@@ -54,11 +54,16 @@
 				y:y,
 				neighbors: [],
 				freeDirections: [],
-				minus:function(p){
-					return {
-						x: x - p.x,
-						y: y - p.y
-					};
+				neighborInDirection: function(d){
+					if(d == direction.RIGHT){
+						return this.neighbors.first(function(n){return n.x == x + 1;});
+					}else if(d == direction.BOTTOM){
+						return this.neighbors.first(function(n){return n.y == y + 1;});
+					}else if(d == direction.LEFT){
+						return this.neighbors.first(function(n){return n.x == x - 1;});
+					}else if(d == direction.TOP){
+						return this.neighbors.first(function(n){return n.y == y - 1;});
+					}
 				}
 			};
 		};
