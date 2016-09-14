@@ -116,6 +116,7 @@
 
 		};
 	})();
+
 	var allNodes = function(node){
 		var result = [node];
 		if(node.children.length > 0){
@@ -123,15 +124,7 @@
 		}
 		return result;
 	};
-	var once = function(f){
-		var called = false;
-		return function(){
-			if(!called){
-				called = true;
-				return f.apply(null, arguments);
-			}
-		};
-	};
+
 	var step = (function(){
 		var s = function(execute){
 			var finish = function(){};
@@ -156,45 +149,61 @@
 		};
 		return s;
 	})();
-	var chooser = (function(){
-		var sequentialSender = function(){
-			var all=[], i = 0;
-			var f = function(){
-				if(i < all.length){
-					return all[i].apply(null, arguments);
-					i++;
-				}
-			};
-			f.add = function(f_){all.push(f_);};
-			return f;
+	
 
-		};
-		var makeStep = function(sel){
-			return step(function(context, finish){
-				return sel(once(function(v){
-					context(v);
-					finish();
-				}));
-			});
-		};
-		return function(selector, send){
-			var step_ = makeStep(selector);
-			var context = sequentialSender();
-			context.add(send);
-			var exec = function(){return step_(context);}
-			exec.then = function(selector_, send_){
-				step_ = step_.then(makeStep(selector_));
-				console.log("adding function to context");
-				context.add(send_);
-				return exec;
+	var copySet = function(origArray, mapper){
+		var set = function(o, i){
+			return {
+				orig: o,
+				copy:mapper(o,i)
 			};
-			return exec;
 		};
-	})();
+		var all = origArray.map(set);
+		return {
+			copyOf: function(o){
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						return all[i].copy;
+					}
+				}
+				return null;
+			},
+			originalOf:function(c){
+				for(var i=0;i<all.length;i++){
+					if(all[i].copy == c){
+						return all[i].orig;
+					}
+				}
+				return null;
+			},
+			allCopies: function(){return all.map(function(o){return o.copy;});},
+			addFor: function(o){
+				var filtered = all.filter(function(s){return s.orig == o;});
+				if(filtered.length == 0){
+					newSet = set(o, all.length);
+					all.push(newSet);
+					return newSet.copy;
+				}else{
+					return filtered[0].copy;
+				}
+			},
+			removeFor:function(o){
+				var index = -1;
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						index = i;
+					}
+				}
+				if(index != -1){
+					all.splice(index, 1);
+				}
+			}
+		};
+	};
 	window.structureHelpers = {
 		makeTrees: makeTrees,
 		allNodes: allNodes,
-		chooser: chooser
+		copySet:copySet
 	};
 })();
 
