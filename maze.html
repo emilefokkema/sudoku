@@ -22,7 +22,7 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var maze, boxSize = 80;
+	var maze, boxSize = 50;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
 	var chooseRandom = function(arr, p){
@@ -40,7 +40,9 @@ div{color:#fff;}
 			}
 		};
 	};
-
+	var mazePositionToScreenPosition = function(p){
+		return screenPosition(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
+	};
 	
 	var direction = mazeMaker.direction;
 
@@ -341,16 +343,14 @@ div{color:#fff;}
 		return textProgressMaker(t+": ");
 	};
 
-	var mazePositionToScreenPosition = function(p){
-		return screenPosition(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
-	};
+	
 
 	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
 		var walker, makeWalker, makeEaser;
 		//var firstPosition = chooseRandom(m.positions);
 		
 		
-		setPosition(firstPosition);
+		//setPosition(firstPosition);
 		
 		var getNextGoal = function(){
 			var p = walker.doStep();
@@ -390,7 +390,7 @@ div{color:#fff;}
 			};
 		});
 		var areClose = function(p1,p2){
-			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < 30;
+			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < 2*boxSize;
 		};
 		var check = function(){
 			for(var i=0;i<all.length;i++){
@@ -443,7 +443,7 @@ div{color:#fff;}
 		var circle1 = circleThing('#f00');
 		var circle2 = circleThing('#0f0', function(c){
 			if(c == circle3){
-				console.log("green meets yellow");
+				console.log("green meets yellow")
 			}
 		});
 		var circle3 = circleThing('#ff0');
