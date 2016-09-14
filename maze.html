@@ -22,8 +22,14 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var maze, boxSize = 50;
-	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
+	var boxSize, maxY, maxX;
+	var setBoxSize = function(s){
+		boxSize = s;
+		maxY = Math.floor(h / boxSize);
+		maxX = Math.floor(w / boxSize);
+	};
+
+	
 
 	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
@@ -263,7 +269,7 @@ div{color:#fff;}
 			}
 			return abs;
 		};
-		var goal, dx, dy, currentX = 0, currentY = 0, getNextGoal = _getNextGoal;
+		var goal, dx, dy, currentX = 0, currentY = 0, getNextGoal = _getNextGoal, interval;
 		var update = function(){
 			dx = goal.x - currentX;
 			dy = goal.y - currentY;
@@ -278,10 +284,14 @@ div{color:#fff;}
 			goal = getNextGoal();
 			currentX = goal.x;
 			currentY = goal.y;
-			setInterval(update, 20);
+			interval = setInterval(update, 20);
+		};
+		var stop = function(){
+			clearInterval(interval);
 		};
 		this.expose({
-			start:start
+			start:start,
+			stop:stop
 		});
 		this.extend('bufferEaser',function(){
 			var goalBuffer = (function(){
@@ -346,7 +356,7 @@ div{color:#fff;}
 	
 
 	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
-		var walker, makeWalker, makeEaser;
+		var walker, makeWalker, makeEaser, _easer;
 
 		var getNextGoal = function(){
 			var p = walker.doStep();
@@ -354,10 +364,14 @@ div{color:#fff;}
 		};
 		var start = function(){
 			walker = makeWalker(m, firstPosition);
-			makeEaser(setPosition, easiness, maxSpeed, getNextGoal).start();
+			_easer = makeEaser(setPosition, easiness, maxSpeed, getNextGoal);
+			_easer.start();
+		};
+		var stop = function(){
+			_easer.stop();
 		};
 		this.expose({
-			//node:circle,
+			stop:stop,
 			start:start
 		});
 		this.extend('autonomousWalkerThing',function(){
@@ -381,12 +395,11 @@ div{color:#fff;}
 	var positionableThing = (function(){
 		var all = [], copies = copySet([], function(o){
 			return {
-				setPosition:o.setPosition,
-				node:o.node
+				setPosition:o.setPosition
 			};
 		});
 		var areClose = function(p1,p2){
-			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < 2*boxSize;
+			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < boxSize/2;
 		};
 		var check = function(){
 			for(var i=0;i<all.length;i++){
@@ -394,12 +407,28 @@ div{color:#fff;}
 					if(areClose(all[i].getPosition(), all[j].getPosition())){
 						all[i].onMeeting(copies.copyOf(all[j]));
 						all[j].onMeeting(copies.copyOf(all[i]));
+					}else{
+						all[i].onCeasingToMeet(copies.copyOf(all[j]));
+						all[j].onCeasingToMeet(copies.copyOf(all[i]));
 					}
 				}
 			}
 		};
-		var makeNew = function(_setPosition, onMeeting){
-			onMeeting = onMeeting || function(){};
+		var makeNew = function(_setPosition, _onMeeting){
+			_onMeeting = _onMeeting || function(){};
+			var alreadyMeeting = [];
+			var onMeeting = function(other){
+				if(alreadyMeeting.indexOf(other) == -1){
+					_onMeeting(other);
+					alreadyMeeting.push(other);
+				}
+			};
+			var onCeasingToMeet = function(other){
+				var index;
+				if((index = alreadyMeeting.indexOf(other)) != -1){
+					alreadyMeeting.splice(index,1);
+				}
+			};
 			var currentPosition;
 			var setPosition = function(p){
 				currentPosition = p;
@@ -409,7 +438,8 @@ div{color:#fff;}
 			return {
 				setPosition:setPosition,
 				getPosition:function(){return currentPosition;},
-				onMeeting:onMeeting
+				onMeeting:onMeeting,
+				onCeasingToMeet:onCeasingToMeet
 			};
 		};
 		return function(_setPosition, onMeeting){
@@ -419,60 +449,116 @@ div{color:#fff;}
 		};
 	})();
 	
-
-	
-
-	var atTheEnd = function(model){
-		var svg = svgMazeDrawer.draw(model, boxSize);
-		var circleThing = function(color, onMeeting){
-			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-			circle.setAttribute('r',boxSize * 0.2);
-			circle.setAttribute('fill',color);
-			var setPosition = function(p){
-				circle.setAttribute('cx',p.x);
-				circle.setAttribute('cy',p.y);
-			};
-			svg.appendChild(circle);
-			return positionableThing(setPosition, onMeeting);
+	var levelProvider = (function(){
+		var currentCounter, currentBoxSize;
+		var reset = function(){
+			currentCounter = 1;
+			currentBoxSize = 70;
 		};
-		var initialYellowPosition = {x:0,y:0};
-		var yellowCircle = circleThing('#ff0');
-		yellowCircle.setPosition(mazePositionToScreenPosition(initialYellowPosition));
-
-		var redCircle = circleThing('#f00');
-		var initialRedPosition = chooseRandom(model.positions.filter(function(p){
-			return p.distanceFrom(initialYellowPosition) > 5;
-		}));
-
-		var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
-			return 	p.distanceFrom(initialYellowPosition) > 5 &&
-					p.distanceFrom(initialRedPosition) > 5;
-		}));
-		var greenCircle = circleThing('#0f0', function(c){
-			if(c == yellowCircle){
-				console.log("green meets yellow")
+		reset();
+		var getNext = function(){
+			var l = {
+				boxSize:currentBoxSize,
+				number:currentCounter
+			};
+			if(boxSize > 5){
+				boxSize -= 5;
 			}
-		});
-	
+			currentCounter++;
+			return l;
+		};
+		return {
+			getNext:getNext,
+			reset:reset
+		};
+	})();
+
+	var playLevel = function(l, onSucceed, onFail){
+		setBoxSize(l.boxSize);
+		mazeMaker.make(maxX, maxY, createProgress, function(model){
+			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize);
+			var circleThing = function(color, onMeeting){
+				var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+				circle.setAttribute('r',boxSize * 0.2);
+				circle.setAttribute('fill',color);
+				var setPosition = function(p){
+					circle.setAttribute('cx',p.x);
+					circle.setAttribute('cy',p.y);
+				};
+				svg.appendChild(circle);
+				return positionableThing(setPosition, onMeeting);
+			};
+			var initialYellowPosition = {x:0,y:0};
+			var yellowCircle = circleThing('#ff0');
+			yellowCircle.setPosition(mazePositionToScreenPosition(initialYellowPosition));
+
+			var redCircle = circleThing('#f00',function(c){
+				if(c == yellowCircle){
+					succeed();
+				}
+			});
+			var initialRedPosition = chooseRandom(model.positions.filter(function(p){
+				return p.distanceFrom(initialYellowPosition) > 5;
+			}));
+
+			var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
+				return 	p.distanceFrom(initialYellowPosition) > 5 &&
+						p.distanceFrom(initialRedPosition) > 5;
+			}));
+			var greenCircle = circleThing('#0f0', function(c){
+				if(c == yellowCircle){
+					fail();
+				}
+			});
 		
-		var walkers = [
-			walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
-			walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,5)
-			];
-		
-		walkers.map(function(w){
 			
-			w.start();
+			var walkers = [
+				walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
+				walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,2)
+				];
+
+			var teardown = function(){
+				walkers.map(function(w){
+					w.stop();
+				});
+				body.removeChild(svg);
+			};
+
+			succeed = function(){
+				teardown();
+				onSucceed();
+			};
+
+			fail = function(){
+				teardown();
+				onFail();
+			};
+			
+			walkers.map(function(w){
+				
+				w.start();
+			});
+			
+			
+			body.appendChild(svg);
+			
 		});
-		
-		
-		body.appendChild(svg);
-		
 	};
 
-	mazeMaker.make(maxX, maxY, createProgress, atTheEnd);
+	var playAgain = function(){
+		playLevel(levelProvider.getNext(),function(){
+			if(confirm("You win! Go again?")){
+				playAgain();
+			}
+		},function(){
+			if(confirm("You lose! Go again?")){
+				levelProvider.reset();
+				playAgain();
+			}
+		});
+	};
 
-	
+	playAgain();
 	
 
 })(document.body.offsetWidth, document.body.offsetHeight, document.body);
