@@ -472,7 +472,7 @@ div{color:#fff;}
 	})();
 	
 
-	var circleThing = function(color){
+	var circleThing = function(color, onMeeting){
 		var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
 		circle.setAttribute('r',boxSize * 0.2);
 		circle.setAttribute('fill',color);
@@ -480,7 +480,7 @@ div{color:#fff;}
 			circle.setAttribute('cx',p.x);
 			circle.setAttribute('cy',p.y);
 		};
-		return positionableThing(circle, setPosition);
+		return positionableThing(circle, setPosition, onMeeting);
 	};
 
 	var atTheEnd = function(){
