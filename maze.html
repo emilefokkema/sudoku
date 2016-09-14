@@ -347,11 +347,7 @@ div{color:#fff;}
 
 	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
 		var walker, makeWalker, makeEaser;
-		//var firstPosition = chooseRandom(m.positions);
-		
-		
-		//setPosition(firstPosition);
-		
+
 		var getNextGoal = function(){
 			var p = walker.doStep();
 			return mazePositionToScreenPosition(p);
@@ -402,7 +398,7 @@ div{color:#fff;}
 				}
 			}
 		};
-		var makeNew = function(node, _setPosition, onMeeting){
+		var makeNew = function(_setPosition, onMeeting){
 			onMeeting = onMeeting || function(){};
 			var currentPosition;
 			var setPosition = function(p){
@@ -412,34 +408,33 @@ div{color:#fff;}
 			};
 			return {
 				setPosition:setPosition,
-				node:node,
 				getPosition:function(){return currentPosition;},
 				onMeeting:onMeeting
 			};
 		};
-		return function(node, _setPosition, onMeeting){
-			var n = makeNew(node, _setPosition, onMeeting);
+		return function(_setPosition, onMeeting){
+			var n = makeNew(_setPosition, onMeeting);
 			all.push(n);
 			return copies.addFor(n);
 		};
 	})();
 	
 
-	var circleThing = function(color, onMeeting){
-		var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-		circle.setAttribute('r',boxSize * 0.2);
-		circle.setAttribute('fill',color);
-		var setPosition = function(p){
-			circle.setAttribute('cx',p.x);
-			circle.setAttribute('cy',p.y);
-		};
-		return positionableThing(circle, setPosition, onMeeting);
-	};
+	
 
-	var atTheEnd = function(){
-		var model = maze.getModel();
+	var atTheEnd = function(model){
 		var svg = svgMazeDrawer.draw(model, boxSize);
-		
+		var circleThing = function(color, onMeeting){
+			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+			circle.setAttribute('r',boxSize * 0.2);
+			circle.setAttribute('fill',color);
+			var setPosition = function(p){
+				circle.setAttribute('cx',p.x);
+				circle.setAttribute('cy',p.y);
+			};
+			svg.appendChild(circle);
+			return positionableThing(setPosition, onMeeting);
+		};
 		var circle1 = circleThing('#f00');
 		var circle2 = circleThing('#0f0', function(c){
 			if(c == circle3){
@@ -453,9 +448,7 @@ div{color:#fff;}
 			walkerThing.controllableWalkerThing(model, circle1.setPosition, chooseRandom(model.positions), 2, 10),
 			walkerThing.autonomousWalkerThing(model, circle2.setPosition,chooseRandom(model.positions), 2,5)
 			];
-		svg.appendChild(circle1.node);
-		svg.appendChild(circle2.node);
-		svg.appendChild(circle3.node);
+		
 		walkers.map(function(w){
 			
 			w.start();
@@ -466,7 +459,7 @@ div{color:#fff;}
 		
 	};
 
-	maze = mazeMaker.make(maxX, maxY, createProgress, atTheEnd);
+	mazeMaker.make(maxX, maxY, createProgress, atTheEnd);
 
 	
 	

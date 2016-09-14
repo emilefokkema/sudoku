@@ -125,6 +125,15 @@
 	
 	var makeMaze = function(maxX, maxY, createProgress, done){
 		var paths, x, y, allBorderParts = [],positions;
+		var getModel = function(){
+			return {
+				maxX:maxX,
+				maxY:maxY,
+				borderParts:allBorderParts.slice(),
+				paths:paths.slice(),
+				positions:positions.slice()
+			};
+		};
 		var borderPart = function(x,y,direction,length){
 			length = length || 1;
 			return {
@@ -295,23 +304,10 @@
 					progress3.done();
 					progress2.done();
 					progress1.done();
-					done();
+					done(getModel());
 				});
 			});
 		});
-		return {
-			connectPositions:connectPositions,
-			toString:toString,
-			getModel:function(){
-				return {
-					maxX:maxX,
-					maxY:maxY,
-					borderParts:allBorderParts.slice(),
-					paths:paths.slice(),
-					positions:positions.slice()
-				};
-			}
-		};
 	};
 	window.mazeMaker = {
 		make:makeMaze,
