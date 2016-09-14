@@ -21,11 +21,61 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var maze, boxSize = 20;
+	var maze, boxSize = 80;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
 	var chooseRandom = function(arr, p){
 		return arr[Math.floor(Math.random() * arr.length)];
+	};
+
+	var copySet = function(origArray, mapper){
+		var set = function(o, i){
+			return {
+				orig: o,
+				copy:mapper(o,i)
+			};
+		};
+		var all = origArray.map(set);
+		return {
+			copyOf: function(o){
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						return all[i].copy;
+					}
+				}
+				return null;
+			},
+			originalOf:function(c){
+				for(var i=0;i<all.length;i++){
+					if(all[i].copy == c){
+						return all[i].orig;
+					}
+				}
+				return null;
+			},
+			allCopies: function(){return all.map(function(o){return o.copy;});},
+			addFor: function(o){
+				var filtered = all.filter(function(s){return s.orig == o;});
+				if(filtered.length == 0){
+					newSet = set(o, all.length);
+					all.push(newSet);
+					return newSet.copy;
+				}else{
+					return filtered[0].copy;
+				}
+			},
+			removeFor:function(o){
+				var index = -1;
+				for(var i=0;i<all.length;i++){
+					if(all[i].orig == o){
+						index = i;
+					}
+				}
+				if(index != -1){
+					all.splice(index, 1);
+				}
+			}
+		};
 	};
 
 	var screenPosition = function(x,y){
@@ -379,18 +429,48 @@ div{color:#fff;}
 		});
 	});
 
-	var positionableThing = function(node, _setPosition){
-		var currentPosition;
-		var setPosition = function(p){
-			currentPosition = p;
-			_setPosition(p);
+	var positionableThing = (function(){
+		var all = [], copies = copySet([], function(o){
+			return {
+				setPosition:o.setPosition,
+				node:o.node
+			};
+		});
+		var areClose = function(p1,p2){
+			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < 30;
 		};
-		return {
-			setPosition:setPosition,
-			node:node,
-			getPosition:function(){return currentPosition;}
+		var check = function(){
+			for(var i=0;i<all.length;i++){
+				for(var j = i+1;j<all.length;j++){
+					if(areClose(all[i].getPosition(), all[j].getPosition())){
+						all[i].onMeeting(copies.copyOf(all[j]));
+						all[j].onMeeting(copies.copyOf(all[i]));
+					}
+				}
+			}
 		};
-	};
+		var makeNew = function(node, _setPosition, onMeeting){
+			onMeeting = onMeeting || function(){};
+			var currentPosition;
+			var setPosition = function(p){
+				currentPosition = p;
+				_setPosition(p);
+				check();
+			};
+			return {
+				setPosition:setPosition,
+				node:node,
+				getPosition:function(){return currentPosition;},
+				onMeeting:onMeeting
+			};
+		};
+		return function(node, _setPosition, onMeeting){
+			var n = makeNew(node, _setPosition, onMeeting);
+			all.push(n);
+			return copies.addFor(n);
+		};
+	})();
+	
 
 	var circleThing = function(color){
 		var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
@@ -408,7 +488,11 @@ div{color:#fff;}
 		var svg = svgMazeDrawer.draw(model, boxSize);
 		
 		var circle1 = circleThing('#f00');
-		var circle2 = circleThing('#0f0');
+		var circle2 = circleThing('#0f0', function(c){
+			if(c == circle3){
+				console.log("green meets yellow");
+			}
+		});
 		var circle3 = circleThing('#ff0');
 		circle3.setPosition(mazePositionToScreenPosition({x:0,y:0}));
 		
