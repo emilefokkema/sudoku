@@ -24,6 +24,7 @@ div{color:#fff;}
 	};
 	var boxSize, maxY, maxX;
 	var setBoxSize = function(s){
+		console.log("setting box size",s);
 		boxSize = s;
 		maxY = Math.floor(h / boxSize);
 		maxX = Math.floor(w / boxSize);
@@ -461,8 +462,8 @@ div{color:#fff;}
 				boxSize:currentBoxSize,
 				number:currentCounter
 			};
-			if(boxSize > 5){
-				boxSize -= 5;
+			if(currentBoxSize > 5){
+				currentBoxSize -= 5;
 			}
 			currentCounter++;
 			return l;
