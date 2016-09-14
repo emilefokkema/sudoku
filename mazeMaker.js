@@ -64,6 +64,9 @@
 					}else if(d == direction.TOP){
 						return this.neighbors.first(function(n){return n.y == y - 1;});
 					}
+				},
+				distanceFrom: function(p){
+					return Math.sqrt(Math.pow(p.x - x, 2) + Math.pow(p.y - y, 2));
 				}
 			};
 		};

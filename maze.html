@@ -25,7 +25,7 @@ div{color:#fff;}
 	var maze, boxSize = 50;
 	var maxY = Math.floor(h / boxSize), maxX = Math.floor(w / boxSize);
 
-	var chooseRandom = function(arr, p){
+	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
 	};
 
@@ -435,18 +435,29 @@ div{color:#fff;}
 			svg.appendChild(circle);
 			return positionableThing(setPosition, onMeeting);
 		};
-		var circle1 = circleThing('#f00');
-		var circle2 = circleThing('#0f0', function(c){
-			if(c == circle3){
+		var initialYellowPosition = {x:0,y:0};
+		var yellowCircle = circleThing('#ff0');
+		yellowCircle.setPosition(mazePositionToScreenPosition(initialYellowPosition));
+
+		var redCircle = circleThing('#f00');
+		var initialRedPosition = chooseRandom(model.positions.filter(function(p){
+			return p.distanceFrom(initialYellowPosition) > 5;
+		}));
+
+		var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
+			return 	p.distanceFrom(initialYellowPosition) > 5 &&
+					p.distanceFrom(initialRedPosition) > 5;
+		}));
+		var greenCircle = circleThing('#0f0', function(c){
+			if(c == yellowCircle){
 				console.log("green meets yellow")
 			}
 		});
-		var circle3 = circleThing('#ff0');
-		circle3.setPosition(mazePositionToScreenPosition({x:0,y:0}));
+	
 		
 		var walkers = [
-			walkerThing.controllableWalkerThing(model, circle1.setPosition, chooseRandom(model.positions), 2, 10),
-			walkerThing.autonomousWalkerThing(model, circle2.setPosition,chooseRandom(model.positions), 2,5)
+			walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
+			walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,5)
 			];
 		
 		walkers.map(function(w){
