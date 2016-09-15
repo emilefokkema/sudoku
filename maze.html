@@ -581,7 +581,7 @@ span{
 	})();
 
 	var playLevel = function(l, onSucceed, onFail){
-		console.log("beginning to play a level");
+		console.log("beginning to play level "+l.number);
 		setBoxSize(l.boxSize);
 		mazeMaker.make(maxX, maxY, createProgress, function(model){
 			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize);
@@ -602,7 +602,7 @@ span{
 
 			var redCircle = circleThing('#f00',function(c){
 				if(c == yellowCircle){
-					console.log("succeed");
+					console.log("succeed level "+l.number);
 					succeed();
 				}
 			});
@@ -617,7 +617,7 @@ span{
 			}));
 			var greenCircle = circleThing('#0f0', function(c){
 				if(c == yellowCircle){
-					console.log("failure");
+					console.log("fail level "+l.number);
 					fail();
 				}
 			});
