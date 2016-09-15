@@ -1,7 +1,23 @@
 <html>
 <head><style>
 body{background-color:#000;}
-
+span{
+	float: left;
+}
+.circle {
+	width:30px;
+	height: 20px;
+	background-repeat: no-repeat;
+}
+.redcircle {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#f00\"/></svg>");
+}
+.yellowcircle {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#ff0\"/></svg>");
+}
+.greencircle {
+	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#0f0\"/></svg>");
+}
 .popup{
 	background-color:#000;
 	border: 1pt solid #fff;
@@ -507,24 +523,27 @@ body{background-color:#000;}
 	})();
 	
 	var levelProvider = (function(){
-		var currentCounter, currentBoxSize;
+		var currentCounter, currentBoxSize, currentGreenSpeed;
 		var reset = function(){
 			currentCounter = 1;
 			currentBoxSize = 70;
+			currentGreenSpeed = 1;
 		};
 		reset();
 		var getNext = function(){
 			var l = {
 				boxSize:currentBoxSize,
-				number:currentCounter
+				number:currentCounter,
+				greenSpeed:currentGreenSpeed
 			};
 			if(currentCounter == 1){
-				l.message = "a message";
+				l.message = "<span>Use the arrow keys to move </span><span class='circle redcircle'> </span><span>to</span><span class='circle yellowcircle'> </span><span>before</span><span class='circle greencircle'> </span><span>gets there.</span>";
 			}
-			if(currentBoxSize > 5){
+			if(currentCounter % 5 == 0 && currentBoxSize > 5){
 				currentBoxSize -= 5;
 			}
 			currentCounter++;
+			currentGreenSpeed += 1;
 			return l;
 		};
 		return {
@@ -575,7 +594,7 @@ body{background-color:#000;}
 			
 			var walkers = [
 				walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
-				walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,2)
+				walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
 				];
 
 			var teardown = function(){
