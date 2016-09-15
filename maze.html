@@ -280,10 +280,11 @@ span{
 			}
 			return currentPosition;
 		};
-		body.addEventListener('keyup',function(){
+		var keyupListener = function(){
 			going = false;
-		});
-		body.addEventListener('keydown',function(e){
+		};
+		body.addEventListener('keyup',keyupListener);
+		var keyDownListener = function(e){
 			if(e.key === "ArrowUp"){
 				currentDirection = direction.TOP;
 			}else if(e.key === "ArrowDown"){
@@ -294,7 +295,8 @@ span{
 				currentDirection = direction.RIGHT;
 			}
 			going = true;
-		});
+		};
+		body.addEventListener('keydown',keyDownListener);
 		var doStep = function(){
 			if(!going){
 				return currentPosition;
@@ -302,8 +304,14 @@ span{
 				return goInDirection(currentDirection);
 			}
 		};
+		var removeListeners = function(){
+			console.log("removing listeners");
+			body.removeEventListener('keyup', keyupListener);
+			body.removeEventListener('keydown', keyDownListener);
+		};
 		return {
-			doStep:doStep
+			doStep:doStep,
+			removeListeners:removeListeners
 		};
 	};
 
@@ -333,6 +341,7 @@ span{
 			interval = setInterval(update, 20);
 		};
 		var stop = function(){
+			console.log("stopping easer");
 			clearInterval(interval);
 		};
 		this.expose({
@@ -474,6 +483,13 @@ span{
 			makeEaser = function(setPosition, easiness, maxSpeed, getNextGoal){
 				return easer(setPosition, easiness, maxSpeed, getNextGoal);
 			};
+			stop = this.override(stop, function(){
+				walker.removeListeners();
+				this();
+			});
+			this.expose({
+				stop:stop
+			});
 		});
 	});
 
@@ -565,6 +581,7 @@ span{
 	})();
 
 	var playLevel = function(l, onSucceed, onFail){
+		console.log("beginning to play a level");
 		setBoxSize(l.boxSize);
 		mazeMaker.make(maxX, maxY, createProgress, function(model){
 			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize);
@@ -585,20 +602,22 @@ span{
 
 			var redCircle = circleThing('#f00',function(c){
 				if(c == yellowCircle){
+					console.log("succeed");
 					succeed();
 				}
 			});
 			var initialRedPosition = chooseRandom(model.positions.filter(function(p){
-				return p.distanceFrom(initialYellowPosition) > 5;
+				return p.distanceFrom(initialYellowPosition) > 3;
 			}));
 			redCircle.setPosition(mazePositionToScreenPosition(initialRedPosition));
 
 			var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
-				return 	p.distanceFrom(initialYellowPosition) > 5 &&
-						p.distanceFrom(initialRedPosition) > 5;
+				return 	p.distanceFrom(initialYellowPosition) > 3 &&
+						p.distanceFrom(initialRedPosition) > 3;
 			}));
 			var greenCircle = circleThing('#0f0', function(c){
 				if(c == yellowCircle){
+					console.log("failure");
 					fail();
 				}
 			});
