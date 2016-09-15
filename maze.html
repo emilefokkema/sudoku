@@ -1,11 +1,39 @@
 <html>
 <head><style>
 body{background-color:#000;}
-div{color:#fff;}
+
+.popup{
+	background-color:#000;
+	border: 1pt solid #fff;
+	border-radius:3px;
+	font-family:sans-serif;
+	font-size:20px;
+	color:#fff;
+}
+.popup-container{
+	padding:20px;
+	left:50%;
+	transform:translateX(-50%);
+	-webkit-transform:translateX(-50%);
+	position: absolute;
+	transition-property:top;
+	transition-duration:0.3s;
+	-webkit-transition-property:top;
+	-webkit-transition-duration:0.3s;
+	width:50%;
+	height: 30%;
+}
+.popup-button{
+	position: absolute;
+	bottom:20px;
+}
+.left{left:20px;}
+.right{right:20px;}
 </style></head>
 <body></body>
 <script src="mazeMaker.js"></script>
 <script src="makeModule.js"></script>
+<script src="makeNode.js"></script>
 <script src="structureHelpers.js"></script>
 <script>
 (function(w, h, body){
@@ -354,7 +382,35 @@ div{color:#fff;}
 		return textProgressMaker(t+": ");
 	};
 
-	
+	var showPopup = function(html, confirm, reject){
+		var div;
+		disappear = function(){
+			body.removeChild(div);
+		};
+		div = makeNode("<div class='popup popup-container' style='top:"+h+"px'><div>"+html+"</div><div id='1'></div></div>",function(buttonDiv){
+			if(confirm){
+				var ok = makeNode("<input type='button' class='popup popup-button right' value='OK'/>");
+				buttonDiv.appendChild(ok);
+				ok.onclick = function(){
+					disappear();
+					confirm();
+				};
+			}
+			if(reject){
+				var cancel = makeNode("<input type='button' class='popup popup-button left'/>");
+				buttonDiv.appendChild(cancel);
+				cancel.onclick = function(){
+					disappear();
+					reject();
+				};
+			}
+		});
+		body.appendChild(div);
+		setTimeout(function(){
+			div.style.top = (h/4)+"px";
+		},1);
+		
+	};
 
 	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
 		var walker, makeWalker, makeEaser, _easer;
@@ -462,6 +518,9 @@ div{color:#fff;}
 				boxSize:currentBoxSize,
 				number:currentCounter
 			};
+			if(currentCounter == 1){
+				l.message = "a message";
+			}
 			if(currentBoxSize > 5){
 				currentBoxSize -= 5;
 			}
@@ -501,6 +560,7 @@ div{color:#fff;}
 			var initialRedPosition = chooseRandom(model.positions.filter(function(p){
 				return p.distanceFrom(initialYellowPosition) > 5;
 			}));
+			redCircle.setPosition(mazePositionToScreenPosition(initialRedPosition));
 
 			var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
 				return 	p.distanceFrom(initialYellowPosition) > 5 &&
@@ -511,7 +571,7 @@ div{color:#fff;}
 					fail();
 				}
 			});
-		
+			greenCircle.setPosition(mazePositionToScreenPosition(initialGreenPosition));
 			
 			var walkers = [
 				walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
@@ -534,21 +594,30 @@ div{color:#fff;}
 				teardown();
 				onFail();
 			};
-			
-			walkers.map(function(w){
-				
-				w.start();
-			});
-			
-			
+
 			body.appendChild(svg);
+			
+			var start = function(){
+				walkers.map(function(w){
+					w.start();
+				});
+			};
+			
+			if(l.message){
+				showPopup(l.message, start);
+			}else{
+				start();
+			}
+			
+			
 			
 		});
 	};
 
 	var playAgain = function(){
-		playLevel(levelProvider.getNext(),function(){
-			if(confirm("You win! Go again?")){
+		var l = levelProvider.getNext();
+		playLevel(l,function(){
+			if(confirm("You win level "+l.number+"! Go again?")){
 				playAgain();
 			}
 		},function(){
