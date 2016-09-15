@@ -69,7 +69,6 @@ span{
 	};
 	var boxSize, maxY, maxX;
 	var setBoxSize = function(s){
-		console.log("setting box size",s);
 		boxSize = s;
 		maxY = Math.floor(h / boxSize);
 		maxX = Math.floor(w / boxSize);
@@ -604,7 +603,6 @@ span{
 				}
 			});
 			greenCircle.setPosition(mazePositionToScreenPosition(initialGreenPosition));
-			console.log("about to make walker with green speed",l.greenSpeed);
 			var walkers = [
 				walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
 				walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
@@ -614,7 +612,13 @@ span{
 				walkers.map(function(w){
 					w.stop();
 				});
-				body.removeChild(svg);
+				try{
+					console.log("removing svg");
+					body.removeChild(svg);
+				}catch(e){
+					console.log("svg had already been removed");
+				}
+				
 			};
 
 			succeed = function(){
