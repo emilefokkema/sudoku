@@ -495,9 +495,10 @@ span{
 
 	var positionableThing = (function(){
 		var all = [], copies = copySet([], function(o){
-			return {
+			var c = {
 				setPosition:o.setPosition
 			};
+			return c;
 		});
 		var areClose = function(p1,p2){
 			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < boxSize/2;
@@ -546,7 +547,13 @@ span{
 		return function(_setPosition, onMeeting){
 			var n = makeNew(_setPosition, onMeeting);
 			all.push(n);
-			return copies.addFor(n);
+			var c = copies.addFor(n);
+			c.remove = function(){
+				console.log("removing positionableThing");
+				copies.removeFor(n);
+				all.splice(all.indexOf(n),1);
+			};
+			return c;
 		};
 	})();
 	
@@ -567,7 +574,7 @@ span{
 			if(currentCounter == 1){
 				l.message = "<span>Use the arrow keys to move </span><span class='circle redcircle'> </span><span>to</span><span class='circle yellowcircle'> </span><span>before</span><span class='circle greencircle'> </span><span>gets there.</span>";
 			}
-			if(currentCounter % 5 == 0 && currentBoxSize > 5){
+			if(currentCounter % 3 == 0 && currentBoxSize > 5){
 				currentBoxSize -= 5;
 			}
 			currentCounter++;
@@ -584,7 +591,7 @@ span{
 		console.log("beginning to play level "+l.number);
 		setBoxSize(l.boxSize);
 		mazeMaker.make(maxX, maxY, createProgress, function(model){
-			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize);
+			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize), succeeded = false, failed = false;
 			var circleThing = function(color, onMeeting){
 				var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
 				circle.setAttribute('r',boxSize * 0.2);
@@ -631,6 +638,9 @@ span{
 				walkers.map(function(w){
 					w.stop();
 				});
+				redCircle.remove();
+				greenCircle.remove();
+				yellowCircle.remove();
 				try{
 					console.log("removing svg");
 					body.removeChild(svg);
@@ -641,13 +651,19 @@ span{
 			};
 
 			succeed = function(){
-				teardown();
-				onSucceed();
+				if(!failed){
+					teardown();
+					onSucceed();
+					succeeded = true;
+				}
 			};
 
 			fail = function(){
-				teardown();
-				onFail();
+				if(!succeeded){
+					teardown();
+					onFail();
+					failed=true;
+				}
 			};
 
 			body.appendChild(svg);
