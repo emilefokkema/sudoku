@@ -399,7 +399,7 @@ div{color:#fff;}
 			var a = document.createElement('div');
 			body.appendChild(a);
 			return {
-				update: function(x){a.innerHTML = text + x.toString();},
+				update: function(x){a.innerHTML = text + (Math.floor(100 * x)).toString() + "%";},
 				teardown:function(){body.removeChild(a)}
 			};
 		});

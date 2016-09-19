@@ -120,11 +120,41 @@
 					moveInDirection(direction.LEFT);
 				}
 			}
-			update(Math.floor(100 * result.length / size)+"%")
+			update(result.length / size);
 		}, 30, function(){
 			done(result);
 		}, update)
 	};
+
+	var first = function(fSoFarDone, done){
+		done = done || function(){};
+		var res;
+		var f = function(){
+			fSoFarDone(res, done);
+		};
+
+		f.then = function(_fSoFarDone){
+			return first(function(soFar, _done){
+				fSoFarDone(soFar, function(r){
+					_fSoFarDone(r, _done);
+				});
+			});
+		};
+		
+		return f;
+	};
+
+	first(function(soFar, done){
+		done(6);
+	}).then(function(r, done){
+		done(r + 1);
+	})
+	.then(function(r, done){
+		done(2*r);
+	})
+	.then(function(r, done){
+		console.log(r);
+	})();
 	
 	var makeMaze = function(maxX, maxY, createProgress, done){
 		var paths, x, y, allBorderParts = [],positions;
@@ -204,7 +234,7 @@
 						}
 						currentGroup = [];
 					}
-					update(Math.floor(100 * (1 - left.length / leftLengthInitial))+"%")
+					update(1 - left.length / leftLengthInitial);
 				},30,done,update);
 			};
 		})();
@@ -282,7 +312,7 @@
 					visitPosition(nextPosition);
 					connectPositions(currentPosition, nextPosition);
 					currentPosition = nextPosition;
-					update(Math.floor(100 * (1 - unvisitedPositions.length / size))+"%");
+					update(1 - unvisitedPositions.length / size);
 				}, 30, function(){
 					newPath();
 					done(paths);
@@ -296,21 +326,40 @@
 
 		})();
 
+		// var progress1 = createProgress("initializing");
+		// getPositionsWithNeighbors(maxX, maxY, progress1.update, function(pos){
+		// 	positions = pos;
+		// 	var progress2 = createProgress("making paths");
+		// 	pathMaker.make(progress2.update, function(p){
+		// 		paths = p;
+		// 		var progress3 = createProgress("merging borders");
+		// 		mergeBorderParts(progress3.update, function(){
+		// 			progress3.done();
+		// 			progress2.done();
+		// 			progress1.done();
+		// 			done(getModel());
+		// 		});
+		// 	});
+		// });
+
 		var progress1 = createProgress("initializing");
-		getPositionsWithNeighbors(maxX, maxY, progress1.update, function(pos){
-			positions = pos;
-			var progress2 = createProgress("making paths");
-			pathMaker.make(progress2.update, function(p){
-				paths = p;
-				var progress3 = createProgress("merging borders");
-				mergeBorderParts(progress3.update, function(){
-					progress3.done();
-					progress2.done();
-					progress1.done();
-					done(getModel());
-				});
-			});
-		});
+		var progress2 = createProgress("making paths");
+		var progress3 = createProgress("merging borders");
+
+		first(function(soFar, done){
+			getPositionsWithNeighbors(maxX, maxY, progress1.update, done);
+		}).then(function(soFar, done){
+			positions = soFar;
+			pathMaker.make(progress2.update, done);
+		}).then(function(soFar, done){
+			paths = soFar;
+			mergeBorderParts(progress3.update, done);
+		}).then(function(soFar, _done){
+			progress3.done();
+			progress2.done();
+			progress1.done();
+			done(getModel());
+		})();
 	};
 	window.mazeMaker = {
 		make:makeMaze,
