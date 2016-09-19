@@ -46,6 +46,7 @@ span{
 }
 .left{left:20px;}
 .right{right:20px;}
+div{color:#fff;}
 </style></head>
 <body></body>
 <script src="mazeMaker.js"></script>
@@ -398,7 +399,9 @@ span{
 			var a = document.createElement('div');
 			body.appendChild(a);
 			return {
-				update: function(x){a.innerHTML = text + (Math.floor(100 * x)).toString() + "%";},
+				update: function(x){
+					a.innerHTML = text + (Math.floor(100 * x.partial)).toString() + "%";
+				},
 				teardown:function(){body.removeChild(a)}
 			};
 		});
@@ -568,7 +571,7 @@ span{
 		var currentCounter, currentBoxSize, currentGreenSpeed;
 		var reset = function(){
 			currentCounter = 1;
-			currentBoxSize = 70;
+			currentBoxSize = 7;
 			currentGreenSpeed = 1;
 		};
 		reset();
