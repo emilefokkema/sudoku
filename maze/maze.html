@@ -86,11 +86,12 @@ div{color:#fff;}
 </style></head>
 <body></body>
 <script src="mazeMaker.js"></script>
-<script src="makeModule.js"></script>
-<script src="makeNode.js"></script>
-<script src="structureHelpers.js"></script>
+<script src="../makeModule.js"></script>
+<script src="../makeNode.js"></script>
+<script src="../structureHelpers.js"></script>
+<script src="levelProvider.js"></script>
 <script>
-(function(w, h, body){
+(function(w, h, body, mazeGame){
 	Array.prototype.first = function(test){
 		var res, found = false;
 		for(var i=0;i<this.length;i++){
@@ -648,35 +649,7 @@ div{color:#fff;}
 		};
 	})();
 	
-	var levelProvider = (function(){
-		var currentCounter, currentBoxSize, currentGreenSpeed;
-		var reset = function(){
-			currentCounter = 1;
-			currentBoxSize = 10;
-			currentGreenSpeed = 1;
-		};
-		reset();
-		var getNext = function(){
-			var l = {
-				boxSize:currentBoxSize,
-				number:currentCounter,
-				greenSpeed:currentGreenSpeed
-			};
-			if(currentCounter == 1){
-				l.message = "<span>Use the arrow keys to move </span><span class='circle redcircle'> </span><span>to</span><span class='circle yellowcircle'> </span><span>before</span><span class='circle greencircle'> </span><span>gets there.</span>";
-			}
-			if(currentCounter % 3 == 0 && currentBoxSize > 5){
-				currentBoxSize -= 3;
-			}
-			currentCounter++;
-			//currentGreenSpeed += 1;
-			return l;
-		};
-		return {
-			getNext:getNext,
-			reset:reset
-		};
-	})();
+	var levelProvider = mazeGame.getLevelProvider();
 
 	var playLevel = function(l, onSucceed, onFail){
 		console.log("beginning to play level "+l.number);
@@ -789,5 +762,5 @@ div{color:#fff;}
 	playAgain();
 	
 
-})(document.body.offsetWidth, document.body.offsetHeight, document.body);
+})(document.body.offsetWidth, document.body.offsetHeight, document.body, window.mazeGame);
 </script></html>
