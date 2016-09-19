@@ -326,34 +326,40 @@
 
 		})();
 
-		// var progress1 = createProgress("initializing");
-		// getPositionsWithNeighbors(maxX, maxY, progress1.update, function(pos){
-		// 	positions = pos;
-		// 	var progress2 = createProgress("making paths");
-		// 	pathMaker.make(progress2.update, function(p){
-		// 		paths = p;
-		// 		var progress3 = createProgress("merging borders");
-		// 		mergeBorderParts(progress3.update, function(){
-		// 			progress3.done();
-		// 			progress2.done();
-		// 			progress1.done();
-		// 			done(getModel());
-		// 		});
-		// 	});
-		// });
-
+		
 		var progress1 = createProgress("initializing");
 		var progress2 = createProgress("making paths");
 		var progress3 = createProgress("merging borders");
 
+		var update1 = function(x){
+			progress1.update({
+				partial:x,
+				total:x/3
+			});
+		};
+
+		var update2 = function(x){
+			progress2.update({
+				partial:x,
+				total:1/3 + x/3
+			});
+		};
+
+		var update3 = function(x){
+			progress3.update({
+				partial:x,
+				total:2/3 + x/3
+			});
+		};
+
 		first(function(soFar, done){
-			getPositionsWithNeighbors(maxX, maxY, progress1.update, done);
+			getPositionsWithNeighbors(maxX, maxY, update1, done);
 		}).then(function(soFar, done){
 			positions = soFar;
-			pathMaker.make(progress2.update, done);
+			pathMaker.make(update2, done);
 		}).then(function(soFar, done){
 			paths = soFar;
-			mergeBorderParts(progress3.update, done);
+			mergeBorderParts(update3, done);
 		}).then(function(soFar, _done){
 			progress3.done();
 			progress2.done();
