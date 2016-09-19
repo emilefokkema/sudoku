@@ -408,6 +408,13 @@ span{
 		return textProgressMaker(t+": ");
 	};
 
+	var progressBar = (function(){
+		var createProgressPart = function(text){
+
+		};
+		return {createProgressPart:createProgressPart};
+	})();
+
 	var showPopup = function(html, confirm, reject){
 		var div;
 		disappear = function(){
