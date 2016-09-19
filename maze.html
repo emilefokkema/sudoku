@@ -4,7 +4,42 @@ body{background-color:#000;overflow: hidden;}
 span{
 	float: left;
 }
-
+.progress-total{
+	width:100%;
+	height:5px;
+	background-color: #333;
+	position: absolute;
+	left:0px;
+	top:50%;
+	-webkit-transform:translateY(-50%);
+	transform:translateY(-50%);
+	padding:0px;
+}
+.progress-container{
+	width:100%;
+	height:100%;
+	position: absolute;
+	left:0px;
+	top:0px;
+}
+.progress-text{
+	color:#fff;
+	font-size: 15px;
+	font-family: Verdana;
+	position: absolute;
+	left:50%;
+	top:50%;
+	transform:translate(-50%,-150%);
+	-webkit-transform:translate(-50%,-150%);
+}
+.progress-part{
+	height:100%;
+	background-color: #fff;
+	padding: 0px;
+	position: relative;
+	left:0px;
+	top:0px;
+}
 .circle {
 	width:30px;
 	height: 20px;
@@ -386,11 +421,14 @@ div{color:#fff;}
 	var progressMaker = function(setup, done){
 		done = done || function(){};
 		setup = setup();
+		var stopped = false;
 		return {
 			update:function(x){
-				setup.update(x);
+				if(!stopped){
+					setup.update(x);
+				}
 			},
-			done:function(){setup.teardown();done();}
+			done:function(){setup.teardown();stopped = true;done();}
 		};
 	};
 
@@ -411,12 +449,54 @@ div{color:#fff;}
 		return textProgressMaker(t+": ");
 	};
 
-	var progressBar = (function(){
+	var progressBar = function(){
+		var started = false, currentPercentage = 0, done = false;
+		var bar = makeNode("<div id='1' class='progress-container'><div class='progress-text' id='3'></div><div class='progress-total'><div id='2' class='progress-part'></div></div></div>",function(tot,part,text){
+			return {
+				append:function(){
+					body.appendChild(tot);
+				},
+				remove:function(){
+					body.removeChild(tot);
+				},
+				setPercentage:function(x){
+					part.style.width = Math.floor(100 * x) + "%";
+				},
+				setText:function(t){
+					text.innerHTML = t;
+				}
+			};
+		});
+		var updateGlobal = function(x){
+			if(!started){
+				bar.append();
+			}
+			started = true;
+			currentPercentage = x;
+			bar.setPercentage(x);
+		};
 		var createProgressPart = function(text){
-
+			var textSet = false;
+			return progressMaker(function(){
+				return {
+					update:function(x){
+						if(!textSet){
+							bar.setText(text);
+							textSet = true;
+						}
+						updateGlobal(x.total);
+					},
+					teardown:function(){
+						if(!done && currentPercentage > 0.99){
+							bar.remove();
+							done = true;
+						}
+					}
+				};
+			});
 		};
 		return {createProgressPart:createProgressPart};
-	})();
+	};
 
 	var showPopup = function(html, confirm, reject){
 		var div;
@@ -571,7 +651,7 @@ div{color:#fff;}
 		var currentCounter, currentBoxSize, currentGreenSpeed;
 		var reset = function(){
 			currentCounter = 1;
-			currentBoxSize = 7;
+			currentBoxSize = 10;
 			currentGreenSpeed = 1;
 		};
 		reset();
@@ -600,6 +680,7 @@ div{color:#fff;}
 	var playLevel = function(l, onSucceed, onFail){
 		console.log("beginning to play level "+l.number);
 		setBoxSize(l.boxSize);
+		var createProgress = progressBar().createProgressPart;
 		mazeMaker.make(maxX, maxY, createProgress, function(model){
 			var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize), succeeded = false, failed = false;
 			var circleThing = function(color, onMeeting){
