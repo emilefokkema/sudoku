@@ -40,6 +40,7 @@ span{
 	width:50%;
 	height: 30%;
 }
+div{color:#fff;}
 .popup-button{
 	position: absolute;
 	bottom:20px;
@@ -575,10 +576,10 @@ span{
 				l.message = "<span>Use the arrow keys to move </span><span class='circle redcircle'> </span><span>to</span><span class='circle yellowcircle'> </span><span>before</span><span class='circle greencircle'> </span><span>gets there.</span>";
 			}
 			if(currentCounter % 3 == 0 && currentBoxSize > 5){
-				currentBoxSize -= 5;
+				currentBoxSize -= 3;
 			}
 			currentCounter++;
-			currentGreenSpeed += 1;
+			//currentGreenSpeed += 1;
 			return l;
 		};
 		return {
@@ -613,15 +614,10 @@ span{
 					succeed();
 				}
 			});
-			var initialRedPosition = chooseRandom(model.positions.filter(function(p){
-				return p.distanceFrom(initialYellowPosition) > 3;
-			}));
+			var initialRedPosition = model.positions.first(function(p){return p.x == model.maxX - 2 && p.y == model.maxY - 1;});
 			redCircle.setPosition(mazePositionToScreenPosition(initialRedPosition));
 
-			var initialGreenPosition = chooseRandom(model.positions.filter(function(p){
-				return 	p.distanceFrom(initialYellowPosition) > 3 &&
-						p.distanceFrom(initialRedPosition) > 3;
-			}));
+			var initialGreenPosition = model.positions.first(function(p){return p.x == model.maxX - 1 && p.y == model.maxY - 1;});
 			var greenCircle = circleThing('#0f0', function(c){
 				if(c == yellowCircle){
 					console.log("fail level "+l.number);
