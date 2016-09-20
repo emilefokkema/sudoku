@@ -125,30 +125,91 @@
 		return result;
 	};
 
-	var step = (function(){
-		var s = function(execute){
-			var finish = function(){};
-			var exec = function(context){
-				finish = execute(context || {}, function(){finish();});
-				return finish || function(){};
+	var actionSequence = (function(){
+		var first = function(fSoFarDone, done){
+			done = done || function(){};
+			var res;
+			var f = function(){
+				fSoFarDone(res, done);
 			};
-			exec.then = function(otherStep){
-				return s(function(context, finish){
-					var stop2 = function(){}, stop = execute(context, function(){
-						stop2 = otherStep.then(s(function(){finish();}))(context);
-						
+
+			f.then = function(_fSoFarDone){
+				return first(function(soFar, _done){
+					fSoFarDone(soFar, function(r){
+						_fSoFarDone(r, _done);
 					});
-					return function(){
-						stop2();
-						(stop || function(){})();
-						
-					};
 				});
 			};
-			return exec;
+			
+			return f;
 		};
-		return s;
+		var makeFSoFarDone = function(fSoFarDoneUpdate, progress, stepIndex, nOfSteps, stopAllProgresses){
+			return function(soFar, done){
+				if(stepIndex == nOfSteps - 1){
+					done = (function(_done){
+						return function(x){
+							stopAllProgresses();
+							_done(x);
+						};
+					})(done);
+				}
+				fSoFarDoneUpdate(soFar, done, function(x){
+					progress.update({
+						partial:x,
+						total:(stepIndex + x) / nOfSteps
+					})
+				});
+			};
+		};
+		return function(){
+			var all = [];
+
+			var add = function(fSoFarDoneUpdate, progress){
+				all.push({
+					f:fSoFarDoneUpdate,
+					progress:progress
+				});
+			};
+			var execute = function(){
+				if(all.length == 0){return;}
+				var stopAllProgresses = function(){
+					for(var i=0;i<all.length;i++){
+						all[i].progress && all[i].progress.done();
+					}
+				};
+				var s = first(makeFSoFarDone(all[0].f, all[0].progress, 0, all.length, stopAllProgresses));
+				for(var i = 1;i<all.length;i++){
+					s = s.then(makeFSoFarDone(all[i].f, all[i].progress, i, all.length, stopAllProgresses));
+				}
+				s();
+			};
+			return {
+				add:function(){
+					add.apply(null, arguments);
+					return this;
+				},
+				execute:execute
+			};
+		};
 	})();
+
+	// var progress = {update:function(x){console.log(x);}};
+
+	// actionSequence()
+	// .add(function(soFar, done, update){
+	// 	update(0);
+	// 	update(1);
+	// 	done(6);
+	// }, progress)
+	// .add(function(r, done, update){
+	// 	update(0);
+	// 	update(1);
+	// 	done(r + 1);
+	// }, progress).add(function(r, done){
+	// 	done(2*r);
+	// }).add(function(r, done){
+	// 	console.log(r);
+	// }).execute();
 	
 
 	var copySet = function(origArray, mapper){
@@ -203,7 +264,8 @@
 	window.structureHelpers = {
 		makeTrees: makeTrees,
 		allNodes: allNodes,
-		copySet:copySet
+		copySet:copySet,
+		actionSequence:actionSequence
 	};
 })();
 

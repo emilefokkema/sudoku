@@ -155,8 +155,10 @@
 	.then(function(r, done){
 		console.log(r);
 	})();
+
+
 	
-	var makeMaze = function(maxX, maxY, createProgress, done){
+	var makeMaze = function(actionSequence, maxX, maxY, createProgress){
 		var paths, x, y, allBorderParts = [],positions;
 		var getModel = function(){
 			return {
@@ -326,46 +328,22 @@
 
 		})();
 
-		
-		var progress1 = createProgress("initializing");
-		var progress2 = createProgress("making paths");
-		var progress3 = createProgress("merging borders");
-
-		var update1 = function(x){
-			progress1.update({
-				partial:x,
-				total:x/3
-			});
-		};
-
-		var update2 = function(x){
-			progress2.update({
-				partial:x,
-				total:1/3 + x/3
-			});
-		};
-
-		var update3 = function(x){
-			progress3.update({
-				partial:x,
-				total:2/3 + x/3
-			});
-		};
-
-		first(function(soFar, done){
-			getPositionsWithNeighbors(maxX, maxY, update1, done);
-		}).then(function(soFar, done){
+		actionSequence
+		.add(function(soFar, done, update){
+			getPositionsWithNeighbors(maxX, maxY, update, done);
+		}, createProgress("initializing"))
+		.add(function(soFar, done, update){
 			positions = soFar;
-			pathMaker.make(update2, done);
-		}).then(function(soFar, done){
+			pathMaker.make(update, done);
+		}, createProgress("making paths"))
+		.add(function(soFar, done, update){
 			paths = soFar;
-			mergeBorderParts(update3, done);
-		}).then(function(soFar, _done){
-			progress3.done();
-			progress2.done();
-			progress1.done();
+			mergeBorderParts(update, done);
+		}, createProgress("merging borders"))
+		.add(function(soFar, done, update){
+			update(1);
 			done(getModel());
-		})();
+		}, createProgress(""));
 	};
 	window.mazeMaker = {
 		make:makeMaze,
