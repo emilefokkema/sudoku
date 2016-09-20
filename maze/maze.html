@@ -426,8 +426,8 @@ div{color:#fff;}
 	
 	var levelProvider = mazeGame.getLevelProvider();
 
-	var playLevelWithModel = function(l, model, onSucceed, onFail){
-		var succeed, fail, svg = svgMazeDrawer.draw(model, boxSize), succeeded = false, failed = false;
+	var playLevelWithModel = function(svg, l, model, onSucceed, onFail){
+		var succeed, fail, succeeded = false, failed = false;
 		var circleThing = function(color, onMeeting){
 			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
 			circle.setAttribute('r',boxSize * 0.2);
@@ -518,11 +518,12 @@ div{color:#fff;}
 		var createProgress = progressBar().createProgressPart;
 		var seq = structureHelpers.actionSequence();
 		mazeMaker.make(seq, maxX, maxY, createProgress);
+		svgMazeDrawer.draw(seq, createProgress, boxSize);
 		seq.add(function(soFar, done, update){
-			playLevelWithModel(l,soFar,onSucceed,onFail);
+			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail);
 			update(1);
 			done();
-		}, createProgress(""));
+		},createProgress(""));
 		seq.execute();
 	};
 
