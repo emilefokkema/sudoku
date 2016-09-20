@@ -514,7 +514,7 @@ div{color:#fff;}
 		
 	};
 
-	var walkerThing = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
+	var thingWalker = makeModule(function(m, setPosition, firstPosition, easiness, maxSpeed){
 		var walker, makeWalker, makeEaser, _easer;
 
 		var getNextGoal = function(){
@@ -533,7 +533,7 @@ div{color:#fff;}
 			stop:stop,
 			start:start
 		});
-		this.extend('autonomousWalkerThing',function(){
+		this.extend('autonomousThingWalker',function(){
 			makeWalker = function(m, firstPosition){
 				return mazeWalker(m, firstPosition);
 			};
@@ -541,7 +541,7 @@ div{color:#fff;}
 				return easer.bufferEaser(setPosition, easiness, maxSpeed, getNextGoal);
 			};
 		});
-		this.extend('controllableWalkerThing',function(){
+		this.extend('controllableThingWalker',function(){
 			makeWalker = function(m, firstPosition){
 				return controllableMazeWalker(m, firstPosition);
 			};
@@ -663,8 +663,8 @@ div{color:#fff;}
 			});
 			greenCircle.setPosition(mazePositionToScreenPosition(initialGreenPosition));
 			var walkers = [
-				walkerThing.controllableWalkerThing(model, redCircle.setPosition, initialRedPosition, 2, 10),
-				walkerThing.autonomousWalkerThing(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
+				thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10),
+				thingWalker.autonomousThingWalker(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
 				];
 
 			var teardown = function(){
