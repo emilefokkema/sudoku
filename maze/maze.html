@@ -268,23 +268,6 @@ div{color:#fff;}
 		};
 	};
 
-	var textProgressMaker = function(text){
-		return progressMaker(function(){
-			var a = document.createElement('div');
-			body.appendChild(a);
-			return {
-				update: function(x){
-					a.innerHTML = text + (Math.floor(100 * x.partial)).toString() + "%";
-				},
-				teardown:function(){body.removeChild(a)}
-			};
-		});
-	};
-
-	var createProgress = function(t){
-		return textProgressMaker(t+": ");
-	};
-
 	var progressBar = function(){
 		var started = false, currentPercentage = 0, done = false;
 		var bar = makeNode("<div id='1' class='progress-container'><div class='progress-text' id='3'></div><div class='progress-total'><div id='2' class='progress-part'></div></div></div>",function(tot,part,text){
