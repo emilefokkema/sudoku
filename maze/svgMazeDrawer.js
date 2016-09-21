@@ -1,7 +1,7 @@
 (function(){
 	window.mazeGame = window.mazeGame || {};
 
-	window.mazeGame.getSvgMazeDrawer = function(direction){
+	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile){
 		var draw = function(actionSequence, createProgress, boxSize, drawPaths){
 			
 			actionSequence.add(function(m, done, update){

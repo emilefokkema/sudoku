@@ -141,7 +141,7 @@ div{color:#fff;}
 	};
 	
 	var direction = mazeMaker.direction;
-	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction);
+	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile);
 	var easer = mazeGame.getEaser(makeModule, screenPosition, representsSmallDistance);
 	var thingWalker = mazeGame.getThingWalker(makeModule, easer, direction, mazePositionToScreenPosition, body, chooseRandom);
 
