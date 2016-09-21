@@ -1,7 +1,7 @@
 (function(){
 	window.mazeGame = window.mazeGame || {};
 
-	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile){
+	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker){
 		var timeOutMap = function(arr, toDo, update, done){
 			var i = 0, l = arr.length;
 			timeOutWhile(function(){return i < l;},function(update){
@@ -10,7 +10,7 @@
 				i++;
 			}, 30, done, update);
 		};
-		var addForBorderPart = function(svg, p, m, boxSize){
+		var getEndPoints = function(p){
 			var x1, y1, x2, y2;
 			if(p.direction == direction.TOP){
 				x1 = p.x; x2 = p.x + p.length; y1 = y2 = p.y;
@@ -21,12 +21,48 @@
 			}else if(p.direction == direction.RIGHT){
 				y1 = p.y; y2 = p.y + p.length; x1 = x2 = p.x + 1;
 			}
-			var l = document.createElementNS('http://www.w3.org/2000/svg','line');
-			l.setAttribute('x1',x1*boxSize);
-			l.setAttribute('y1',y1*boxSize);
-			l.setAttribute('x2',x2*boxSize);
-			l.setAttribute('y2',y2*boxSize);
+			return {x1:x1,y1:y1,x2:x2,y2:y2};
+		};
+		var getRectangle = function(ends, dir, boxSize){
+			var x,y,width,height;
+			if(dir == direction.LEFT || dir == direction.RIGHT){
+				if(ends.x1 == 0){
+					x = 0;
+					y = Math.min(ends.y1, ends.y2);
+					width = 1 / 5;
+					height = Math.abs(ends.y2 - ends.y1);
+				}else{
+					x = ends.x1 - 1/5;
+					y = Math.min(ends.y1, ends.y2);
+					width = 1/5;
+					height = Math.abs(ends.y2 - ends.y1);
+				}
+			}else{
+				if(ends.y1 == 0){
+					x = Math.min(ends.x1, ends.x2);
+					y = 0;
+					width = Math.abs(ends.x2 - ends.x1);
+					height = 1/5;
+				}else{
+					x = Math.min(ends.x1, ends.x2);
+					y = ends.y1 - 1/5;
+					width = Math.abs(ends.x2 - ends.x1);
+					height = 1/5;
+				}
+			}
+			return contourMaker.rectangle(x,y,width,height).scale(boxSize);
+		};
+		var addForBorderPart = function(svg, p, m, boxSize){
+			var ends = getEndPoints(p);
+			var rect = getRectangle(ends, p.direction, boxSize);
+			var box = rect.box();
+			var l = document.createElementNS('http://www.w3.org/2000/svg','rect');
+			l.setAttribute('x',box.minx);
+			l.setAttribute('y',box.miny);
+			l.setAttribute('width',box.maxx - box.minx);
+			l.setAttribute('height',box.maxy - box.miny);
 			l.setAttribute('stroke','#999');
+			l.setAttribute('fill','#0f0');
 			svg.appendChild(l);
 		};
 

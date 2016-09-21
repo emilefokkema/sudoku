@@ -93,6 +93,7 @@ div{color:#fff;}
 <script src="svgMazeDrawer.js"></script>
 <script src="thingWalker.js"></script>
 <script src="easer.js"></script>
+<script src="../contourMaker.js"></script>
 <script>
 (function(w, h, body, mazeGame){
 	Array.prototype.first = function(test){
@@ -141,7 +142,7 @@ div{color:#fff;}
 	};
 	
 	var direction = mazeMaker.direction;
-	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile);
+	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker);
 	var easer = mazeGame.getEaser(makeModule, screenPosition, representsSmallDistance);
 	var thingWalker = mazeGame.getThingWalker(makeModule, easer, direction, mazePositionToScreenPosition, body, chooseRandom);
 
