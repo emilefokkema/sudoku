@@ -114,7 +114,8 @@ div{color:#fff;}
 		maxY = Math.floor(h / boxSize);
 		maxX = Math.floor(w / boxSize);
 	};
-
+	
+	var mazeMaker = window.getMazeMaker(structureHelpers.timeoutWhile);
 	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
 	};

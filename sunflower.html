@@ -1,0 +1,37 @@
+<html><body style='margin:0px;padding:0px'></body><script>
+(function(body, w, h){
+	var branchSpacing = 100;
+	var ctx = (function(){
+		var canvas = document.createElement('canvas');
+		canvas.setAttribute('width',w);
+		canvas.setAttribute('height', h);
+		body.appendChild(canvas)
+		return canvas.getContext('2d');
+	})();
+	ctx.fillStyle = '#000';
+	ctx.fillRect(0,0,w,h);
+	var drawCircle = function(x,y,r, hue){
+		x = w/2 + x ;
+		y = h/2 - y ;
+		
+		ctx.fillStyle = 'hsl('+hue+',0%,40%)';
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, 2*Math.PI)
+		ctx.fill();
+	};
+
+	var drawBranch = function(aStart, aStep){
+
+		var r;
+		for(var a = -2*Math.PI; a < 3*Math.PI/2; a+=aStep){
+			r = Math.pow(5.65, a );
+			drawCircle(r * Math.cos(a + aStart), r * Math.sin(a + aStart), 8*(1-1/(r/400+1)), 360*aStart/(Math.PI));
+		}
+	};
+
+	//drawBranch(0, Math.PI/20);
+	for(var i=0;i<2*Math.PI;i+=2*Math.PI/branchSpacing){
+		drawBranch(i, Math.PI/branchSpacing);
+	}
+})(document.body, document.body.offsetWidth, document.body.offsetHeight)
+</script></html>
