@@ -221,7 +221,12 @@
 							currentGroup = [];
 						}
 						update(1 - left.length / leftLengthInitial);
-					},30,done,update);
+					},30,function(){
+						if(currentGroup.length > 1){
+							mergeGroup(currentGroup);
+						}
+						done();
+					},update);
 				};
 			})();
 
