@@ -111,13 +111,15 @@ div{color:#fff;}
 		}
 		return null;
 	};
-	var boxSize, maxY, maxX;
-	var setBoxSize = function(s){
-		boxSize = s;
-		maxY = Math.floor(h / boxSize);
-		maxX = Math.floor(w / boxSize);
+	var position = function(x,y){
+		return {
+			x:x,
+			y:y,
+			minus:function(p){
+				return position(x - p.x, y - p.y);
+			}
+		};
 	};
-	
 	var mazeMaker = window.getMazeMaker(structureHelpers.timeoutWhile);
 	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
@@ -125,28 +127,42 @@ div{color:#fff;}
 
 	var copySet = structureHelpers.copySet;
 
-	var screenPosition = function(x,y){
-		return {
-			x:x,
-			y:y,
-			minus:function(p){
-				return screenPosition(x - p.x, y - p.y);
-			}
+
+	var space = (function(){
+		var boxSize, maxY, maxX;
+		var setBoxSize = function(s){
+			boxSize = s;
+			maxY = Math.floor(h / boxSize);
+			maxX = Math.floor(w / boxSize);
 		};
-	};
+		var mazePositionToScreenPosition = function(p){
+			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
+		};
 
-	var mazePositionToScreenPosition = function(p){
-		return screenPosition(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
-	};
+		var representsSmallDistance = function(dx, dy){
+			return Math.abs(dx) + Math.abs(dy) < boxSize / 3;
+		};
+		return {
+			positionFromMazePosition:mazePositionToScreenPosition,
+			representsSmallDistance:representsSmallDistance,
+			getMaxX:function(){return maxX;},
+			getMaxY:function(){return maxY;},
+			setBoxSize:setBoxSize,
+			getBoxSize:function(){return boxSize;}
+		};
 
-	var representsSmallDistance = function(dx, dy){
-		return Math.abs(dx) + Math.abs(dy) < boxSize / 3;
-	};
+	})();
+	
+	
+	
+	
+
+	
 	
 	var direction = mazeMaker.direction;
 	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker);
-	var easer = mazeGame.getEaser(makeModule, screenPosition, representsSmallDistance);
-	var thingWalker = mazeGame.getThingWalker(makeModule, easer, direction, mazePositionToScreenPosition, body, chooseRandom);
+	var easer = mazeGame.getEaser(makeModule, position, space.representsSmallDistance);
+	var thingWalker = mazeGame.getThingWalker(makeModule, easer, direction, space.positionFromMazePosition, body, chooseRandom);
 
 	var mazeStringifier = mazeGame.getMazeStringifier(direction);
 
@@ -269,7 +285,8 @@ div{color:#fff;}
 			return c;
 		});
 		var areClose = function(p1,p2){
-			return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < boxSize/2;
+			//return p1 && p2 && Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y) < boxSize/2;
+			return space.representsSmallDistance(p1.x - p2.x, p1.y - p2.y);
 		};
 		var check = function(){
 			for(var i=0;i<all.length;i++){
@@ -331,7 +348,7 @@ div{color:#fff;}
 		var succeed, fail, succeeded = false, failed = false;
 		var circleThing = function(color, onMeeting){
 			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-			circle.setAttribute('r',boxSize * 0.2);
+			circle.setAttribute('r',space.getBoxSize() * 0.2);
 			circle.setAttribute('fill',color);
 			var setPosition = function(p){
 				circle.setAttribute('cx',p.x);
@@ -342,7 +359,7 @@ div{color:#fff;}
 		};
 		var initialYellowPosition = {x:0,y:0};
 		var yellowCircle = circleThing('#ff0');
-		yellowCircle.setPosition(mazePositionToScreenPosition(initialYellowPosition));
+		yellowCircle.setPosition(space.positionFromMazePosition(initialYellowPosition));
 
 		var redCircle = circleThing('#f00',function(c){
 			if(c == yellowCircle){
@@ -351,7 +368,7 @@ div{color:#fff;}
 			}
 		});
 		var initialRedPosition = model.positions.first(function(p){return p.x == model.maxX - 2 && p.y == model.maxY - 1;});
-		redCircle.setPosition(mazePositionToScreenPosition(initialRedPosition));
+		redCircle.setPosition(space.positionFromMazePosition(initialRedPosition));
 
 		var initialGreenPosition = model.positions.first(function(p){return p.x == model.maxX - 1 && p.y == model.maxY - 1;});
 		var greenCircle = circleThing('#0f0', function(c){
@@ -360,7 +377,7 @@ div{color:#fff;}
 				fail();
 			}
 		});
-		greenCircle.setPosition(mazePositionToScreenPosition(initialGreenPosition));
+		greenCircle.setPosition(space.positionFromMazePosition(initialGreenPosition));
 		var walkers = [
 			thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10),
 			thingWalker.autonomousThingWalker(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
@@ -415,11 +432,11 @@ div{color:#fff;}
 
 	var playLevel = function(l, onSucceed, onFail){
 		console.log("beginning to play level "+l.number);
-		setBoxSize(l.boxSize);
+		space.setBoxSize(l.boxSize);
 		var createProgress = progressBar().createProgressPart;
 		var seq = structureHelpers.actionSequence();
-		mazeMaker.make(seq, maxX, maxY, createProgress);
-		svgMazeDrawer.draw(seq, createProgress, boxSize);
+		mazeMaker.make(seq, space.getMaxX(), space.getMaxY(), createProgress);
+		svgMazeDrawer.draw(seq, createProgress, l.boxSize);
 		seq.add(function(soFar, done, update){
 			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail);
 			update(1);
