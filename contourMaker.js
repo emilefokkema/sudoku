@@ -180,6 +180,12 @@
 
 		window.point = point;
 		var isTheOne = function(p){return p.x>7 && p.x<7.05;};
+		var segmentsAreFarApart = function(p1,p2,q1,q2){
+			var d = p1.plus(p2).scaleInv(2).minus(q1.plus(q2).scaleInv(2)).mod(),
+				r1 = p1.minus(p2).mod() / 2,
+				r2 = q1.minus(q2).mod() / 2;
+			return d > r1 + r2;
+		};
 		var intersectSegments = function(p1,p2,q1,q2){
 			var x1 = p2.minus(p1);
 			var x2 = q2.minus(q1);
@@ -1109,7 +1115,7 @@
 					return soFar+" Z";
 				}
 			};
-			return function(sides){
+			var c = function(sides){
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				var groups = sides
 					.filter(function(s){return isOuterSide(s,sides);})
@@ -1233,6 +1239,11 @@
 					sides:sides
 				};
 			};
+			c.combineMany = function(contours){
+				var sides = contours.map(function(c){return c.sides;}).reduce(function(a,b){return a.concat(b);});
+				return contour(combineMany(sides));
+			};
+			return c;
 		})();
 
 		var rectangleSide = function(x,y,width,height){

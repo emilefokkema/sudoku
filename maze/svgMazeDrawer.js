@@ -10,7 +10,7 @@
 				toDo(arr[i], i);
 				update((i+1)/l);
 				i++;
-			}, 1, done, update);
+			}, 10, done, update);
 		};
 		var getEndPoints = function(p){
 			var x1, y1, x2, y2;
@@ -55,6 +55,17 @@
 			// svg.appendChild(l);
 		};
 
+		var appendPathsFromContour = function(svg, c){
+			var paths = c.makeSvgPaths(4);
+			paths.map(function(p){
+				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+				path.setAttribute('stroke','#888');
+				path.setAttribute('fill','transparent');
+				path.setAttribute('d',p);
+				svg.appendChild(path);
+			});
+		};
+
 		var draw = function(actionSequence, createProgress, boxSize, drawPaths){
 			
 			setShift(shift.scale(boxSize));
@@ -64,29 +75,27 @@
 				svg.setAttribute('height',boxSize * (m.maxY + borderWidth));
 				svg.setAttribute('style','position:fixed;');
 				var contour;
-				timeOutMap(m.borderParts, function(p,i){
-					if(i == 0){
-						contour = getRectangleForBorderPart(p);
-					}else{
-						contour = contour.combine(getRectangleForBorderPart(p));
-					}
-					//addForBorderPart(svg, p, m, boxSize);
-				}, update,function(){
+				var rectangles = m.borderParts.map(function(p){
+					return getRectangleForBorderPart(p);
+				});
+				var myDone = function(){
 					contour = contour.scale(boxSize);
-					var paths = contour.makeSvgPaths(4);
-					paths.map(function(p){
-						var path = document.createElementNS('http://www.w3.org/2000/svg','path');
-						path.setAttribute('stroke','#888');
-						path.setAttribute('fill','transparent');
-						path.setAttribute('d',p);
-						svg.appendChild(path);
-					});
+					appendPathsFromContour(svg, contour);
 					done({
 						svg:svg,
 						model:m
 					});
-				});
-				
+				};
+				// timeOutMap(rectangles, function(r,i){
+				// 	if(i == 0){
+				// 		contour = r;
+				// 	}else{
+				// 		contour = contour.combine(r);
+				// 	}
+				// }, update,myDone);
+				contour = contourMaker.contour.combineMany(rectangles);
+				update(1);
+				myDone();
 			},createProgress("drawing svg"));
 		};
 		return {draw:draw}
