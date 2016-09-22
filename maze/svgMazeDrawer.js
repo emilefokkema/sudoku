@@ -1,8 +1,9 @@
 (function(){
 	window.mazeGame = window.mazeGame || {};
 
-	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker){
-		var borderWidth = 1/5;
+	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker, position, setShift){
+		var borderWidth = 1/4, shift = position(borderWidth/2, borderWidth/2);
+
 		var timeOutMap = function(arr, toDo, update, done){
 			var i = 0, l = arr.length;
 			timeOutWhile(function(){return i < l;},function(update){
@@ -27,25 +28,17 @@
 		var getRectangle = function(ends, dir){
 			var x,y,width,height;
 			if(dir == direction.LEFT || dir == direction.RIGHT){
-				if(ends.x1 == 0){
-					x = 0;
-				}else{
-					x = ends.x1 - 1/5;
-				}
+				x = ends.x1 - borderWidth / 2;
 				width = borderWidth;
-				y = Math.min(ends.y1, ends.y2);
-				height = Math.abs(ends.y2 - ends.y1);
+				y = Math.min(ends.y1, ends.y2) - borderWidth/2;
+				height = Math.abs(ends.y2 - ends.y1) + borderWidth;
 			}else{
-				if(ends.y1 == 0){
-					y = 0;
-				}else{
-					y = ends.y1 - 1/5;
-				}
-				x = Math.min(ends.x1, ends.x2);
+				y = ends.y1 - borderWidth / 2;
+				x = Math.min(ends.x1, ends.x2) - borderWidth/2;
 				height = borderWidth;
-				width = Math.abs(ends.x2 - ends.x1);
+				width = Math.abs(ends.x2 - ends.x1) + borderWidth;
 			}
-			return contourMaker.rectangle(x,y,width,height);
+			return contourMaker.rectangle(x + shift.x,y + shift.y,width,height);
 		};
 		var addForBorderPart = function(svg, p, m, boxSize){
 			var ends = getEndPoints(p);
@@ -63,13 +56,12 @@
 
 		var draw = function(actionSequence, createProgress, boxSize, drawPaths){
 			
-
+			setShift(shift.scale(boxSize));
 			actionSequence.add(function(m, done, update){
 				var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-				svg.setAttribute('width',boxSize * m.maxX);
-				svg.setAttribute('height',boxSize * m.maxY);
+				svg.setAttribute('width',boxSize * (m.maxX + borderWidth));
+				svg.setAttribute('height',boxSize * (m.maxY + borderWidth));
 				svg.setAttribute('style','position:fixed;');
-
 				timeOutMap(m.borderParts, function(p){
 					addForBorderPart(svg, p, m, boxSize);
 				}, update,function(){

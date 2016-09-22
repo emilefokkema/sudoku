@@ -117,6 +117,12 @@ div{color:#fff;}
 			y:y,
 			minus:function(p){
 				return position(x - p.x, y - p.y);
+			},
+			plus:function(p){
+				return position(x + p.x, y + p.y);
+			},
+			scale:function(r){
+				return position(r*x, r*y);
 			}
 		};
 	};
@@ -129,6 +135,7 @@ div{color:#fff;}
 
 
 	var space = (function(){
+		var shift = position(0,0);
 		var boxSize, maxY, maxX;
 		var setBoxSize = function(s){
 			boxSize = s;
@@ -136,7 +143,7 @@ div{color:#fff;}
 			maxX = Math.floor(w / boxSize);
 		};
 		var mazePositionToScreenPosition = function(p){
-			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2));
+			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2)).plus(shift);
 		};
 
 		var representsSmallDistance = function(dx, dy){
@@ -148,7 +155,8 @@ div{color:#fff;}
 			getMaxX:function(){return maxX;},
 			getMaxY:function(){return maxY;},
 			setBoxSize:setBoxSize,
-			getBoxSize:function(){return boxSize;}
+			getBoxSize:function(){return boxSize;},
+			setShift:function(s){shift = s;}
 		};
 
 	})();
@@ -160,7 +168,7 @@ div{color:#fff;}
 	
 	
 	var direction = mazeMaker.direction;
-	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker);
+	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker, position, space.setShift);
 	var easer = mazeGame.getEaser(makeModule, position, space.representsSmallDistance);
 	var thingWalker = mazeGame.getThingWalker(makeModule, easer, direction, space.positionFromMazePosition, body, chooseRandom);
 
