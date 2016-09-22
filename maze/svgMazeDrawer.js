@@ -2,6 +2,7 @@
 	window.mazeGame = window.mazeGame || {};
 
 	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker){
+		var borderWidth = 1/5;
 		var timeOutMap = function(arr, toDo, update, done){
 			var i = 0, l = arr.length;
 			timeOutWhile(function(){return i < l;},function(update){
@@ -23,38 +24,32 @@
 			}
 			return {x1:x1,y1:y1,x2:x2,y2:y2};
 		};
-		var getRectangle = function(ends, dir, boxSize){
+		var getRectangle = function(ends, dir){
 			var x,y,width,height;
 			if(dir == direction.LEFT || dir == direction.RIGHT){
 				if(ends.x1 == 0){
 					x = 0;
-					y = Math.min(ends.y1, ends.y2);
-					width = 1 / 5;
-					height = Math.abs(ends.y2 - ends.y1);
 				}else{
 					x = ends.x1 - 1/5;
-					y = Math.min(ends.y1, ends.y2);
-					width = 1/5;
-					height = Math.abs(ends.y2 - ends.y1);
 				}
+				width = borderWidth;
+				y = Math.min(ends.y1, ends.y2);
+				height = Math.abs(ends.y2 - ends.y1);
 			}else{
 				if(ends.y1 == 0){
-					x = Math.min(ends.x1, ends.x2);
 					y = 0;
-					width = Math.abs(ends.x2 - ends.x1);
-					height = 1/5;
 				}else{
-					x = Math.min(ends.x1, ends.x2);
 					y = ends.y1 - 1/5;
-					width = Math.abs(ends.x2 - ends.x1);
-					height = 1/5;
 				}
+				x = Math.min(ends.x1, ends.x2);
+				height = borderWidth;
+				width = Math.abs(ends.x2 - ends.x1);
 			}
-			return contourMaker.rectangle(x,y,width,height).scale(boxSize);
+			return contourMaker.rectangle(x,y,width,height);
 		};
 		var addForBorderPart = function(svg, p, m, boxSize){
 			var ends = getEndPoints(p);
-			var rect = getRectangle(ends, p.direction, boxSize);
+			var rect = getRectangle(ends, p.direction).scale(boxSize);
 			var box = rect.box();
 			var l = document.createElementNS('http://www.w3.org/2000/svg','rect');
 			l.setAttribute('x',box.minx);
@@ -62,7 +57,7 @@
 			l.setAttribute('width',box.maxx - box.minx);
 			l.setAttribute('height',box.maxy - box.miny);
 			l.setAttribute('stroke','#999');
-			l.setAttribute('fill','#0f0');
+			l.setAttribute('fill','#111');
 			svg.appendChild(l);
 		};
 
