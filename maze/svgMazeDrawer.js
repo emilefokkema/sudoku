@@ -10,7 +10,7 @@
 				toDo(arr[i], i);
 				update((i+1)/l);
 				i++;
-			}, 30, done, update);
+			}, 1, done, update);
 		};
 		var getEndPoints = function(p){
 			var x1, y1, x2, y2;
@@ -40,18 +40,19 @@
 			}
 			return contourMaker.rectangle(x + shift.x,y + shift.y,width,height);
 		};
-		var addForBorderPart = function(svg, p, m, boxSize){
+		var getRectangleForBorderPart = function(p){
 			var ends = getEndPoints(p);
-			var rect = getRectangle(ends, p.direction).scale(boxSize);
-			var box = rect.box();
-			var l = document.createElementNS('http://www.w3.org/2000/svg','rect');
-			l.setAttribute('x',box.minx);
-			l.setAttribute('y',box.miny);
-			l.setAttribute('width',box.maxx - box.minx);
-			l.setAttribute('height',box.maxy - box.miny);
-			l.setAttribute('stroke','#999');
-			l.setAttribute('fill','#111');
-			svg.appendChild(l);
+			var rect = getRectangle(ends, p.direction);
+			return rect;
+			// var box = rect.box();
+			// var l = document.createElementNS('http://www.w3.org/2000/svg','rect');
+			// l.setAttribute('x',box.minx);
+			// l.setAttribute('y',box.miny);
+			// l.setAttribute('width',box.maxx - box.minx);
+			// l.setAttribute('height',box.maxy - box.miny);
+			// l.setAttribute('stroke','#999');
+			// l.setAttribute('fill','#111');
+			// svg.appendChild(l);
 		};
 
 		var draw = function(actionSequence, createProgress, boxSize, drawPaths){
@@ -62,9 +63,24 @@
 				svg.setAttribute('width',boxSize * (m.maxX + borderWidth));
 				svg.setAttribute('height',boxSize * (m.maxY + borderWidth));
 				svg.setAttribute('style','position:fixed;');
-				timeOutMap(m.borderParts, function(p){
-					addForBorderPart(svg, p, m, boxSize);
+				var contour;
+				timeOutMap(m.borderParts, function(p,i){
+					if(i == 0){
+						contour = getRectangleForBorderPart(p);
+					}else{
+						contour = contour.combine(getRectangleForBorderPart(p));
+					}
+					//addForBorderPart(svg, p, m, boxSize);
 				}, update,function(){
+					contour = contour.scale(boxSize);
+					var paths = contour.makeSvgPaths(4);
+					paths.map(function(p){
+						var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+						path.setAttribute('stroke','#888');
+						path.setAttribute('fill','transparent');
+						path.setAttribute('d',p);
+						svg.appendChild(path);
+					});
 					done({
 						svg:svg,
 						model:m
