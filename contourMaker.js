@@ -105,7 +105,12 @@
 				minus:function(p){return point(x-p.x,y-p.y);},
 				plus:function(p){return point(x+p.x,y+p.y);},
 				cross:function(p){return x*p.y - y*p.x;},
-				scale:function(r){return point(r*x, r*y);},
+				scale:function(r){
+					return point(r*x, r*y);
+				},
+				scaleInv:function(r){
+					return point(x/r, y/r);
+				},
 				matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
 				mod:function(){return Math.sqrt(Math.pow(x,2)+Math.pow(y,2));},
 				dot:function(p){return x*p.x+y*p.y;},
@@ -122,7 +127,7 @@
 					return p.scale(this.dot(p)/p.mod());
 				},
 				unit:function(){
-					return this.scale(1/this.mod());
+					return this.scaleInv(this.mod());
 				},
 				angleLeftFromXAxis:function(){
 					if(x==0){
@@ -199,7 +204,7 @@
 					return [];
 				}
 			}else{
-				var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
+				var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scaleInv(cross);
 				if(st.x>1||st.y>1||st.x<0||st.y<0){
 					return [];
 				}else{
@@ -216,7 +221,7 @@
 			if(cross == 0){
 				return null;
 			}
-			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
+			var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scaleInv(cross);
 			return p1.plus(p2.minus(p1).scale(st.x));
 		};
 
@@ -1260,29 +1265,29 @@
 			this.assert(s.lastPointBefore(point(0,0)).equals(point(10,0)));
 			this.assert(s.lastPointBefore(point(5,0)).equals(point(10,0)));
 		});
-		test("intersectWithSelfTest1", function(){
+		test("intersectWithSelfSomethingChangesTest", function(){
 			var s = sideBuilder(point(0,0)).to(point(0,10)).to(point(10,10)).to(point(20,10)).to(point(20,20)).to(point(10,20)).to(point(10,0)).to(point(0,0)).close();
 			var res = combine.withItself(s);
 
 			this.expect(res.length).toBe(2);
 		});
-		test("intersectWithSelfTest2",function(){
+		test("intersectWithSelfNothingChangesTest",function(){
 			var s = rectangleSide(0,0,10,10);
 			var res = combine.withItself(s);
 
 			this.expect(res.length).toBe(1);
 		});
-		test("expandTest1",function(){
+		test("expandPositiveTest",function(){
 			var s = rectangleSide(0,0,10,10);
 			var sExp = s.expand(2);
 			this.expect(sExp.area()).toBe(14*14);
 		});
-		test("expandTest2",function(){
+		test("expandNegativeTest",function(){
 			var s = rectangleSide(0,0,10,10);
 			var sExp = s.expand(-2);
 			this.expect(sExp.area()).toBe(6*6);
 		});
-		test("expandTest3",function(){
+		test("expandCombinationTest",function(){
 			var c = rectangle(0,0,10,10).combineNegative(rectangle(1,1,8,8));
 			var cExp = c.expand(1);
 
@@ -1337,8 +1342,11 @@
 					.reduce(function(a,b){return a+b;})
 				).toBe(128);
 		});
-		test("holelessPaths3",function(){
-			var c = rectangle(0,0,20,10).combineNegative(rectangle(2,2,6,6)).combineNegative(rectangle(12,2,6,6)).rot(Math.PI/2);
+		test("holelessPathsWithRotationTest1",function(){
+			var c = rectangle(0,0,20,10)
+				.combineNegative(rectangle(2,2,6,6))
+				.combineNegative(rectangle(12,2,6,6))
+				.rot(Math.PI/2);
 			var holeless = c.getHolelessPaths();
 
 			this.expect(c.area()).toBe(128, "initial area");
@@ -1355,15 +1363,15 @@
 			var holeless = contour1.getHolelessPaths();
 			this.expect(holeless.length).toBe(2);
 		});
-		test("holelessPaths4",function(){
+		test("holelessPathsWithRotationTest2",function(){
 			var c = rectangle(0,0,20,20).combineNegative(rectangle(5,5,10,10)).rot(Math.PI/4);
 			var holeless = c.getHolelessPaths();
 
-			this.expect(c.area()).toBe(300);
+			this.expect(c.area()).toBe(300, "initial area");
 			this.expect(holeless
 					.map(function(h){return h.area();})
 					.reduce(function(a,b){return a+b;})
-					).toBe(300);
+					).toBe(300, "combined are of holeless");
 		});
 		return {
 			rectangle:rectangle,

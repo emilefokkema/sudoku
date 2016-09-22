@@ -31,11 +31,13 @@ div.parent {margin:10px;}
 			return [
 				{
 					color: "#000",
-					contour: parent.expand(-5).combineNegative(b.expand(5))
+					contour: parent.expand(-5).combineNegative(b.expand(5)),
+					width:1
 				},
 				{
 					color: "#000",
-					contour: b
+					contour: b,
+					width:1
 				}
 			];
 		},
@@ -45,7 +47,8 @@ div.parent {margin:10px;}
 					color: "#000",
 					contour: parent.expand(-7)
 						.combineNegative(children.a.expand(5))
-						.combine(children.b.expand(3))
+						.combine(children.b.expand(3)),
+					width:1
 				}
 			];
 		}
