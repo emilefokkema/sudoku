@@ -881,8 +881,10 @@
 
 		window.combine=combine;
 
+
 		var combineManyThings = (function(){
 			var thingWithCombinationHistory = function(thing, history){
+
 				return {
 					thing:thing,
 					history:history
@@ -935,6 +937,12 @@
 		var combineMany = (function(){
 			return function(sides){
 				return combineManyThings(sides, combine, function(s1,s2){return s1.intersects(s2);});
+			};
+		})();
+
+		var combineManyContours = (function(){
+			return function(contours){
+				return combineManyThings(contours, function(c1,c2){return [c1.combine(c2)];}, function(c1,c2){return c1.intersects(c2);});
 			};
 		})();
 
@@ -1133,7 +1141,7 @@
 			};
 			var c = function(sides, doLog){
 				console.log("making contour");
-				
+
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				console.log("found sides to use");
 				var groups = sides
@@ -1153,6 +1161,9 @@
 					},
 					combine:function(cntr){
 						return contour(combineMany(sides.concat(cntr.sides)));
+					},
+					intersects:function(cntr){
+						return sides.some(function(s){return cntr.sides.some(function(ss){return s.intersects(ss);});});
 					},
 					combineNegative:function(cntr){
 						return contour(combineMany(sides.concat(cntr.sides.map(function(s){return s.reverse();}))));
@@ -1260,8 +1271,8 @@
 				};
 			};
 			c.combineMany = function(contours){
-				var sides = contours.map(function(c){return c.sides;}).reduce(function(a,b){return a.concat(b);});
-				return contour(combineMany(sides), true);
+				var contours = combineManyContours(contours);
+				return contours[0];
 			};
 			return c;
 		})();
