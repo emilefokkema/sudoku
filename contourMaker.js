@@ -1042,7 +1042,6 @@
 				});
 			};
 			var isOuterSide = function(s, allSides){
-				console.log("isOuterSide");
 				return s.area() > 0 && !allSides.some(function(ss){
 					var rightAround = ss!=s && isFirstOutsideOf(ss, s, allSides) && ss.area() > 0;
 					
@@ -1140,14 +1139,10 @@
 				}
 			};
 			var c = function(sides, doLog){
-				console.log("making contour");
-
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
-				console.log("found sides to use");
 				var groups = sides
 					.filter(function(s){return isOuterSide(s,sides);})
 					.map(function(outer){return group(outer, findHolesForOuterSide(outer, sides));});
-				console.log("made groups");
 				return {
 					rot:function(){
 						var args = arguments;

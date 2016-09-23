@@ -44,15 +44,6 @@
 			var ends = getEndPoints(p);
 			var rect = getRectangle(ends, p.direction);
 			return rect;
-			// var box = rect.box();
-			// var l = document.createElementNS('http://www.w3.org/2000/svg','rect');
-			// l.setAttribute('x',box.minx);
-			// l.setAttribute('y',box.miny);
-			// l.setAttribute('width',box.maxx - box.minx);
-			// l.setAttribute('height',box.maxy - box.miny);
-			// l.setAttribute('stroke','#999');
-			// l.setAttribute('fill','#111');
-			// svg.appendChild(l);
 		};
 
 		var appendPathsFromContour = function(svg, c){
@@ -86,14 +77,10 @@
 						model:m
 					});
 				};
-				// timeOutMap(rectangles, function(r,i){
-				// 	if(i == 0){
-				// 		contour = r;
-				// 	}else{
-				// 		contour = contour.combine(r);
-				// 	}
-				// }, update,myDone);
 				contour = contourMaker.contour.combineMany(rectangles);
+				if(contour.sides.length != 2){
+					console.warn("The created contour has "+contour.sides.length+" sides.");
+				}
 				update(1);
 				myDone();
 			},createProgress("drawing svg"));
