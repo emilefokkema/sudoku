@@ -181,12 +181,13 @@
 		window.point = point;
 		var isTheOne = function(p){return p.x>7 && p.x<7.05;};
 		var segmentsAreFarApart = function(p1,p2,q1,q2){
-			var d = p1.plus(p2).scaleInv(2).minus(q1.plus(q2).scaleInv(2)).mod(),
-				r1 = p1.minus(p2).mod() / 2,
-				r2 = q1.minus(q2).mod() / 2;
-			return d > r1 + r2;
+			return Math.max(p1.x,p2.x) < Math.min(q1.x,q2.x) || Math.max(q1.x,q2.x) < Math.min(p1.x,p2.x)
+				|| Math.max(p1.y,p2.y) < Math.min(q1.y,q2.y) || Math.max(q1.y,q2.y) < Math.min(p1.y,p2.y);
 		};
 		var intersectSegments = function(p1,p2,q1,q2){
+			if(segmentsAreFarApart(p1,p2,q1,q2)){
+				return []
+			}
 			var x1 = p2.minus(p1);
 			var x2 = q2.minus(q1);
 			var cross = x2.cross(x1);
