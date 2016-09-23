@@ -84,7 +84,8 @@
 				var rectangles = m.borderParts.map(function(p){
 					return getRectangleForBorderPart(p);
 				});
-				var myDone = function(){
+				var myDone = function(contour){
+					checkCreatedContour(contour);
 					contour = contour.scale(boxSize);
 					appendPathsFromContour(svg, contour);
 					done({
@@ -92,10 +93,8 @@
 						model:m
 					});
 				};
-				contour = contourMaker.contour.combineMany(rectangles);
-				checkCreatedContour(contour);
-				update(1);
-				myDone();
+				contourMaker.contour.combineManyAsync(rectangles, update, myDone, timeOutWhile);
+				
 			},createProgress("drawing svg"));
 		};
 		return {draw:draw}

@@ -921,7 +921,7 @@
 				return null;
 			};
 
-			return function(things, combineTwoThings, areCombinable){
+			var f = function(things, combineTwoThings, areCombinable){
 				var newPair, allThings = things.map(function(t,i){return thingWithCombinationHistory(t, history([i]));});
 				while(newPair = findCombinableThingsWithDisjointHistories(allThings, areCombinable)){
 					allThings.splice(allThings.indexOf(newPair[0]), 1);
@@ -932,6 +932,21 @@
 				var res = allThings.map(function(t){return t.thing;});
 				return res;
 			};
+			f.async = function(things, combineTwoThings, areCombinable, update, done, timeOutWhile){
+				var newPair, allThings = things.map(function(t,i){return thingWithCombinationHistory(t, history([i]));});
+				timeOutWhile(
+					function(){return newPair = findCombinableThingsWithDisjointHistories(allThings, areCombinable);}, 
+					function(update){
+						allThings.splice(allThings.indexOf(newPair[0]), 1);
+ 						allThings.splice(allThings.indexOf(newPair[1]), 1);
+						combination(newPair[0],newPair[1],combineTwoThings).map(function(t){allThings.push(t);});
+						update(0.5);
+					}, 20, function(){
+						update(1);
+						done(allThings.map(function(t){return t.thing;}));
+					}, update);
+			};
+			return f;
 		})();
 		
 		var combineMany = (function(){
@@ -946,7 +961,17 @@
 			};
 		})();
 
-		
+		var combineManyContoursAsync = (function(){
+			return function(contours, update, done, timeOutWhile){
+				combineManyThings.async(
+					contours,
+					function(c1,c2){return [c1.combine(c2)];},
+					function(c1,c2){return c1.intersects(c2);},
+					update,
+					done,
+					timeOutWhile);
+			};
+		})();
 
 		var contour = (function(){
 			var holelessPathSet = function(sides, cutoffPoints){
@@ -1268,6 +1293,11 @@
 			c.combineMany = function(contours){
 				var contours = combineManyContours(contours);
 				return contours[0];
+			};
+			c.combineManyAsync = function(contours, update, done, timeOutWhile){
+				combineManyContoursAsync(contours, update, function(_contours){
+					done(_contours[0]);
+				}, timeOutWhile);
 			};
 			return c;
 		})();
