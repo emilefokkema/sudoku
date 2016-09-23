@@ -97,7 +97,7 @@
 			});
 			return res;
 		};
-
+		var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
 		var sign = {
 			NEGATIVE:-1,
 			POSITIVE:1
@@ -179,7 +179,11 @@
 				}
 			};
 		};
-
+		point.fromString = function(s){
+			var rgx = new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\)");
+			var match = s.match(rgx);
+			return point(parseFloat(match[1]),parseFloat(match[2]));
+		};
 		window.point = point;
 		var isTheOne = function(p){return p.x>7 && p.x<7.05;};
 		var intersectSegments = function(p1,p2,q1,q2){
@@ -530,9 +534,9 @@
 					return res;
 				},
 				toString:function(){
-					var s="";
+					var s=this.from.toString();
 					follow(function(ss){
-						s += ss.from.toString()+"-->"+ss.to.toString();
+						s += "-->"+ss.to.toString();
 					});
 					return s;
 				},
@@ -595,6 +599,19 @@
 			};
 			return ret;
 		};
+		side.fromString = function(s){
+			var match = s.match(/\([^)]+\)/g);
+			var builder;
+			for(var i=0;i<match.length;i++){
+				if(i==0){
+					builder = sideBuilder(point.fromString(match[i]));
+				}else{
+					builder = builder.to(point.fromString(match[i]));
+				}
+			}
+			return builder.close();
+		};
+		
 		var sideBuilder = function(from, side_){
 			var to;
 			if(!side_){
@@ -613,6 +630,7 @@
 				}
 			};
 		};
+		
 		var pathSet = function(){
 			var paths = [];
 			var contains = function(s){
