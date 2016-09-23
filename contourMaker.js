@@ -880,12 +880,12 @@
 		})();
 
 		window.combine=combine;
-		
-		var combineMany = (function(){
-			var path = function(side, h){
+
+		var combineManyThings = (function(){
+			var thingWithCombinationHistory = function(thing, history){
 				return {
-					side:side,
-					history:h
+					thing:thing,
+					history:history
 				};
 			};
 			var history = function(indices){
@@ -901,31 +901,40 @@
 					combine:combine
 				};
 			};
-			var combination = function(path1, path2){
-				var newSides = combine(path1.side, path2.side);
-				var newHistory = path1.history.combine(path2.history);
-				return newSides.map(function(s){return path(s, newHistory);});
+			var combination = function(thingWithHistory1, thingWithHistory2, combineTwoThings){
+				var newThings = combineTwoThings(thingWithHistory1.thing, thingWithHistory2.thing);
+				var newHistory = thingWithHistory1.history.combine(thingWithHistory2.history);
+				return newThings.map(function(t){
+					return thingWithCombinationHistory(t, newHistory);
+				});
 			};
-			var findIntersectingPairWithDisjointHistories = function(allPaths){
-				for(var i=0;i<allPaths.length-1;i++){
-					for(var j=i+1;j<allPaths.length;j++){
-						if(allPaths[i].history.isDisjointWith(allPaths[j].history) && allPaths[i].side.intersects(allPaths[j].side)){
-							return [allPaths[i], allPaths[j]]
+			var findCombinableThingsWithDisjointHistories = function(allThings, areCombinable){
+				for(var i=0;i<allThings.length-1;i++){
+					for(var j=i+1;j<allThings.length;j++){
+						if(allThings[i].history.isDisjointWith(allThings[j].history) && areCombinable(allThings[i].thing, allThings[j].thing)){
+							return [allThings[i], allThings[j]]
 						}
 					}
 				}
 				return null;
 			};
-			return function(sides){
-				var comb, newPair,allPaths = sides.map(function(s,i){return path(s, history([i]));});
-				while(newPair = findIntersectingPairWithDisjointHistories(allPaths)){
-					allPaths.splice(allPaths.indexOf(newPair[0]), 1);
-					allPaths.splice(allPaths.indexOf(newPair[1]), 1);
-					combination(newPair[0],newPair[1]).map(function(p){allPaths.push(p);});
-					//allPaths = allPaths.filter(function(p){return p!=newPair[0] && p!=newPair[1];}).concat(combination(newPair[0],newPair[1]));
+
+			return function(things, combineTwoThings, areCombinable){
+				var newPair, allThings = things.map(function(t,i){return thingWithCombinationHistory(t, history([i]));});
+				while(newPair = findCombinableThingsWithDisjointHistories(allThings, areCombinable)){
+					allThings.splice(allThings.indexOf(newPair[0]), 1);
+ 					allThings.splice(allThings.indexOf(newPair[1]), 1);
+					combination(newPair[0],newPair[1],combineTwoThings).map(function(t){allThings.push(t);});
+
 				}
-				var res = pathSet().addMany(allPaths.map(function(p){return p.side;})).paths;
+				var res = allThings.map(function(t){return t.thing;});
 				return res;
+			};
+		})();
+		
+		var combineMany = (function(){
+			return function(sides){
+				return combineManyThings(sides, combine, function(s1,s2){return s1.intersects(s2);});
 			};
 		})();
 
