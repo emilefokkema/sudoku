@@ -983,7 +983,14 @@
 			return function(contours, update, done, timeOutWhile){
 				combineManyThings.async(
 					contours,
-					function(c1,c2){return [c1.combine(c2)];},
+					function(c1,c2){
+						var newOne = c1.combine(c2);
+						if(newOne.sides.length == 0){
+							console.warn("combination of contour1 with sides ["+c1.sides.map(function(s){return s.toString();}).join("|")+"]"+
+								" and contour2 with sides ["+c2.sides.map(function(s){return s.toString();}).join("|")+"] resulted in a contour with no sides");
+						}
+						return [newOne];
+					},
 					function(c1,c2){return c1.intersects(c2);},
 					update,
 					done,
