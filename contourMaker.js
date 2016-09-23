@@ -915,9 +915,12 @@
 				return null;
 			};
 			return function(sides){
-				var newPair,allPaths = sides.map(function(s,i){return path(s, history([i]));});
+				var comb, newPair,allPaths = sides.map(function(s,i){return path(s, history([i]));});
 				while(newPair = findIntersectingPairWithDisjointHistories(allPaths)){
-					allPaths = allPaths.filter(function(p){return p!=newPair[0] && p!=newPair[1];}).concat(combination(newPair[0],newPair[1]));
+					allPaths.splice(allPaths.indexOf(newPair[0]), 1);
+					allPaths.splice(allPaths.indexOf(newPair[1]), 1);
+					combination(newPair[0],newPair[1]).map(function(p){allPaths.push(p);});
+					//allPaths = allPaths.filter(function(p){return p!=newPair[0] && p!=newPair[1];}).concat(combination(newPair[0],newPair[1]));
 				}
 				var res = pathSet().addMany(allPaths.map(function(p){return p.side;})).paths;
 				return res;
@@ -1116,11 +1119,20 @@
 					return soFar+" Z";
 				}
 			};
-			var c = function(sides){
+			var c = function(sides, doLog){
+				if(doLog){
+					console.log("making contour");
+				}
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
+				if(doLog){
+					console.log("found sides to use");
+				}
 				var groups = sides
 					.filter(function(s){return isOuterSide(s,sides);})
 					.map(function(outer){return group(outer, findHolesForOuterSide(outer, sides));});
+				if(doLog){
+					console.log("made groups");
+				}
 				return {
 					rot:function(){
 						var args = arguments;
@@ -1242,7 +1254,7 @@
 			};
 			c.combineMany = function(contours){
 				var sides = contours.map(function(c){return c.sides;}).reduce(function(a,b){return a.concat(b);});
-				return contour(combineMany(sides));
+				return contour(combineMany(sides), true);
 			};
 			return c;
 		})();
