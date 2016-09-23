@@ -1,8 +1,10 @@
 ;(function(){
 	window.contourMaker = (function(){
+		var doTests = true;
 		var rectangle;
 		var test = (function(){
 			return function(name,t){
+				if(!doTests){return;}
 				try{
 					t.apply({
 						assert:function(bool, message){
@@ -998,7 +1000,7 @@
 					}
 				};
 				var area = function(){
-					return outerSide.area() + holes.map(function(h){return h.area();}).reduce(function(a,b){return a+b;});
+					return outerSide.area() + holes.map(function(h){return h.area();}).reduce(function(a,b){return a+b;},0);
 				};
 				return {
 					outerSide:outerSide,
@@ -1354,6 +1356,18 @@
 					.map(function(h){return h.area();})
 					.reduce(function(a,b){return a+b;})
 				).toBe(64);
+		});
+		test("twiceSideOverlapTest",function(){
+			var r1 = rectangle(0,0,10,5);
+			var r2 = rectangle(0,0,5,10);
+			var c = r1.combine(r2);
+			this.expect(c.area()).toBe(75);
+		});
+		test("onceSideOverlapTest",function(){
+			var r1 = rectangle(0,0,10,5);
+			var r2 = rectangle(0,0,5,10);
+			var c = r1.combine(r2);
+			this.expect(c.area()).toBe(75);
 		});
 		test("holelessPaths2",function(){
 			var c = rectangle(0,0,20,10).combineNegative(rectangle(2,2,6,6)).combineNegative(rectangle(12,2,6,6));
