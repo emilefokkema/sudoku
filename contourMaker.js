@@ -968,6 +968,10 @@
 								.filter(function(i){return intersection(i.point, i.side, i.vertical).toBeSwitched;});
 						});
 
+						if(intersectionSet.some(function(s){return s.length % 2 != 0;})){
+							throw new Error("intersection between contour group and vertical did not result in an even number of intersections");
+						}
+
 						intersectionSet.mapMany(function(intersections){return intersections;})
 							.groupBy(function(i){return i.side;})
 							.map(function(g){
