@@ -1005,28 +1005,12 @@
 		})();
 
 		var combineManyContoursAsync = (function(){
-			return function(contours, update, done, timeOutWhile){
+			return function(contours, update, done, timeOutWhile,onCreatedNewContour){
 				combineManyThings.async(
 					contours,
 					function(c1,c2){
 						var newOne = c1.combine(c2);
-						newOne.sides.map(function(s){
-							s.follow(function(ss){
-								if(ss.from.isImproperlyPlaced()){
-									console.warn("point "+ss.from.toString()+" is improperly placed.");
-									throw new Error("improperly placed point");
-								}
-							});
-						});
-						if(newOne.sides.length == 0){
-							console.error("combination of contour1 with sides "+c1.toString()+
-								" and contour2 with sides "+c2.toString()+" resulted in a contour with no sides");
-							throw new Error("no sides");
-						}
-						if(newOne.sides.length > 2){
-							console.warn("more than two sides resulted from "+c1.toString()+" and "+c2.toString());
-							throw new Error("more than two sides");
-						}
+						onCreatedNewContour && onCreatedNewContour(c1,c2,newOne);
 						return [newOne];
 					},
 					function(c1,c2){return c1.intersects(c2);},
@@ -1364,10 +1348,10 @@
 				var contours = combineManyContours(contours);
 				return contours[0];
 			};
-			c.combineManyAsync = function(contours, update, done, timeOutWhile){
+			c.combineManyAsync = function(contours, update, done, timeOutWhile,onCreatedNewContour){
 				combineManyContoursAsync(contours, update, function(_contours){
 					done(_contours[0]);
-				}, timeOutWhile);
+				}, timeOutWhile,onCreatedNewContour);
 			};
 			return c;
 		})();

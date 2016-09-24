@@ -47,32 +47,33 @@
 		};
 
 		var appendPathsFromContour = function(svg, c){
-			var paths = c.makeSvgPaths(4);
+			var paths = c.makeSvgPaths(3);
 			paths.map(function(p){
 				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
-				path.setAttribute('stroke','#888');
+				path.setAttribute('stroke','#fff');
 				path.setAttribute('fill','transparent');
 				path.setAttribute('d',p);
 				svg.appendChild(path);
 			});
 		};
 
-		var checkCreatedContour = function(contour){
-			var twoSides = contour.sides.length == 2;
-			var aHole = contour.sides.some(function(s){return s.area() < 0;});
-			var selfIntersecting = contour.sides.filter(function(s){return s.isSelfIntersecting();});
-			var msg = "";
-			if(selfIntersecting.length > 0){
-				msg += "Some self-intersecting sides were created.";
+		var onCreatedNewContour = function(c1,c2,newOne){
+			newOne.sides.map(function(s){
+				s.follow(function(ss){
+					if(ss.from.isImproperlyPlaced()){
+						console.warn("point "+ss.from.toString()+" is improperly placed.");
+						throw new Error("improperly placed point");
+					}
+				});
+			});
+			if(newOne.sides.length == 0){
+				console.error("combination of contour1 with sides "+c1.toString()+
+					" and contour2 with sides "+c2.toString()+" resulted in a contour with no sides");
+				throw new Error("no sides");
 			}
-			if(!twoSides){
-				msg += "The created contour has "+contour.sides.length+" sides.";
-			}
-			if(!aHole){
-				msg += "It has no hole.";
-			}
-			if(msg.length > 0){
-				console.warn(msg);
+			if(newOne.sides.length > 2){
+				console.warn("more than two sides resulted from "+c1.toString()+" and "+c2.toString());
+				throw new Error("more than two sides");
 			}
 		};
 
@@ -89,7 +90,6 @@
 					return getRectangleForBorderPart(p);
 				});
 				var myDone = function(contour){
-					checkCreatedContour(contour);
 					contour = contour.scale(boxSize);
 					appendPathsFromContour(svg, contour);
 					done({
@@ -97,7 +97,7 @@
 						model:m
 					});
 				};
-				contourMaker.contour.combineManyAsync(rectangles, update, myDone, timeOutWhile);
+				contourMaker.contour.combineManyAsync(rectangles, update, myDone, timeOutWhile, onCreatedNewContour);
 				
 			},createProgress("drawing svg"));
 		};
