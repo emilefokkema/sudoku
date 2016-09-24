@@ -1409,6 +1409,13 @@
 					.reduce(function(a,b){return a+b;})
 				).toBe(128, "area of sum of holeless paths");
 		});
+		test("something2",function(){
+			var side1 = side.fromString("(0,0)-->(0,0.25)-->(12.25,0.25)-->(12.25,0)-->(0,0)");
+			var side2 = side.fromString("(12,0)-->(12,12.25)-->(12.25,12.25)-->(12.25,0)-->(12,0)");
+			var c = combine(side1,side2);
+			this.expect(c.length).toBe(2);
+			this.expect(c[0].isSelfIntersecting()).toBe(false);
+		});
 		test("holelessPaths5",function(){
 			var contour2 = rectangle(10,10,10,10).combine(rectangle(7,7,6,6));
 			var contour1 = contour2.combineNegative(rectangle(8,8,4,4));
