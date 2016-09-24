@@ -1373,12 +1373,18 @@
 				).toBe(64);
 		});
 		test("positiveCombineToMakeHole",function(){
-			var c = rectangle(0,0,10,2)
-					.combine(rectangle(0,0,2,10))
-					.combine(rectangle(0,8,10,2))
-					.combine(rectangle(8,0,2,10));
-			this.expect(c.sides.length).toBe(2,"expected 1 hole, but didn't even see two sides");
-			this.expect(c.area()).toBe(64);
+			var rect1 = rectangle(0,0,10,2);
+			var rect2 = rectangle(0,0,2,10);
+			var rect3 = rectangle(0,8,10,2);
+			var rect4 = rectangle(8,0,2,10);
+			var c = rect1;
+			this.expect(c.area()).toBe(20,"the area isn't even right in step 1");
+			c = c.combine(rect2);
+			this.expect(c.area()).toBe(36,"area is wrong in step 2");
+			c = c.combine(rect3);
+			this.expect(c.area()).toBe(52,"area is wrong in step 3");
+			c = c.combine(rect4);
+			this.expect(c.area()).toBe(64,"area is wrong in step 4");
 		});
 		test("twiceSideOverlapTest",function(){
 			var r1 = rectangle(0,0,10,5);
