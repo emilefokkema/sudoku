@@ -280,6 +280,7 @@
 			var hasZeroLength = function(s){return s.to.equals(s.from);};
 			var isNotStraightContinuation = function(s){return s.to.minus(s.from).cross(s.prev().to.minus(s.prev().from)) != 0;};
 			ret= {
+				string:p1.toString()+"-->"+p2.toString(),
 				from:p1,
 				to:p2,
 				next:function(s, notBack){
@@ -357,8 +358,9 @@
 					return newNext;
 				},
 				clean:function(){
-					var toKeep = this.find(function(s){return !hasZeroLength(s);});
-					filter(hasZeroLength).map(function(s){s.eliminate();});
+					var thisClone = this.clone();
+					var toKeep = thisClone.find(function(s){return !hasZeroLength(s);});
+					thisClone.filter(hasZeroLength).map(function(s){s.eliminate();});
 					toKeep = toKeep.filter(isNotStraightContinuation).map(function(s){return s.extend();})[0];
 					return toKeep;
 				},
