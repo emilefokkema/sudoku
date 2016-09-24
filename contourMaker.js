@@ -360,9 +360,15 @@
 				clean:function(){
 					var thisClone = this.clone();
 					var toKeep = thisClone.find(function(s){return !hasZeroLength(s);});
-					thisClone.filter(hasZeroLength).map(function(s){s.eliminate();});
-					toKeep = toKeep.filter(isNotStraightContinuation).map(function(s){return s.extend();})[0];
-					return toKeep;
+					var haveZeroLength = thisClone.filter(hasZeroLength);
+					haveZeroLength.map(function(s){s.eliminate();});
+					var areNotStraightContinuation = toKeep.filter(isNotStraightContinuation);
+					var current = toKeep;
+					for(var i=0;i<areNotStraightContinuation.length;i++){
+						current = current.find(function(s){return s == areNotStraightContinuation[i];});
+						current = current.extend();
+					}
+					return current;
 				},
 				addPoints:function(arr){
 					arr.sort(function(a,b){return a.minus(ret.from).mod() - b.minus(ret.from).mod();});
