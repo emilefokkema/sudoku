@@ -287,6 +287,7 @@
 			var hasZeroLength = function(s){return s.to.equals(s.from);};
 			var isNotStraightContinuation = function(s){return s.to.minus(s.from).cross(s.prev().to.minus(s.prev().from)) != 0;};
 			ret= {
+				string:p1.toString()+"-->"+p2.toString(),
 				from:p1,
 				to:p2,
 				next:function(s, notBack){
@@ -364,10 +365,16 @@
 					return newNext;
 				},
 				clean:function(){
-					var toKeep = this.find(function(s){return !hasZeroLength(s);});
-					filter(hasZeroLength).map(function(s){s.eliminate();});
-					toKeep = toKeep.filter(isNotStraightContinuation).map(function(s){return s.extend();})[0];
-					return toKeep;
+					var thisClone = this.clone();
+					var toKeep = thisClone.find(function(s){return !hasZeroLength(s);});
+					var haveZeroLength = thisClone.filter(hasZeroLength);
+					haveZeroLength.map(function(s){s.eliminate();});
+					var areNotStraightContinuation = toKeep.filter(isNotStraightContinuation);
+					var current = toKeep;
+					for(var i=0;i<areNotStraightContinuation.length;i++){
+						current = areNotStraightContinuation[i].extend();
+					}
+					return current;
 				},
 				addPoints:function(arr){
 					arr.sort(function(a,b){return a.minus(ret.from).mod() - b.minus(ret.from).mod();});
@@ -375,6 +382,15 @@
 					arr.map(function(p){
 						currentPart = currentPart.addPoint(p).prev();
 					});
+					return currentPart;
+				},
+				addPointsOnDifferentSides:function(arr){ //[{point:..., side: ...}, ...]
+					var current = ret;
+					var grouped = arr.groupBy(function(p){return p.side;});
+					for(var i=0;i<grouped.length;i++){
+						current = grouped[i].key.addPoints(grouped[i].members.map(function(m){return m.point;}));
+					}
+					return current;
 				},
 				intersectWithVertical:function(x){
 					var box = this.box();
@@ -832,12 +848,17 @@
 			};
 
 			var addPointsForIntersections = (function(){
-				var addPoints = function(g){
-					g.key.addPoints(g.members.map(function(m){return m.point;}));
-				};
 				return function(intersections){
-					intersections.groupBy(function(i){return i.one;}).map(addPoints);
-					intersections.groupBy(function(i){return i.two;}).map(addPoints);
+					var newOne = intersections[0].one.addPointsOnDifferentSides(intersections.map(function(i){
+						return {point:i.point,side:i.one};
+					}));
+					var newTwo = intersections[0].two.addPointsOnDifferentSides(intersections.map(function(i){
+						return {point:i.point,side:i.two};
+					}));
+					return {
+						newOne:newOne,
+						newTwo:newTwo
+					};
 				};
 			})();
 
@@ -854,8 +875,9 @@
 				if(intersections.length==0){
 					return [s1Original,s2Original];
 				}
-				addPointsForIntersections(intersections);
-				
+				var newOnes = addPointsForIntersections(intersections);
+				s1 = newOnes.newOne;
+				s2 = newOnes.newTwo;
 				var pairsToSwitch = intersections.map(function(i){
 					var fromOne = sideFrom(i.point, s1);
 					var fromTwo = sideFrom(i.point, s2);
