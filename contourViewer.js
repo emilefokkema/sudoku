@@ -1,8 +1,16 @@
 (function(body){
 	window.getContourViewer = function(makeNode, side){
 		var space = (function(){
+			var sideToSvg = function(s){
+				var svg = document.createElementNS('http://www.w3.org/2000/svg','path');
+				return svg;
+			};
 			var render = function(sides, svg, w, h){
-				console.log("hoi");
+				var box = sides.map(function(s){return s.box();}).reduce(function(b1,b2){return b1.plus(b2);});
+				var scale = Math.min(h / box.maxy, w / box.maxx);
+				sides.map(function(s){
+					svg.appendChild(sideToSvg(s.scale(scale)));
+				});
 			};
 			
 			return {render:render};
@@ -24,6 +32,8 @@
 					body.appendChild(container);
 					var makeSvg = function(){
 						var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+						svg.setAttribute('width',w);
+						svg.setAttribute('height',h);
 						return svg;
 					};
 					var render = function(){
