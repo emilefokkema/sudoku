@@ -1436,6 +1436,14 @@
 					.reduce(function(a,b){return a+b;})
 				).toBe(64);
 		});
+		test("positiveCombineToMakeHole",function(){
+			var c = rectangle(0,0,10,2)
+					.combine(rectangle(0,0,2,10))
+					.combine(rectangle(0,8,10,2))
+					.combine(rectangle(8,0,2,10));
+			this.expect(c.sides.length).toBe(2,"expected 1 hole, but didn't even see two sides");
+			this.expect(c.area()).toBe(64);
+		});
 		test("twiceSideOverlapTest",function(){
 			var r1 = rectangle(0,0,10,5);
 			var r2 = rectangle(0,0,5,10);
@@ -1472,6 +1480,13 @@
 					.map(function(h){return h.area();})
 					.reduce(function(a,b){return a+b;})
 				).toBe(128, "area of sum of holeless paths");
+		});
+		test("something2",function(){
+			var side1 = side.fromString("(0,0)-->(0,0.25)-->(12.25,0.25)-->(12.25,0)-->(0,0)");
+			var side2 = side.fromString("(12,0)-->(12,12.25)-->(12.25,12.25)-->(12.25,0)-->(12,0)");
+			var c = combine(side1,side2);
+			this.expect(c.length).toBe(2);
+			this.expect(c[0].isSelfIntersecting()).toBe(false);
 		});
 		test("holelessPaths5",function(){
 			var contour2 = rectangle(10,10,10,10).combine(rectangle(7,7,6,6));
