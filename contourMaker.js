@@ -1306,6 +1306,11 @@
 			a = a.clean();
 			this.expect(a.area()).toBe(100,"area changed after adding points and cleaning");
 		});
+		test("clean2",function(){
+			var s = side.fromString("(8,0)-->(0,0)-->(0,10)-->(8,10)-->(10,10)-->(10,0)-->(8,0)");
+			s = s.clean();
+			this.expect(s.length()).toBe(4);
+		});
 		test("reverseTest1",function(){
 			var a =side(point(0,0), point(1,0)).reverse();
 		});
