@@ -368,6 +368,12 @@
 					arr.map(function(p){
 						currentPart = currentPart.addPoint(p).prev();
 					});
+					return currentPart;
+				},
+				addPointsOnDifferentSides:function(arr){ //[{point:..., side: ...}, ...]
+					arr.groupBy(function(p){return p.side;}).map(function(g){
+						g.key.addPoints(g.members.map(function(m){return m.point;}));
+					});
 				},
 				intersectWithVertical:function(x){
 					var box = this.box();
@@ -825,12 +831,13 @@
 			};
 
 			var addPointsForIntersections = (function(){
-				var addPoints = function(g){
-					g.key.addPoints(g.members.map(function(m){return m.point;}));
-				};
 				return function(intersections){
-					intersections.groupBy(function(i){return i.one;}).map(addPoints);
-					intersections.groupBy(function(i){return i.two;}).map(addPoints);
+					intersections[0].one.addPointsOnDifferentSides(intersections.map(function(i){
+						return {point:i.point,side:i.one};
+					}));
+					intersections[0].two.addPointsOnDifferentSides(intersections.map(function(i){
+						return {point:i.point,side:i.two};
+					}));
 				};
 			})();
 
