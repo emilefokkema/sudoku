@@ -371,9 +371,13 @@
 					return currentPart;
 				},
 				addPointsOnDifferentSides:function(arr){ //[{point:..., side: ...}, ...]
-					arr.groupBy(function(p){return p.side;}).map(function(g){
-						g.key.addPoints(g.members.map(function(m){return m.point;}));
-					});
+					var current = ret;
+					var grouped = arr.groupBy(function(p){return p.side;});
+					for(var i=0;i<grouped.length;i++){
+						current = current.find(function(s){return s == grouped[i].key;});
+						current = current.addPoints(grouped[i].members.map(function(m){return m.point;}));
+					}
+					return current;
 				},
 				intersectWithVertical:function(x){
 					var box = this.box();
@@ -832,12 +836,16 @@
 
 			var addPointsForIntersections = (function(){
 				return function(intersections){
-					intersections[0].one.addPointsOnDifferentSides(intersections.map(function(i){
+					var newOne = intersections[0].one.addPointsOnDifferentSides(intersections.map(function(i){
 						return {point:i.point,side:i.one};
 					}));
-					intersections[0].two.addPointsOnDifferentSides(intersections.map(function(i){
+					var newTwo = intersections[0].two.addPointsOnDifferentSides(intersections.map(function(i){
 						return {point:i.point,side:i.two};
 					}));
+					return {
+						newOne:newOne,
+						newTwo:newTwo
+					};
 				};
 			})();
 
@@ -854,8 +862,9 @@
 				if(intersections.length==0){
 					return [s1Original,s2Original];
 				}
-				addPointsForIntersections(intersections);
-				
+				var newOnes = addPointsForIntersections(intersections);
+				s1 = newOnes.newOne;
+				s2 = newOnes.newTwo;
 				var pairsToSwitch = intersections.map(function(i){
 					var fromOne = sideFrom(i.point, s1);
 					var fromTwo = sideFrom(i.point, s2);
