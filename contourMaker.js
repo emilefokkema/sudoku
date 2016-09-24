@@ -1379,6 +1379,14 @@
 					.reduce(function(a,b){return a+b;})
 				).toBe(64);
 		});
+		test("positiveCombineToMakeHole",function(){
+			var c = rectangle(0,0,10,2)
+					.combine(rectangle(0,0,2,10))
+					.combine(rectangle(0,8,10,2))
+					.combine(rectangle(8,0,2,10));
+			this.expect(c.sides.length).toBe(2,"expected 1 hole, but didn't even see two sides");
+			this.expect(c.area()).toBe(64);
+		});
 		test("twiceSideOverlapTest",function(){
 			var r1 = rectangle(0,0,10,5);
 			var r2 = rectangle(0,0,5,10);
