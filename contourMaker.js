@@ -365,8 +365,7 @@
 					var areNotStraightContinuation = toKeep.filter(isNotStraightContinuation);
 					var current = toKeep;
 					for(var i=0;i<areNotStraightContinuation.length;i++){
-						current = current.find(function(s){return s == areNotStraightContinuation[i];});
-						current = current.extend();
+						current = areNotStraightContinuation[i].extend();
 					}
 					return current;
 				},
@@ -382,8 +381,7 @@
 					var current = ret;
 					var grouped = arr.groupBy(function(p){return p.side;});
 					for(var i=0;i<grouped.length;i++){
-						current = current.find(function(s){return s == grouped[i].key;});
-						current = current.addPoints(grouped[i].members.map(function(m){return m.point;}));
+						current = grouped[i].key.addPoints(grouped[i].members.map(function(m){return m.point;}));
 					}
 					return current;
 				},
