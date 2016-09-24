@@ -1350,6 +1350,14 @@
 			var contour2 = contour([side.fromString("(0.25,0)-->(0,0)-->(0,12.25)-->(0.25,12.25)-->(0.25,0)")]);
 			this.expect(contour1.combine(contour2).sides.length).toBe(1);
 		});
+		test("something3",function(){
+			var s1 = side.fromString("(10,10)-->(10,8)-->(2,8)-->(2,2)-->(10,2)-->(10,0)-->(0,0)-->(0,10)-->(10,10)");
+			var s2 = side.fromString("(8,0)-->(8,10)-->(10,10)-->(10,0)-->(8,0)");
+			var c = combine(s1, s2);
+			this.expect(c.length).toBe(4);
+			c = c.map(function(s){return s.clean();});
+			this.expect(c.some(function(s){return s.length() != 4;})).toBe(false, "expected all cleaned resulting sides to have length 4")
+		});
 		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
 			var b = rectangleSide(0,0,10,5).reverse();
