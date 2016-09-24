@@ -60,12 +60,16 @@
 		var checkCreatedContour = function(contour){
 			var twoSides = contour.sides.length == 2;
 			var aHole = contour.sides.some(function(s){return s.area() < 0;});
+			var selfIntersecting = contour.sides.filter(function(s){return s.isSelfIntersecting();});
 			var msg = "";
+			if(selfIntersecting.length > 0){
+				msg += "Some self-intersecting sides were created.";
+			}
 			if(!twoSides){
 				msg += "The created contour has "+contour.sides.length+" sides.";
 			}
 			if(!aHole){
-				msg += "Is has no hole.";
+				msg += "It has no hole.";
 			}
 			if(msg.length > 0){
 				console.warn(msg);

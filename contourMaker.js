@@ -113,6 +113,9 @@
 				scaleInv:function(r){
 					return point(x/r, y/r);
 				},
+				isImproperlyPlaced:function(){
+					return Math.floor(x * 1000) / 1000 != x || Math.floor(y * 1000) / 1000 != y;
+				},
 				matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
 				mod:function(){return Math.sqrt(Math.pow(x,2)+Math.pow(y,2));},
 				dot:function(p){return x*p.x+y*p.y;},
@@ -1007,9 +1010,22 @@
 					contours,
 					function(c1,c2){
 						var newOne = c1.combine(c2);
+						newOne.sides.map(function(s){
+							s.follow(function(ss){
+								if(ss.from.isImproperlyPlaced()){
+									console.warn("point "+ss.from.toString()+" is improperly placed.");
+									throw new Error("improperly placed point");
+								}
+							});
+						});
 						if(newOne.sides.length == 0){
-							console.warn("combination of contour1 with sides ["+c1.sides.map(function(s){return s.toString();}).join("|")+"]"+
-								" and contour2 with sides ["+c2.sides.map(function(s){return s.toString();}).join("|")+"] resulted in a contour with no sides");
+							console.error("combination of contour1 with sides "+c1.toString()+
+								" and contour2 with sides "+c2.toString()+" resulted in a contour with no sides");
+							throw new Error("no sides");
+						}
+						if(newOne.sides.length > 2){
+							console.warn("more than two sides resulted from "+c1.toString()+" and "+c2.toString());
+							throw new Error("more than two sides");
 						}
 						return [newOne];
 					},
@@ -1338,7 +1354,10 @@
 						}
 						
 					},
-					sides:sides
+					sides:sides,
+					toString:function(){
+						return "["+sides.map(function(s){return s.toString();}).join("|")+"]";
+					}
 				};
 			};
 			c.combineMany = function(contours){
