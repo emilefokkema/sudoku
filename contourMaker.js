@@ -633,7 +633,7 @@
 			return {
 				to:to,
 				close:function(){
-					return side_.close();
+					return side_.close().next();
 				}
 			};
 		};
@@ -1346,7 +1346,9 @@
 			this.expect(p[0].y).toBe(10);
 		});
 		test("clean",function(){
-			var a = rectangleSide(0,0,10,10).addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
+			var a = rectangleSide(0,0,10,10);
+			a.addPoint(point(5,0)).addPoint(point(0,5)).addPoint(point(0,10));
+			this.expect(a.area()).toBe(100);
 			a = a.clean();
 			this.expect(a.area()).toBe(100,"area changed after adding points and cleaning");
 		});
@@ -1388,6 +1390,13 @@
 			var cExp = c.expand(1);
 
 			this.expect(cExp.area()).toBe(12*12 - 6*6);
+		});
+		test("something",function(){
+			//try to reproduce this:
+			//combination of contour1 with sides [(17.25,12)-->(0,12)-->(0,12.25)-->(17.25,12.25)-->(17.25,12)] and contour2 with sides [(0.25,0)-->(0,0)-->(0,12.25)-->(0.25,12.25)-->(0.25,0)] resulted in a contour with no sides
+			var contour1 = contour([side.fromString("(17.25,12)-->(0,12)-->(0,12.25)-->(17.25,12.25)-->(17.25,12)")]);
+			var contour2 = contour([side.fromString("(0.25,0)-->(0,0)-->(0,12.25)-->(0.25,12.25)-->(0.25,0)")]);
+			this.expect(contour1.combine(contour2).sides.length).toBe(1);
 		});
 		test("negative combine 1",function(){
 			var a = rectangleSide(0,0,10,10);
