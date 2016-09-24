@@ -1502,7 +1502,8 @@
 		return {
 			rectangle:rectangle,
 			point:point,
-			contour:contour
+			contour:contour,
+			side:side
 		};
 	})();
 })()
