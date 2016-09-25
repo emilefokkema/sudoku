@@ -1,5 +1,6 @@
 <html>
 <body></body>
+<script src="structureHelpers.js"></script>
 <script src="makeModule.js"></script>
 <script src="makeNode.js"></script>
 <script src="contourMakerTest.js"></script>
@@ -7,7 +8,7 @@
 <script src="contourViewer.js"></script>
 <script>
 ;(function(){
-	window.contourViewer = window.getContourViewer(makeNode, contourMaker.side).append();
+	window.contourViewer = window.getContourViewer(makeNode, contourMaker.side, structureHelpers.copySet).append();
 	var test = (function(){
 		return function(name,t){
 			try{
