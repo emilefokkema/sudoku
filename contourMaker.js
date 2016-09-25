@@ -610,6 +610,12 @@
 						return !s.to.equals(p);
 					});
 					return found.to;
+				},
+				toSvgPath:function(){
+					return goAlongPath(svgFunctions.beginPath,
+								svgFunctions.pathStep,
+								svgFunctions.endPath)(this);
+
 				}
 
 			};
@@ -967,7 +973,88 @@
 			};
 		})();
 
-		
+		var goAlongPath = function(beginPath, pathStep, endPath){
+			return function(s, context){
+				var soFar,index = 0;
+				s.follow(function(ss){
+					if(index == 0){
+						soFar = beginPath.apply(null,[ss, context]);
+					}
+					soFar = pathStep.apply(null,[ss,soFar, context]);
+					index++;
+				});
+				return endPath.apply(null,[soFar, context]);
+			};
+		};
+
+		var canvasFunctions = {
+			angleRoundingBeginPath: function(ctx,r){
+				return function(firstSide, isCutoffPoint){
+					ctx.beginPath();
+					var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
+					ctx.moveTo(p.x,p.y);
+				};
+			},
+			beginPath : function(ctx){
+				return function(firstSide){
+					ctx.beginPath();
+					ctx.moveTo(firstSide.from.x, firstSide.from.y);
+				};
+			},
+			pathStep: function(ctx){
+				return function(nextSide){
+					ctx.lineTo(nextSide.to.x, nextSide.to.y);
+				};
+			},
+			angleRoundingPathStep:function(ctx,r){
+				return function(nextSide, soFar, isCutoffPoint){
+					if(isCutoffPoint(nextSide.to)){
+						ctx.lineTo(nextSide.to.x, nextSide.to.y);
+					}else{
+						var nextnext = nextSide.next();
+						ctx.arcTo(nextSide.to.x, nextSide.to.y, nextnext.to.x, nextnext.to.y,r);
+					}
+				};
+			},
+			endPath : function(ctx, pathCompleteCallback){
+				return function(){
+					ctx.closePath();
+					pathCompleteCallback && pathCompleteCallback.call(null,[]);
+				};
+			}
+		};
+
+		var svgFunctions = {
+			angleRoundingBeginPath:function(r){
+				return function(firstSide, isCutoffPoint){
+					if(typeof isCutoffPoint !=="function"){
+						console.log("whoa");
+					}
+					var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
+					return "M"+p.x+" "+p.y;
+				};
+			},
+			beginPath: function(firstSide){
+				return "M"+firstSide.from.x+" "+firstSide.from.y;
+			},
+			pathStep: function(nextSide, soFar){
+				return soFar+" L "+nextSide.to.x+" "+nextSide.to.y;
+			},
+			angleRoundingPathStep:function(r){
+				return function(nextSide, soFar, isCutoffPoint){
+					if(isCutoffPoint(nextSide.to)){
+						return soFar + " L "+nextSide.to.x+" "+nextSide.to.y;
+					}else{
+						var p1 = nextSide.angleRoundingBegin(r);
+						var p2 = nextSide.next().angleRoundingEnd(r);
+						return soFar+" L "+p1.x+" "+p1.y+" Q "+nextSide.to.x+" "+nextSide.to.y+" "+p2.x+" "+p2.y;
+					}
+				};
+			},
+			endPath: function(soFar){
+				return soFar+" Z";
+			}
+		};
 
 		var contour = (function(){
 			var holelessPathSet = function(sides, cutoffPoints){
@@ -1083,86 +1170,7 @@
 					return ss!=s && isFirstOutsideOf(ss, s, allSides) && ss.area() > 0;
 				});
 			};
-			var goAlongPath = function(beginPath, pathStep, endPath){
-				return function(s, context){
-					var soFar,index = 0;
-					s.follow(function(ss){
-						if(index == 0){
-							soFar = beginPath.apply(null,[ss, context]);
-						}
-						soFar = pathStep.apply(null,[ss,soFar, context]);
-						index++;
-					});
-					return endPath.apply(null,[soFar, context]);
-				};
-			};
-			var canvasFunctions = {
-				angleRoundingBeginPath: function(ctx,r){
-					return function(firstSide, isCutoffPoint){
-						ctx.beginPath();
-						var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
-						ctx.moveTo(p.x,p.y);
-					};
-				},
-				beginPath : function(ctx){
-					return function(firstSide){
-						ctx.beginPath();
-						ctx.moveTo(firstSide.from.x, firstSide.from.y);
-					};
-				},
-				pathStep: function(ctx){
-					return function(nextSide){
-						ctx.lineTo(nextSide.to.x, nextSide.to.y);
-					};
-				},
-				angleRoundingPathStep:function(ctx,r){
-					return function(nextSide, soFar, isCutoffPoint){
-						if(isCutoffPoint(nextSide.to)){
-							ctx.lineTo(nextSide.to.x, nextSide.to.y);
-						}else{
-							var nextnext = nextSide.next();
-							ctx.arcTo(nextSide.to.x, nextSide.to.y, nextnext.to.x, nextnext.to.y,r);
-						}
-					};
-				},
-				endPath : function(ctx, pathCompleteCallback){
-					return function(){
-						ctx.closePath();
-						pathCompleteCallback && pathCompleteCallback.call(null,[]);
-					};
-				}
-			};
-			var svgFunctions = {
-				angleRoundingBeginPath:function(r){
-					return function(firstSide, isCutoffPoint){
-						if(typeof isCutoffPoint !=="function"){
-							console.log("whoa");
-						}
-						var p = isCutoffPoint(firstSide.from) ? firstSide.from : firstSide.angleRoundingEnd(r);
-						return "M"+p.x+" "+p.y;
-					};
-				},
-				beginPath: function(firstSide){
-					return "M"+firstSide.from.x+" "+firstSide.from.y;
-				},
-				pathStep: function(nextSide, soFar){
-					return soFar+" L "+nextSide.to.x+" "+nextSide.to.y;
-				},
-				angleRoundingPathStep:function(r){
-					return function(nextSide, soFar, isCutoffPoint){
-						if(isCutoffPoint(nextSide.to)){
-							return soFar + " L "+nextSide.to.x+" "+nextSide.to.y;
-						}else{
-							var p1 = nextSide.angleRoundingBegin(r);
-							var p2 = nextSide.next().angleRoundingEnd(r);
-							return soFar+" L "+p1.x+" "+p1.y+" Q "+nextSide.to.x+" "+nextSide.to.y+" "+p2.x+" "+p2.y;
-						}
-					};
-				},
-				endPath: function(soFar){
-					return soFar+" Z";
-				}
-			};
+
 			return function(sides){
 				sides = sides.filter(function(s){return isOuterSide(s, sides) || isHole(s, sides);});
 				var groups = sides
@@ -1339,13 +1347,24 @@
 			this.expect(res.length).toBe(1);
 		});
 		test("svgTest",function(){
-			var c = rectangle(0,0,3,3).combineNegative(rectangle(1,1,1,1));
+			var c = rectangle(0,0,3,3).combineNegative(rectangle(1,1,1,1)).scale(10);
 			var svgPaths = c.makeSvgPaths();
-			this.expect(svgPaths[0]).toBe("M0 0 L 0 3 L 3 3 L 3 0 L 0 0 Z");
-			this.expect(svgPaths[1]).toBe("M1 2 L 1 1 L 2 1 L 2 2 L 1 2 Z");
-			var holelessPaths = c.makeHolelessSvgPaths();
-			this.expect(holelessPaths[0]).toBe("M1.5 1 L 2 1 L 2 2 L 1.5 2 L 1.5 3 L 3 3 L 3 0 L 1.5 0 L 1.5 1 Z");
-			this.expect(holelessPaths[1]).toBe("M1.5 0 L 0 0 L 0 3 L 1.5 3 L 1.5 2 L 1 2 L 1 1 L 1.5 1 L 1.5 0 Z");
+			this.expect(svgPaths[0]).toBe("M0 0 L 0 30 L 30 30 L 30 0 L 0 0 Z");
+			this.expect(svgPaths[1]).toBe("M10 20 L 10 10 L 20 10 L 20 20 L 10 20 Z");
+			svgPaths = c.makeHolelessSvgPaths();
+			this.expect(svgPaths[0]).toBe("M15 10 L 20 10 L 20 20 L 15 20 L 15 30 L 30 30 L 30 0 L 15 0 L 15 10 Z");
+			this.expect(svgPaths[1]).toBe("M15 0 L 0 0 L 0 30 L 15 30 L 15 20 L 10 20 L 10 10 L 15 10 L 15 0 Z");
+			svgPaths = c.makeSvgPaths(1);
+			this.expect(svgPaths[0]).toBe("M0 1.0000000000000002 L 0 29 Q 0 30 1.0000000000000002 30 L 29 30 Q 30 30 30 29 L 30 1.0000000000000002 Q 30 0 29 0 L 1.0000000000000002 0 Q 0 0 0 1.0000000000000002 Z");
+			this.expect(svgPaths[1]).toBe("M10 19 L 10 11 Q 10 10 11 10 L 19 10 Q 20 10 20 11 L 20 19 Q 20 20 19 20 L 11 20 Q 10 20 10 19 Z");
+			svgPaths = c.makeHolelessSvgPaths(1);
+			this.expect(svgPaths[0]).toBe("M15 10 L 19 10 Q 20 10 20 11 L 20 19 Q 20 20 19 20 L 15 20 L 15 30 L 29 30 Q 30 30 30 29 L 30 1.0000000000000002 Q 30 0 29 0 L 15 0 L 15 10 Z");
+			this.expect(svgPaths[1]).toBe("M15 0 L 1.0000000000000002 0 Q 0 0 0 1.0000000000000002 L 0 29 Q 0 30 1.0000000000000002 30 L 15 30 L 15 20 L 11 20 Q 10 20 10 19 L 10 11 Q 10 10 11 10 L 15 10 L 15 0 Z");
+		});
+		test("svgTest2",function(){
+			var s = side.fromString("(8,0)-->(0,0)-->(0,10)-->(8,10)-->(10,10)-->(10,0)-->(8,0)");
+			var svg = s.toSvgPath();
+			this.expect(svg).toBe("M8 0 L 0 0 L 0 10 L 8 10 L 10 10 L 10 0 L 8 0 Z");
 		});
 		test("expandPositiveTest",function(){
 			var s = rectangleSide(0,0,10,10);
@@ -1511,7 +1530,8 @@
 		return {
 			rectangle:rectangle,
 			point:point,
-			contour:contour
+			contour:contour,
+			side:side
 		};
 	})();
 })()
