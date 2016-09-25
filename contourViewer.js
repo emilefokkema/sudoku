@@ -17,18 +17,41 @@
 				xAxis.setAttribute('stroke','#444');
 				return xAxis;
 			};
-			var renderAxes = function(svg, w, h, scale, shift){
-				svg.appendChild(makeAxis(0,shift,w,shift));
-				svg.appendChild(makeAxis(shift, 0, shift,h));
+			var renderAxes = function(svg, w, h, scale, origin){
+				svg.appendChild(makeAxis(0,origin.y,w,origin.y));
+				svg.appendChild(makeAxis(origin.x, 0, origin.x,h));
+			};
+			var getViewBox = function(sides){
+				var box = sides.map(function(s){return s.box();}).reduce(function(b1,b2){return b1.plus(b2);});
+				if(box.minx > 0){
+					box = box.expand({left:box.minx});
+				}
+				if(box.maxx < 0){
+					box = box.expand({right:-box.maxx})
+				}
+				if(box.miny > 0){
+					box = box.expand({bottom:box.miny});
+				}
+				if(box.maxy < 0){
+					box = box.expand({top:-box.maxy})
+				}
+				return box;
+			};
+			var getZero = function(length, left, right){
+				return length * (Math.abs(left) / (right - left));
 			};
 			var render = function(sides, svg, w, h){
 				if(!sides.length){return;}
-				var box = sides.map(function(s){return s.box();}).reduce(function(b1,b2){return b1.plus(b2);});
-				var scale = Math.min(h / box.maxy, w / box.maxx) * 0.8;
-				var shift = Math.min(w,h) * 0.1;
-				renderAxes(svg, w, h, scale,shift);
+				var box = getViewBox(sides);
+				var scale = Math.min(h / (box.maxy - box.miny), w / (box.maxx - box.minx));
+				var origin = {
+					x: getZero(w, box.minx, box.maxx),
+					y: getZero(h, box.miny, box.maxy)
+				};
+
+				renderAxes(svg, w, h, scale,origin);
 				sides.map(function(s){
-					svg.appendChild(sideToSvg(s.scale(scale).translate(shift, shift)));
+					svg.appendChild(sideToSvg(s.scale(scale).translate(origin.x, origin.y)));
 				});
 			};
 			
