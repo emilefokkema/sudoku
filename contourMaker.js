@@ -509,6 +509,11 @@
 					});
 					return Math.abs(angle) > 0.01;
 				},
+				goesAroundSide:function(other){
+					return !other.find(function(s){
+						return !ret.containsPoint(s.from) && !ret.goesAround(s.from);
+					});
+				},
 				overlapsWith:function(other){
 					var res=true;
 					follow(function(s){
@@ -1169,15 +1174,9 @@
 					}
 				};
 			};
-			var goesAround = function(s1,s2){
-				return !s2.find(function(s){
-					var isOutsideOfS1 = !s1.containsPoint(s.from) && !s1.goesAround(s.from);
-					return isOutsideOfS1;
-				});
-			};
 			var isFirstOutsideOf = function(s1,s2,allSides){
-				return goesAround(s1,s2) && !allSides.some(function(s){
-					var isBetween = s!=s1 && s!=s2 && goesAround(s1, s) && goesAround(s, s2);
+				return s1.goesAroundSide(s2) && !allSides.some(function(s){
+					var isBetween = s!=s1 && s!=s2 && s1.goesAroundSide(s) && s.goesAroundSide(s2);
 					return isBetween; 
 				});
 			};
