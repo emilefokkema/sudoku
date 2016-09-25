@@ -1338,6 +1338,15 @@
 
 			this.expect(res.length).toBe(1);
 		});
+		test("svgTest",function(){
+			var c = rectangle(0,0,3,3).combineNegative(rectangle(1,1,1,1));
+			var svgPaths = c.makeSvgPaths();
+			this.expect(svgPaths[0]).toBe("M0 0 L 0 3 L 3 3 L 3 0 L 0 0 Z");
+			this.expect(svgPaths[1]).toBe("M1 2 L 1 1 L 2 1 L 2 2 L 1 2 Z");
+			var holelessPaths = c.makeHolelessSvgPaths();
+			this.expect(holelessPaths[0]).toBe("M1.5 1 L 2 1 L 2 2 L 1.5 2 L 1.5 3 L 3 3 L 3 0 L 1.5 0 L 1.5 1 Z");
+			this.expect(holelessPaths[1]).toBe("M1.5 0 L 0 0 L 0 3 L 1.5 3 L 1.5 2 L 1 2 L 1 1 L 1.5 1 L 1.5 0 Z");
+		});
 		test("expandPositiveTest",function(){
 			var s = rectangleSide(0,0,10,10);
 			var sExp = s.expand(2);
