@@ -118,6 +118,11 @@
 				var small = side.fromString("(14,6)-->(14,6.25)-->(14.25,6.25)-->(14.25,6)-->(14,6)");
 				this.assert(!big.goesAroundSide(small), "big one should not go around small one");
 			});
+			test("goesAroundSideTest2",function(){
+				var big = side.fromString("(4,1)-->(4,0)-->(0,0)-->(0,3)-->(4,3)-->(4,2)-->(1,2)-->(1,1)-->(4,1)")
+				var small = side.fromString("(1,1)-->(1,2)-->(2,2)-->(2,1)-->(1,1)")
+				this.assert(!big.goesAroundSide(small), "big one should not go around small one");
+			});
 			test("something",function(){
 				//try to reproduce this:
 				//combination of contour1 with sides [(17.25,12)-->(0,12)-->(0,12.25)-->(17.25,12.25)-->(17.25,12)] and contour2 with sides [(0.25,0)-->(0,0)-->(0,12.25)-->(0.25,12.25)-->(0.25,0)] resulted in a contour with no sides
