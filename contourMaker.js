@@ -519,7 +519,6 @@
 					return beforeP1.next(side(p1,p2)).next(afterP2);
 				},
 				goesAroundSegment: function(p1,p2){
-
 					var thisArea = this.area();
 					var shortCut1 = this.takeShortCutFromTo(p1,p2);
 					var shortCut2 = this.takeShortCutFromTo(p2,p1);
