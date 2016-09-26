@@ -14,6 +14,24 @@
 			return null;
 		};
 		var space = (function(){
+			var arrowBetween = function(from, to, color, hasAccent){
+				var point = from.plus(to).scaleInv(2);
+				var left = point.plus(from.minus(to).rot(Math.PI/8).unit().scale(hasAccent ? 8 : 4));
+				var right = point.plus(from.minus(to).rot(-Math.PI/8).unit().scale(hasAccent ? 8 : 4));
+				var svg = document.createElementNS('http://www.w3.org/2000/svg','path');
+				svg.setAttribute('d','M'+left.x+' '+left.y+' L '+point.x+' '+point.y+' L '+right.x+' '+right.y);
+				svg.setAttribute('stroke-width',hasAccent ? 4 : 2);
+				svg.setAttribute('fill','transparent');
+				svg.setAttribute('stroke',color);
+				return svg;
+			};
+			var arrowsForSide = function(s, color, hasAccent){
+				var result = [];
+				s.follow(function(ss){
+					result.push(arrowBetween(ss.from, ss.to, color, hasAccent));
+				});
+				return result;
+			};
 			var pointsForSide = function(s, color, hasAccent){
 				var result = [];
 				s.follow(function(ss){
@@ -70,6 +88,17 @@
 			var getZero = function(length, left, right){
 				return length * (Math.abs(left) / (right - left));
 			};
+			var renderSide = function(svg, s, scale, origin, hasAccent){
+				var color = s.color;
+				s = s.side.scale(scale).translate(origin.x, origin.y);
+				svg.appendChild(sideToSvg(s, color, hasAccent));
+				pointsForSide(s, color, hasAccent).map(function(c){
+					svg.appendChild(c);
+				});
+				arrowsForSide(s, color, hasAccent).map(function(c){
+					svg.appendChild(c);
+				});
+			};
 			var render = function(sides, svg, w, h, sideWithAccent){
 				if(!sides.length){return;}
 				var box = getViewBox(sides);
@@ -80,14 +109,11 @@
 				};
 
 				renderAxes(svg, w, h, scale,origin);
-				sides.map(function(s){
-					var color = s.color;
-					var hasAccent = s.side == sideWithAccent;
-					s = s.side.scale(scale).translate(origin.x, origin.y);
-					svg.appendChild(sideToSvg(s, color, hasAccent));
-					pointsForSide(s, color, hasAccent).map(function(c){
-						svg.appendChild(c);
-					});
+				sides.filter(function(s){return s.side != sideWithAccent;}).map(function(s){
+					renderSide(svg, s, scale, origin, false);
+				});
+				sides.filter(function(s){return s.side == sideWithAccent;}).map(function(s){
+					renderSide(svg, s, scale, origin, true);
 				});
 			};
 			
