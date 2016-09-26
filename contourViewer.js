@@ -1,11 +1,35 @@
 (function(body){
 	window.getContourViewer = function(makeNode, side, copySet){
-		
+		Array.prototype.first = function(test){
+			var res, found = false;
+			for(var i=0;i<this.length;i++){
+				if(test(res = this[i])){
+					found = true;
+					break;
+				}
+			}
+			if(found){
+				return res;
+			}
+			return null;
+		};
 		var space = (function(){
-			var sideToSvg = function(s, color){
+			var pointsForSide = function(s, color, hasAccent){
+				var result = [];
+				s.follow(function(ss){
+					var svg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+					svg.setAttribute('cx', ss.to.x);
+					svg.setAttribute('cy', ss.to.y);
+					svg.setAttribute('r', hasAccent ? 6 : 3);
+					svg.setAttribute('fill',color);
+					result.push(svg);
+				});
+				return result;
+			};
+			var sideToSvg = function(s, color, hasAccent){
 				var svg = document.createElementNS('http://www.w3.org/2000/svg','path');
 				svg.setAttribute('stroke',color);
-				svg.setAttribute('stroke-width',2);
+				svg.setAttribute('stroke-width',hasAccent ? 4 : 2);
 				svg.setAttribute('fill','transparent');
 				svg.setAttribute('d', s.toSvgPath());
 				return svg;
@@ -32,10 +56,10 @@
 					box = box.expand({right:-box.maxx})
 				}
 				if(box.miny > 0){
-					box = box.expand({bottom:box.miny});
+					box = box.expand({top:box.miny});
 				}
 				if(box.maxy < 0){
-					box = box.expand({top:-box.maxy})
+					box = box.expand({bottom:-box.maxy})
 				}
 				var ext = 0.1;
 				var wExtension = (box.maxx - box.minx) * ext;
@@ -46,7 +70,7 @@
 			var getZero = function(length, left, right){
 				return length * (Math.abs(left) / (right - left));
 			};
-			var render = function(sides, svg, w, h){
+			var render = function(sides, svg, w, h, sideWithAccent){
 				if(!sides.length){return;}
 				var box = getViewBox(sides);
 				var scale = Math.min(h / (box.maxy - box.miny), w / (box.maxx - box.minx));
@@ -57,7 +81,13 @@
 
 				renderAxes(svg, w, h, scale,origin);
 				sides.map(function(s){
-					svg.appendChild(sideToSvg(s.side.scale(scale).translate(origin.x, origin.y), s.color));
+					var color = s.color;
+					var hasAccent = s.side == sideWithAccent;
+					s = s.side.scale(scale).translate(origin.x, origin.y);
+					svg.appendChild(sideToSvg(s, color, hasAccent));
+					pointsForSide(s, color, hasAccent).map(function(c){
+						svg.appendChild(c);
+					});
 				});
 			};
 			
@@ -81,11 +111,12 @@
 			});
 			var all = [];
 			var add = function(s){
-				if(all.some(function(ss){
+				var already = all.first(function(ss){
 					return ss.isSameAs(s) || ss.overlapsWith(s);
-				})){
+				});
+				if(already){
 					console.warn("got that one already");
-					return;
+					return {already:already};
 				}
 				all.push(s);
 				var copy = copies.addFor(s);
@@ -120,15 +151,19 @@
 						svg.setAttribute('height',h);
 						return svg;
 					};
-					var render = function(){
+					var render = function(sideWithAccent){
 						var svg = makeSvg();
 						svgContainer.innerHTML = "";
 						svgContainer.appendChild(svg);
-						space.render(sides.getAll(), svg, w, h);
+						space.render(sides.getAll(), svg, w, h, sideWithAccent);
 					};
 					var addSide = function(s){
 						var r = sides.add(s);
-						render();
+						if(r.already){
+							render(r.already)
+						}else{
+							render(s);
+						}
 						return r;
 					};
 					var addSideFromString = function(s){
@@ -139,7 +174,7 @@
 							function(text, button, container){
 								button.onclick = function(){
 									var result = addSideFromString(text.value);
-									if(!result){return;}
+									if(!result.remove){return;}
 									button.onclick = function(){
 										result.remove();
 										render();
