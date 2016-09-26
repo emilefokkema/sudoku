@@ -1,28 +1,49 @@
 (function(){
 	window.contourMakerTest = function(side, contour, combine, rectangleSide, intersectSegments, sideBuilder, rectangle, combineMany){
 		window.contourMakerTest = function(){
+			var logError = function(t){
+				var div = document.createElement('div');
+				div.setAttribute('class','message error-message');
+				div.appendChild(document.createTextNode(t));
+				document.body.appendChild(div);
+				if(console && console.error){
+					console.error(t);
+				}
+			}
+			var logSuccess = function(t){
+				var div = document.createElement('div');
+				div.setAttribute('class','message success-message');
+				div.appendChild(document.createTextNode(t));
+				document.body.appendChild(div);
+			}
 			var test = (function(){
 				return function(name,t){
+					var failed = false;
 					try{
 						t.apply({
 							assert:function(bool, message){
-								if(!bool && console.error){
-									console.error("["+name+"] "+message);
+								if(!bool){
+									failed = true;
+									logError("["+name+"] "+message);
 								}
 							},
 							expect:function(actual){
 								return {
 									toBe:function(expected, message){
-										if(actual != expected && console.error){
-											console.error("["+name+"] "+(message||"")+" (expected "+expected+" but saw "+actual+")");
+										if(actual != expected){
+											failed = true;
+											logError("["+name+"] "+(message||"")+" (expected "+expected+" but saw "+actual+")");
 										}
 									}
 								};
 							}
 						},[]);
+						if(!failed){
+							logSuccess("[" + name + "] passed");
+						}
 					}
 					catch(e){
-						console.error("["+name+"] "+e.message);
+						logError("["+name+"] "+e.message);
 					}
 					
 				};
