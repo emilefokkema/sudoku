@@ -1,5 +1,5 @@
 (function(){
-	window.contourMakerTest = function(side, contour, combine, rectangleSide, intersectSegments, sideBuilder, rectangle, combineMany){
+	window.contourMakerTest = function(side, contour, combine, rectangleSide, intersectSegments, sideBuilder, rectangle, combineMany, point){
 		window.contourMakerTest = function(){
 			var logError = function(t){
 				var div = document.createElement('div');
@@ -143,6 +143,16 @@
 				var big = side.fromString("(4,1)-->(4,0)-->(0,0)-->(0,3)-->(4,3)-->(4,2)-->(1,2)-->(1,1)-->(4,1)")
 				var small = side.fromString("(2,1)-->(2,2)-->(3,2)-->(3,1)-->(2,1)")
 				this.assert(!big.goesAroundSide(small), "big one should not go around small one");
+			});
+			test("containsSegmentTest",function(){
+				var s = side.fromString("(4,1)-->(4,0)-->(0,0)-->(0,3)-->(4,3)-->(4,2)-->(1,2)-->(1,1)-->(4,1)");
+				this.assert(s.containsSegment(point(0,1), point(0,2)));
+				this.assert(!s.containsSegment(point(2,1), point(2,2)));
+			});
+			test("goesAroundSegmentTest",function(){
+				var s = side.fromString("(4,1)-->(4,0)-->(0,0)-->(0,3)-->(4,3)-->(4,2)-->(1,2)-->(1,1)-->(4,1)");
+				this.assert(!s.goesAroundSegment(point(2,1), point(2,2)));
+				this.assert(s.goesAroundSegment(point(2,0), point(2,1)));
 			});
 			test("something",function(){
 				//try to reproduce this:
