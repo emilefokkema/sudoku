@@ -120,7 +120,7 @@
 			});
 			test("goesAroundSideTest2",function(){
 				var big = side.fromString("(4,1)-->(4,0)-->(0,0)-->(0,3)-->(4,3)-->(4,2)-->(1,2)-->(1,1)-->(4,1)")
-				var small = side.fromString("(1,1)-->(1,2)-->(2,2)-->(2,1)-->(1,1)")
+				var small = side.fromString("(2,1)-->(2,2)-->(3,2)-->(3,1)-->(2,1)")
 				this.assert(!big.goesAroundSide(small), "big one should not go around small one");
 			});
 			test("something",function(){

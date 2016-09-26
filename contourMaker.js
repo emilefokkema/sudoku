@@ -500,9 +500,23 @@
 					return Math.abs(angle) > 0.01;
 				},
 				goesAroundSide:function(other){
-					return !other.find(function(s){
-						return !ret.containsPoint(s.from) && !ret.goesAround(s.from);
+					var commonPoints = [];
+					other.follow(function(s){
+						if(ret.containsPoint(s.from)){
+							commonPoints.push(s.from);
+						}
 					});
+					this.follow(function(s){
+						if(other.containsPoint(s.from)){
+							commonPoints.push(s.from);
+						}
+					});
+					if(other.find(function(s){
+						return commonPoints.indexOf(s.from) == -1 && !ret.goesAround(s.from);
+					})){
+						return false;
+					}
+					return true;
 				},
 				overlapsWith:function(other){
 					var res=true;
