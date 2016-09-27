@@ -46,15 +46,25 @@
 			return rect;
 		};
 
-		var appendPathsFromContour = function(svg, c){
-			var paths = c.makeSvgPaths(3);
+		var appendPathsFromContour = function(svg, c, angleRoundingRadius){
+			var paths = c.makeHolelessSvgPaths(angleRoundingRadius);
 			paths.map(function(p){
 				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
-				path.setAttribute('stroke','#fff');
+				//path.setAttribute('stroke','#fff');
+				path.setAttribute('fill','#444');
+				path.setAttribute('d',p);
+				svg.appendChild(path);
+			});
+			paths = c.makeSvgPaths(angleRoundingRadius);
+			paths.map(function(p){
+				var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+				path.setAttribute('stroke','#666');
+				path.setAttribute('stroke-width','2');
 				path.setAttribute('fill','transparent');
 				path.setAttribute('d',p);
 				svg.appendChild(path);
 			});
+
 		};
 
 		var onCreatedNewContour = function(c1,c2,newOne){
@@ -91,7 +101,7 @@
 				});
 				var myDone = function(contour){
 					contour = contour.scale(boxSize);
-					appendPathsFromContour(svg, contour);
+					appendPathsFromContour(svg, contour, boxSize / 8);
 					done({
 						svg:svg,
 						model:m

@@ -997,15 +997,18 @@
 				return res;
 			};
 			f.async = function(things, combineTwoThings, areCombinable, update, done, timeOutWhile){
-				var newPair, allThings = things.map(function(t,i){return thingWithCombinationHistory(t, history([i]));});
+				var newPair,
+					allThings = things.map(function(t,i){return thingWithCombinationHistory(t, history([i]));}),
+					numberOfCombinations = this.length * (things.length - 1) / 2,
+					combined = 0;
 				timeOutWhile(
 					function(){return newPair = findCombinableThingsWithDisjointHistories(allThings, areCombinable);}, 
 					function(update){
 						allThings.splice(allThings.indexOf(newPair[0]), 1);
  						allThings.splice(allThings.indexOf(newPair[1]), 1);
 						combination(newPair[0],newPair[1],combineTwoThings).map(function(t){allThings.push(t);});
-						update(0.5);
-					}, 20, function(){
+						update((combined++) / numberOfCombinations);
+					}, 5, function(){
 						update(1);
 						done(allThings.map(function(t){return t.thing;}));
 					}, update);
