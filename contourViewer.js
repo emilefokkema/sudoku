@@ -129,13 +129,17 @@
 				};
 				return {next:next};
 			})();
-			var copies = copySet([],function(s){
-				return {
-					side:s,
-					color:colorProvider.next()
-				};
-			});
-			var all = [];
+			var copies, all;
+			var clear = function(){
+				copies = copySet([],function(s){
+					return {
+						side:s,
+						color:colorProvider.next()
+					};
+				});
+				all = [];
+			};
+			
 			var add = function(s){
 				var already = all.first(function(ss){
 					return ss.isSameAs(s) || ss.overlapsWith(s);
@@ -158,9 +162,12 @@
 					copies.removeFor(s);
 				}
 			};
+			
+			clear();
 			return {
 				add:add,
-				getAll:function(){return copies.allCopies();}
+				getAll:function(){return copies.allCopies();},
+				clear:clear
 			};
 		})();
 		var append = function(){
@@ -213,10 +220,15 @@
 								controlContainer.appendChild(container);
 							});
 					};
+					var clear = function(){
+						sides.clear();
+						render();
+					};
 					makeAdder();
 					return {
 						addSide:addSide,
-						addSideFromString:addSideFromString
+						addSideFromString:addSideFromString,
+						clear:clear
 					};
 				});
 			

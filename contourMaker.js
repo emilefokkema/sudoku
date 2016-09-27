@@ -476,6 +476,12 @@
 					});
 					return res;
 				},
+				every:function(condition){
+					return !this.find(function(s){return !condition(s);});
+				},
+				contains:function(condition){
+					return this.find(condition) != null;
+				},
 				sideFrom:function(p){
 					return this.find(function(s){return s.from.equals(p);});
 				},
@@ -509,10 +515,40 @@
 					});
 					return Math.abs(angle) > 0.01;
 				},
+				containsSegment: function(p1,p2){
+					return this.contains(function(s){return s.sideContainsPoint(p1) && s.sideContainsPoint(p2);});
+				},
+				takeShortCutFromTo: function(p1,p2){
+					var clone = this.clone()
+						.find(function(s){return s.sideContainsPoint(p1);})
+						.addPoint(p1)
+						.find(function(s){return s.sideContainsPoint(p2);})
+						.addPoint(p2);
+					var beforeP1 = clone.sideFrom(p1).prev();
+					var afterP2 = clone.sideFrom(p2);
+					return beforeP1.next(side(p1,p2)).next(afterP2);
+				},
+				goesAroundSegment: function(p1,p2){
+					if(this.containsPoint(p1)){
+						if(this.containsPoint(p2)){
+							var thisArea = this.area();
+							var shortCut1 = this.takeShortCutFromTo(p1,p2);
+							var shortCut2 = this.takeShortCutFromTo(p2,p1);
+							return shortCut1.area() < thisArea && shortCut2.area() < thisArea;
+						}
+						return this.goesAround(p2);
+					}
+					if(this.containsPoint(p2)){
+						return this.goesAround(p1);
+					}
+					return this.goesAround(p1) && this.goesAround(p2);
+					
+				},
 				goesAroundSide:function(other){
-					return !other.find(function(s){
-						return !ret.containsPoint(s.from) && !ret.goesAround(s.from);
+					return other.every(function(s){
+						return ret.containsSegment(s.from, s.to) || ret.goesAroundSegment(s.from, s.to);
 					});
+					
 				},
 				overlapsWith:function(other){
 					var res=true;
@@ -529,13 +565,7 @@
 					return res;
 				},
 				containsPoint:function(p){
-					var res = false;
-					follow(function(s){
-						if(s.sideContainsPoint(p)){
-							res = true;
-						}
-					});
-					return res;
+					return this.contains(function(s){return s.sideContainsPoint(p);});
 				},
 				toString:function(){
 					var s=this.from.toString();
@@ -1352,7 +1382,7 @@
 		};
 
 		if(window.contourMakerTest){
-			window.contourMakerTest(side, contour, combine, rectangleSide,intersectSegments, sideBuilder, rectangle, combineMany);
+			window.contourMakerTest(side, contour, combine, rectangleSide,intersectSegments, sideBuilder, rectangle, combineMany, point);
 		}
 		return {
 			rectangle:rectangle,
