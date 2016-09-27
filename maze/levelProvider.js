@@ -22,7 +22,7 @@
 				currentBoxSize -= 3;
 			}
 			currentCounter++;
-			//currentGreenSpeed += 1;
+			currentGreenSpeed += 1;
 			return l;
 		};
 		return {

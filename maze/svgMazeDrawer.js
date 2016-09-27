@@ -2,7 +2,7 @@
 	window.mazeGame = window.mazeGame || {};
 
 	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker, position, setShift){
-		var borderWidth = 1/4, shift = position(borderWidth/2, borderWidth/2);
+		var borderWidth = 1/2, shift = position(borderWidth/2, borderWidth/2);
 
 		var timeOutMap = function(arr, toDo, update, done){
 			var i = 0, l = arr.length;
@@ -101,7 +101,7 @@
 				});
 				var myDone = function(contour){
 					contour = contour.scale(boxSize);
-					appendPathsFromContour(svg, contour, boxSize / 8);
+					appendPathsFromContour(svg, contour, boxSize / 4);
 					done({
 						svg:svg,
 						model:m
