@@ -302,6 +302,12 @@
 					this.expect(p[0].x).toBe(7);
 					this.expect(p[0].y).toBe(10);
 				});
+
+				test("intersectionTest2",function(){
+					var p = intersectSegments(point(0,0),point(0,12.25),point(1.25,8),point(0,8));
+					this.expect(p[0].x).toBe(0);
+					this.expect(p[0].y).toBe(8);
+				});
 				
 				test("reverseTest1",function(){
 					var a =side(point(0,0), point(1,0)).reverse();
