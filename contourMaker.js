@@ -519,34 +519,24 @@
 					return beforeP1.next(side(p1,p2)).next(afterP2);
 				},
 				goesAroundSegment: function(p1,p2){
-					var thisArea = this.area();
-					var shortCut1 = this.takeShortCutFromTo(p1,p2);
-					var shortCut2 = this.takeShortCutFromTo(p2,p1);
-					return shortCut1.area() < thisArea && shortCut2.area() < thisArea;
+					if(this.containsPoint(p1)){
+						if(this.containsPoint(p2)){
+							var thisArea = this.area();
+							var shortCut1 = this.takeShortCutFromTo(p1,p2);
+							var shortCut2 = this.takeShortCutFromTo(p2,p1);
+							return shortCut1.area() < thisArea && shortCut2.area() < thisArea;
+						}
+						return this.goesAround(p2);
+					}
+					if(this.containsPoint(p2)){
+						return this.goesAround(p1);
+					}
+					return this.goesAround(p1) && this.goesAround(p2);
+					
 				},
 				goesAroundSide:function(other){
-					var commonPoints = [], onlyThis = [], onlyOther = [];
-					other.follow(function(s){
-						if(ret.containsPoint(s.from)){
-							commonPoints.push(s.from);
-						}else{
-							onlyOther.push(s.from);
-						}
-					});
-					this.follow(function(s){
-						if(other.containsPoint(s.from)){
-							commonPoints.push(s.from);
-						}else{
-							onlyThis.push(s.from);
-						}
-					});
-					if(onlyOther.length > 0){
-						return onlyOther.every(function(p){
-							return ret.goesAround(p);
-						});
-					}
-					return !other.find(function(s){
-						return !ret.containsSegment(s.from, s.to) && !ret.goesAroundSegment(s.from, s.to);
+					return other.every(function(s){
+						return ret.containsSegment(s.from, s.to) || ret.goesAroundSegment(s.from, s.to);
 					});
 					
 				},
@@ -565,13 +555,7 @@
 					return res;
 				},
 				containsPoint:function(p){
-					var res = false;
-					follow(function(s){
-						if(s.sideContainsPoint(p)){
-							res = true;
-						}
-					});
-					return res;
+					return this.contains(function(s){return s.sideContainsPoint(p);});
 				},
 				toString:function(){
 					var s=this.from.toString();
