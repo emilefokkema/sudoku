@@ -44,13 +44,13 @@ span{
 	background-repeat: no-repeat;
 }
 .redcircle {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#f00\"/></svg>");
+	background-image: url(data:image/svg+xml;utf8,%3Csvg%20width=%2230%22%20height=%2220%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Ccircle%20cx=%2215%22%20cy=%2210%22%20r=%2210%22%20fill=%22#f00%22/%3E%3C/svg%3E);
 }
 .yellowcircle {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#ff0\"/></svg>");
+	background-image: url(data:image/svg+xml;utf8,%3Csvg%20width=%2230%22%20height=%2220%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Ccircle%20cx=%2215%22%20cy=%2210%22%20r=%2210%22%20fill=%22#ff0%22/%3E%3C/svg%3E);
 }
 .greencircle {
-	background-image: url("data:image/svg+xml;utf8,<svg width=\"30\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"15\" cy=\"10\" r=\"10\" fill=\"#0f0\"/></svg>");
+	background-image: url(data:image/svg+xml;utf8,%3Csvg%20width=%2230%22%20height=%2220%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Ccircle%20cx=%2215%22%20cy=%2210%22%20r=%2210%22%20fill=%22#0f0%22/%3E%3C/svg%3E);
 }
 .popup{
 	background-color:#000;
