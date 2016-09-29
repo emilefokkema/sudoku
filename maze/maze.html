@@ -143,9 +143,6 @@ div{color:#fff;}
 			maxX = Math.floor(w / boxSize);
 		};
 		var mazePositionToScreenPosition = function(p){
-			if(!p){
-				console.log("oeps");
-			}
 			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2)).plus(shift);
 		};
 
