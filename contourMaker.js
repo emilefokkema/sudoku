@@ -1007,7 +1007,9 @@
 						allThings.splice(allThings.indexOf(newPair[0]), 1);
  						allThings.splice(allThings.indexOf(newPair[1]), 1);
 						combination(newPair[0],newPair[1],combineTwoThings).map(function(t){allThings.push(t);});
-						update((combined++) / numberOfCombinations);
+						update(
+							allThings.filter(function(t){return t.history.indices.indexOf(0)!=-1;}).length / allThings.length
+							);
 					}, 5, function(){
 						update(1);
 						done(allThings.map(function(t){return t.thing;}));
