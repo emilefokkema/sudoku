@@ -2,7 +2,7 @@
 	window.mazeGame = window.mazeGame || {};
 
 	window.mazeGame.getSvgMazeDrawer = function(direction, timeOutWhile, contourMaker, position, setShift){
-		var borderWidth = 1/2, shift = position(borderWidth/2, borderWidth/2);
+		var borderWidth = 0.3, shift = position(borderWidth/2, borderWidth/2);
 
 		var timeOutMap = function(arr, toDo, update, done){
 			var i = 0, l = arr.length;
@@ -68,14 +68,6 @@
 		};
 
 		var onCreatedNewContour = function(c1,c2,newOne){
-			newOne.sides.map(function(s){
-				s.follow(function(ss){
-					if(ss.from.isImproperlyPlaced()){
-						console.warn("point "+ss.from.toString()+" is improperly placed.");
-						throw new Error("improperly placed point");
-					}
-				});
-			});
 			if(newOne.sides.length == 0){
 				console.error("combination of contour1 with sides "+c1.toString()+
 					" and contour2 with sides "+c2.toString()+" resulted in a contour with no sides");
@@ -101,7 +93,7 @@
 				});
 				var myDone = function(contour){
 					contour = contour.scale(boxSize);
-					appendPathsFromContour(svg, contour, boxSize / 4);
+					appendPathsFromContour(svg, contour, boxSize *0.16);
 					done({
 						svg:svg,
 						model:m
