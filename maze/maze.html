@@ -14,6 +14,8 @@
 <script src="../contourMaker.js"></script>
 <script src="canvasMazeDrawer.js"></script>
 <script src="mazeStringifier.js"></script>
+<script src="progressBar.js"></script>
+<script src="showPopup.js"></script>>
 <script>
 (function(w, h, body, mazeGame){
 	Array.prototype.first = function(test){
@@ -83,112 +85,8 @@
 	var mazeStringifier = mazeGame.getMazeStringifier(direction);
 	var mazeDrawer = mazeGame.getCanvasMazeDrawer(direction);
 	var levelProvider = mazeGame.getLevelProvider();
-	
-
-
-	var progressMaker = function(setup, done){
-		done = done || function(){};
-		setup = setup();
-		var stopped = false;
-		return {
-			update:function(x){
-				if(!stopped){
-					setup.update(x);
-				}
-			},
-			done:function(){setup.teardown();stopped = true;done();}
-		};
-	};
-
-	var progressBar = function(){
-		var started = false, currentPercentage = 0, done = false;
-		var bar = makeNode("<div id='1' class='progress-container'><div class='progress-text' id='3'></div><div class='progress-total'><div id='2' class='progress-part'></div></div></div>",function(tot,part,text){
-			return {
-				append:function(){
-					body.appendChild(tot);
-				},
-				remove:function(){
-					body.removeChild(tot);
-				},
-				setPercentage:function(x){
-					part.style.width = Math.floor(100 * x) + "%";
-				},
-				setText:function(t){
-					text.innerHTML = t;
-				}
-			};
-		});
-		var updateGlobal = function(x){
-			if(!started){
-				bar.append();
-			}
-			started = true;
-			currentPercentage = x;
-			bar.setPercentage(x);
-		};
-		var createProgressPart = function(text){
-			var textSet = false;
-			return progressMaker(function(){
-				return {
-					update:function(x){
-						if(!textSet){
-							bar.setText(text);
-							textSet = true;
-						}
-						updateGlobal(x.total);
-					},
-					teardown:function(){
-						if(!done && currentPercentage > 0.99){
-							bar.remove();
-							done = true;
-						}
-					}
-				};
-			});
-		};
-		return {createProgressPart:createProgressPart};
-	};
-
-	var showPopup = function(html, confirm, reject){
-		var div;
-		disappear = function(){
-			body.removeChild(div.node);
-		};
-		div = makeNode("<div id='2' class='popup popup-container' style='top:"+(2*h)+"px'><div>"+html+"</div><div id='1'></div></div>",function(buttonDiv, container){
-			var ok, cancel;
-			if(confirm){
-				ok = makeNode("<input type='button' class='popup popup-button right' value='OK'/>");
-				buttonDiv.appendChild(ok);
-				ok.onclick = function(){
-					disappear();
-					confirm();
-				};
-			}
-			if(reject){
-				cancel = makeNode("<input type='button' class='popup popup-button left' value='Cancel'/>");
-				buttonDiv.appendChild(cancel);
-				cancel.onclick = function(){
-					disappear();
-					reject();
-				};
-			}
-			return {
-				node:container,
-				focus:function(){
-					ok.focus();
-				},
-				setTop:function(p){
-					container.style.top = p;
-				}
-			};
-		});
-		body.appendChild(div.node);
-		div.focus();
-		setTimeout(function(){
-			div.setTop((h/4)+"px");
-		},1);
-		
-	};
+	var progressBar = mazeGame.getProgressBar(body);
+	var showPopup = mazeGame.getShowPopup(body, h);
 
 	var playLevelWithModel = function(svg, l, model, onSucceed, onFail){
 		var succeed, fail, succeeded = false, failed = false;
