@@ -79,14 +79,16 @@
 			}
 		};
 
-		var draw = function(actionSequence, createProgress, boxSize, drawPaths){
+		var draw = function(actionSequence, createProgress, boxSize, drawPaths, w, h){
 			
 			setShift(shift.scale(boxSize));
 			actionSequence.add(function(m, done, update){
 				var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-				svg.setAttribute('width',boxSize * (m.maxX + borderWidth));
-				svg.setAttribute('height',boxSize * (m.maxY + borderWidth));
-				svg.setAttribute('style','position:fixed;');
+				var width = boxSize * (m.maxX + borderWidth);
+				var height = boxSize * (m.maxY + borderWidth);
+				svg.setAttribute('width',width);
+				svg.setAttribute('height',height);
+				svg.setAttribute('style','position:fixed;left:'+(w - width) / 2 +'px;top:'+(h - height) / 2+'px');
 				var contour;
 				var rectangles = m.borderParts.map(function(p){
 					return getRectangleForBorderPart(p);
