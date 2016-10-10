@@ -40,7 +40,7 @@ body{background-color:#000;}
 		})(svg);
 		body.addEventListener('touchmove',function(e){
 			var t = e.changedTouches.item(0);
-			stick.setPosition(t.screenX, t.screenY);
+			stick.setPosition(t.clientX, t.clientY);
 		});
 		return {
 			svg:svg
