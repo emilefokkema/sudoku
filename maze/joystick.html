@@ -50,6 +50,9 @@ body{background-color:#000;}
 			var t = e.changedTouches.item(0);
 			stick.setPosition(t.clientX - left, t.clientY - top);
 		});
+		body.addEventListener('touchend',function(){
+			stick.setPosition(size/2, size/2);
+		});
 		return {
 			svg:svg
 		};
