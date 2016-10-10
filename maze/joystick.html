@@ -1,0 +1,49 @@
+<html>
+<head>
+<style>
+body{background-color:#000;}
+</style>
+</head>
+<body>
+<script>
+(function(){
+	var getJoystick = function(size){
+		var thickness = size/10, color = '#666';
+		var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+		svg.setAttribute('width', size);
+		svg.setAttribute('height', size);
+		var outerRing = (function(svg){
+			var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+			ring.setAttribute('cx',size/2);
+			ring.setAttribute('cy',size/2);
+			ring.setAttribute('r',size/2 - thickness/2);
+			ring.setAttribute('stroke-width', thickness);
+			ring.setAttribute('fill','transparent');
+			ring.setAttribute('stroke', color);
+			svg.appendChild(ring);
+			return ring;
+		})(svg);
+		var stick = (function(){
+			var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+			ring.setAttribute('cx',size/2);
+			ring.setAttribute('cy',size/2);
+			ring.setAttribute('r',thickness);
+			ring.setAttribute('fill',color);
+			svg.appendChild(ring);
+			var setPosition = function(x,y){
+				ring.setAttribute('cx',x);
+				ring.setAttribute('cy',y);
+			};
+			return {
+				setPosition:setPosition
+			};
+		})(svg);
+		return {
+			svg:svg
+		};
+	};
+	document.body.appendChild(getJoystick(200).svg);
+})();
+</script>
+</body>
+</html>
