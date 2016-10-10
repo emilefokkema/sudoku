@@ -7,11 +7,12 @@ body{background-color:#000;}
 <body>
 <script>
 (function(body){
-	var getJoystick = function(size){
+	var getJoystick = function(left, top, size){
 		var thickness = size/10, color = '#666';
 		var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
 		svg.setAttribute('width', size);
 		svg.setAttribute('height', size);
+		svg.setAttribute('style', 'position:fixed;left:'+left+'px;top:'+top+'px;');
 		var outerRing = (function(svg){
 			var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
 			ring.setAttribute('cx',size/2);
@@ -30,7 +31,14 @@ body{background-color:#000;}
 			ring.setAttribute('r',thickness);
 			ring.setAttribute('fill',color);
 			svg.appendChild(ring);
+			var maxR = size/2 - thickness;
 			var setPosition = function(x,y){
+				var d = Math.sqrt(Math.pow(x - size/2, 2) + Math.pow(y - size/2, 2));
+				if(d > maxR){
+					var r = maxR / d;
+					x = size/2 + (x - size/2) * r;
+					y = size/2 + (y - size/2) * r;
+				}
 				ring.setAttribute('cx',x);
 				ring.setAttribute('cy',y);
 			};
@@ -40,13 +48,13 @@ body{background-color:#000;}
 		})(svg);
 		body.addEventListener('touchmove',function(e){
 			var t = e.changedTouches.item(0);
-			stick.setPosition(t.clientX, t.clientY);
+			stick.setPosition(t.clientX - left, t.clientY - top);
 		});
 		return {
 			svg:svg
 		};
 	};
-	document.body.appendChild(getJoystick(200).svg);
+	document.body.appendChild(getJoystick(100, 100, 200).svg);
 })(document.body);
 </script>
 </body>
