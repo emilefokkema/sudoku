@@ -6,7 +6,7 @@ body{background-color:#000;}
 </head>
 <body>
 <script>
-(function(){
+(function(body){
 	var getJoystick = function(size){
 		var thickness = size/10, color = '#666';
 		var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -38,12 +38,16 @@ body{background-color:#000;}
 				setPosition:setPosition
 			};
 		})(svg);
+		body.addEventListener('touchmove',function(e){
+			var t = e.changedTouches.item(0);
+			stick.setPosition(t.screenX, t.screenY);
+		});
 		return {
 			svg:svg
 		};
 	};
 	document.body.appendChild(getJoystick(200).svg);
-})();
+})(document.body);
 </script>
 </body>
 </html>
