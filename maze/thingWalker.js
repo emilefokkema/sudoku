@@ -70,7 +70,6 @@
 			body.addEventListener('keydown',keyDownListener);
 			if(joystick){
 				joystick.onSteer(function(d){
-					document.body.style.backgroundColor = '#fff';
 					currentDirection = d;
 					going = true;
 				});
