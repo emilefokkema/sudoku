@@ -42,7 +42,8 @@
 			return {doStep:doStep};
 		};
 
-		var controllableMazeWalker = function(m, startPosition){
+		var controllableMazeWalker = function(m, startPosition, joystick){
+			console.log("joystick:",joystick);
 			var currentDirection, currentPosition = startPosition, going = false;
 			var goInDirection = function(d){
 				if(currentPosition.freeDirections.indexOf(d) != -1){
@@ -67,6 +68,15 @@
 				going = true;
 			};
 			body.addEventListener('keydown',keyDownListener);
+			if(joystick){
+				joystick.onSteer(function(d){
+					currentDirection = d;
+					going = true;
+				});
+				joystick.onRelease(function(){
+					going = false;
+				});
+			}
 			var doStep = function(){
 				if(!going){
 					return currentPosition;
@@ -112,9 +122,9 @@
 					return easer.bufferEaser(setPosition, easiness, maxSpeed, getNextGoal);
 				};
 			});
-			this.extend('controllableThingWalker',function(){
+			this.extend('controllableThingWalker',function(joystick){
 				makeWalker = function(m, firstPosition){
-					return controllableMazeWalker(m, firstPosition);
+					return controllableMazeWalker(m, firstPosition, joystick);
 				};
 				makeEaser = function(setPosition, easiness, maxSpeed, getNextGoal){
 					return easer(setPosition, easiness, maxSpeed, getNextGoal);

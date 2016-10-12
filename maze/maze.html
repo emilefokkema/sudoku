@@ -47,6 +47,7 @@
 			}
 		};
 	};
+	var joystick;
 	var mazeMaker = window.getMazeMaker(structureHelpers.timeoutWhile);
 	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
@@ -85,6 +86,15 @@
 		};
 
 	})();
+	var weAreOnMobile = function(){
+		return h > w;
+	};
+
+	if(weAreOnMobile()){
+		space.setBottomPadding(200);
+		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction)(0,space.getInnerHeight(),200);
+		body.appendChild(joystick.svg);
+	}
 	var positionableThing = mazeGame.getPositionableThing(space, structureHelpers.copySet);
 	var direction = mazeMaker.direction;
 	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker, position, space.setShift);
@@ -96,19 +106,11 @@
 	var progressBar = mazeGame.getProgressBar(body);
 	var showPopup = mazeGame.getShowPopup(body, h);
 
-	var weAreOnMobile = function(){
-		return h > w;
-	};
-
-	if(weAreOnMobile()){
-		space.setBottomPadding(200);
-		var joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender)(0,space.getInnerHeight(),200);
-		body.appendChild(joystick.svg);
-	}
+	
 
 	
 
-	var playLevelWithModel = function(svg, l, model, onSucceed, onFail){
+	var playLevelWithModel = function(svg, l, model, onSucceed, onFail, joystick){
 		var succeed, fail, succeeded = false, failed = false;
 		var circleThing = function(color, onMeeting){
 			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
@@ -143,7 +145,7 @@
 		});
 		greenCircle.setPosition(space.positionFromMazePosition(initialGreenPosition));
 		var walkers = [
-			thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10),
+			thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10, joystick),
 			thingWalker.autonomousThingWalker(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
 			];
 
@@ -194,7 +196,7 @@
 		}
 	};
 
-	var playLevel = function(l, onSucceed, onFail){
+	var playLevel = function(l, onSucceed, onFail, joystick){
 		console.log("beginning to play level "+l.number);
 		space.setBoxSize(l.boxSize);
 		var createProgress = progressBar().createProgressPart;
@@ -202,7 +204,7 @@
 		mazeMaker.make(seq, space.getMaxX(), space.getMaxY(), createProgress);
 		svgMazeDrawer.draw(seq, createProgress, space.getBoxSize(), false, w, space.getInnerHeight());
 		seq.add(function(soFar, done, update){
-			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail);
+			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail, joystick);
 			update(1);
 			done();
 		},createProgress(""));
@@ -220,7 +222,7 @@
 				levelProvider.reset();
 				playAgain();
 			},function(){});
-		});
+		}, joystick);
 	};
 
 	playAgain();

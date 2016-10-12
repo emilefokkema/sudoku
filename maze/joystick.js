@@ -1,9 +1,11 @@
 (function(){
 	window.mazeGame = window.mazeGame || {};
 
-	window.mazeGame.getJoystickMaker = function(body, sender){
+	window.mazeGame.getJoystickMaker = function(body, sender, direction){
 		return function(left, top, size){
 			var thickness = size/10, color = '#666';
+			var onSteer = sender();
+			var onRelease = sender();
 			var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
 			svg.setAttribute('width', size);
 			svg.setAttribute('height', size);
@@ -41,15 +43,33 @@
 					setPosition:setPosition
 				};
 			})(svg);
+			var directionOf = function(x,y){
+				var dx = x - size/2, dy = y - size/2;
+				if(Math.abs(dx) >= Math.abs(dy)){
+					if(dx >= 0){
+						return direction.RIGHT;
+					}
+					return direction.LEFT;
+				}
+				if(dy >= 0){
+					return direction.BOTTOM;
+				}
+				return direction.TOP;
+			};
 			body.addEventListener('touchmove',function(e){
 				var t = e.changedTouches.item(0);
-				stick.setPosition(t.clientX - left, t.clientY - top);
+				var x = t.clientX - left, y = t.clientY - top;
+				stick.setPosition(x, y);
+				onSteer(directionOf(x,y));
 			});
 			body.addEventListener('touchend',function(){
 				stick.setPosition(size/2, size/2);
+				onRelease();
 			});
 			return {
-				svg:svg
+				svg:svg,
+				onSteer:function(f){onSteer.add(f);},
+				onRelease:function(f){onRelease.add(f);}
 			};
 		};
 	};
