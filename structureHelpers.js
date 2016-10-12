@@ -279,12 +279,25 @@
 		};
 		step();
 	};
+
+	var sender = function(){
+		var todo= [];
+		var f = function(){
+			var args = arguments;
+			todo.map(function(g){
+				g.apply(null, args);
+			});
+		};
+		f.add = function(g){todo.push(g);return f;};
+		return f;
+	};
 	window.structureHelpers = {
 		makeTrees: makeTrees,
 		allNodes: allNodes,
 		copySet:copySet,
 		actionSequence:actionSequence,
-		timeoutWhile:timeoutWhile
+		timeoutWhile:timeoutWhile,
+		sender:sender
 	};
 })();
 

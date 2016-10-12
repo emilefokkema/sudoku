@@ -15,7 +15,8 @@
 <script src="canvasMazeDrawer.js"></script>
 <script src="mazeStringifier.js"></script>
 <script src="progressBar.js"></script>
-<script src="showPopup.js"></script>>
+<script src="showPopup.js"></script>
+<script src="joystick.js"></script>
 <script>
 (function(w, h, body, mazeGame){
 	Array.prototype.first = function(test){
@@ -53,19 +54,24 @@
 
 	var space = (function(){
 		var shift = position(0,0);
-		var boxSize, maxY, maxX;
+		var boxSize, maxY, maxX, bottomPadding;
+		var getInnerHeight = function(){return h - (bottomPadding || 0);};
 		var setBoxSize = function(s){
-			boxSize = s;
-			maxY = Math.floor(h / boxSize);
+			boxSize = w * s;
+			maxY = Math.floor(getInnerHeight() / boxSize);
 			maxX = Math.floor(w / boxSize);
 		};
 		var mazePositionToScreenPosition = function(p){
+			if(p==null){
+				console.log("oeps");
+			}
 			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2)).plus(shift);
 		};
 
 		var representsSmallDistance = function(dx, dy){
 			return Math.abs(dx) + Math.abs(dy) < boxSize / 3;
 		};
+		var setBottomPadding = function(p){bottomPadding = p;};
 		return {
 			positionFromMazePosition:mazePositionToScreenPosition,
 			representsSmallDistance:representsSmallDistance,
@@ -73,7 +79,9 @@
 			getMaxY:function(){return maxY;},
 			setBoxSize:setBoxSize,
 			getBoxSize:function(){return boxSize;},
-			setShift:function(s){shift = s;}
+			setShift:function(s){shift = s;},
+			setBottomPadding:setBottomPadding,
+			getInnerHeight:getInnerHeight
 		};
 
 	})();
@@ -87,6 +95,18 @@
 	var levelProvider = mazeGame.getLevelProvider();
 	var progressBar = mazeGame.getProgressBar(body);
 	var showPopup = mazeGame.getShowPopup(body, h);
+
+	var weAreOnMobile = function(){
+		return h > w;
+	};
+
+	if(weAreOnMobile()){
+		space.setBottomPadding(200);
+		var joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender)(0,space.getInnerHeight(),200);
+		body.appendChild(joystick.svg);
+	}
+
+	
 
 	var playLevelWithModel = function(svg, l, model, onSucceed, onFail){
 		var succeed, fail, succeeded = false, failed = false;
@@ -180,7 +200,7 @@
 		var createProgress = progressBar().createProgressPart;
 		var seq = structureHelpers.actionSequence();
 		mazeMaker.make(seq, space.getMaxX(), space.getMaxY(), createProgress);
-		svgMazeDrawer.draw(seq, createProgress, l.boxSize, false, w, h);
+		svgMazeDrawer.draw(seq, createProgress, space.getBoxSize(), false, w, space.getInnerHeight());
 		seq.add(function(soFar, done, update){
 			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail);
 			update(1);
