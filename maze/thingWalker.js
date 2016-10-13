@@ -54,28 +54,26 @@
 			var keyupListener = function(){
 				going = false;
 			};
+			var receiveDirection = function(d){
+				currentDirection = d;
+				going = true;
+			};
 			body.addEventListener('keyup',keyupListener);
 			var keyDownListener = function(e){
 				if(e.key === "ArrowUp"){
-					currentDirection = direction.TOP;
+					receiveDirection(direction.TOP);
 				}else if(e.key === "ArrowDown"){
-					currentDirection = direction.BOTTOM;
+					receiveDirection(direction.BOTTOM);
 				}else if(e.key === "ArrowLeft"){
-					currentDirection = direction.LEFT;
+					receiveDirection(direction.LEFT);
 				}else if(e.key === "ArrowRight"){
-					currentDirection = direction.RIGHT;
+					receiveDirection(direction.RIGHT);
 				}
-				going = true;
 			};
 			body.addEventListener('keydown',keyDownListener);
 			if(joystick){
-				joystick.onSteer(function(d){
-					currentDirection = d;
-					going = true;
-				});
-				joystick.onRelease(function(){
-					going = false;
-				});
+				joystick.onSteer(receiveDirection, true);
+				joystick.onRelease(keyupListener, true);
 			}
 			var doStep = function(){
 				if(!going){
@@ -88,6 +86,10 @@
 				console.log("removing listeners");
 				body.removeEventListener('keyup', keyupListener);
 				body.removeEventListener('keydown', keyDownListener);
+				if(joystick){
+					joystick.onSteer(receiveDirection, false);
+					joystick.onRelease(keyupListener, false);
+				}
 			};
 			return {
 				doStep:doStep,

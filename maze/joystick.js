@@ -68,8 +68,20 @@
 			});
 			return {
 				svg:svg,
-				onSteer:function(f){onSteer.add(f);},
-				onRelease:function(f){onRelease.add(f);}
+				onSteer:function(f, add){
+					if(add){
+						onSteer.add(f);
+					}else{
+						onSteer.remove(f);
+					}
+				},
+				onRelease:function(f, add){
+					if(add){
+						onRelease.add(f);
+					}else{
+						onRelease.remove(f);
+					}
+				}
 			};
 		};
 	};

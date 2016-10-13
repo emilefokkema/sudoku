@@ -289,6 +289,12 @@
 			});
 		};
 		f.add = function(g){todo.push(g);return f;};
+		f.remove = function(g){
+			var index;
+			if((index = todo.indexOf(g))!=-1){
+				todo.splice(index,1);
+			}
+		};
 		return f;
 	};
 	window.structureHelpers = {
