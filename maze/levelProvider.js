@@ -5,7 +5,7 @@
 		var currentCounter, currentBoxSize, currentGreenSpeed;
 		var reset = function(){
 			currentCounter = 1;
-			currentBoxSize = 50;
+			currentBoxSize = 0.1;
 			currentGreenSpeed = 1;
 		};
 		reset();
@@ -18,9 +18,7 @@
 			if(currentCounter == 1){
 				l.message = "<span>Use the arrow keys to move </span><span class='circle redcircle'> </span><span>to</span><span class='circle yellowcircle'> </span><span>before</span><span class='circle greencircle'> </span><span>gets there.</span>";
 			}
-			if(currentBoxSize > 5){
-				currentBoxSize -= 2;
-			}
+			currentBoxSize *= 0.9;
 			currentCounter++;
 			currentGreenSpeed += 1;
 			return l;

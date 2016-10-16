@@ -42,7 +42,8 @@
 			return {doStep:doStep};
 		};
 
-		var controllableMazeWalker = function(m, startPosition){
+		var controllableMazeWalker = function(m, startPosition, joystick){
+			console.log("joystick:",joystick);
 			var currentDirection, currentPosition = startPosition, going = false;
 			var goInDirection = function(d){
 				if(currentPosition.freeDirections.indexOf(d) != -1){
@@ -53,20 +54,27 @@
 			var keyupListener = function(){
 				going = false;
 			};
+			var receiveDirection = function(d){
+				currentDirection = d;
+				going = true;
+			};
 			body.addEventListener('keyup',keyupListener);
 			var keyDownListener = function(e){
 				if(e.key === "ArrowUp"){
-					currentDirection = direction.TOP;
+					receiveDirection(direction.TOP);
 				}else if(e.key === "ArrowDown"){
-					currentDirection = direction.BOTTOM;
+					receiveDirection(direction.BOTTOM);
 				}else if(e.key === "ArrowLeft"){
-					currentDirection = direction.LEFT;
+					receiveDirection(direction.LEFT);
 				}else if(e.key === "ArrowRight"){
-					currentDirection = direction.RIGHT;
+					receiveDirection(direction.RIGHT);
 				}
-				going = true;
 			};
 			body.addEventListener('keydown',keyDownListener);
+			if(joystick){
+				joystick.onSteer(receiveDirection, true);
+				joystick.onRelease(keyupListener, true);
+			}
 			var doStep = function(){
 				if(!going){
 					return currentPosition;
@@ -78,6 +86,10 @@
 				console.log("removing listeners");
 				body.removeEventListener('keyup', keyupListener);
 				body.removeEventListener('keydown', keyDownListener);
+				if(joystick){
+					joystick.onSteer(receiveDirection, false);
+					joystick.onRelease(keyupListener, false);
+				}
 			};
 			return {
 				doStep:doStep,
@@ -112,9 +124,9 @@
 					return easer.bufferEaser(setPosition, easiness, maxSpeed, getNextGoal);
 				};
 			});
-			this.extend('controllableThingWalker',function(){
+			this.extend('controllableThingWalker',function(joystick){
 				makeWalker = function(m, firstPosition){
-					return controllableMazeWalker(m, firstPosition);
+					return controllableMazeWalker(m, firstPosition, joystick);
 				};
 				makeEaser = function(setPosition, easiness, maxSpeed, getNextGoal){
 					return easer(setPosition, easiness, maxSpeed, getNextGoal);

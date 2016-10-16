@@ -15,7 +15,8 @@
 <script src="canvasMazeDrawer.js"></script>
 <script src="mazeStringifier.js"></script>
 <script src="progressBar.js"></script>
-<script src="showPopup.js"></script>>
+<script src="showPopup.js"></script>
+<script src="joystick.js"></script>
 <script>
 (function(w, h, body, mazeGame){
 	Array.prototype.first = function(test){
@@ -46,6 +47,7 @@
 			}
 		};
 	};
+	var joystick;
 	var mazeMaker = window.getMazeMaker(structureHelpers.timeoutWhile);
 	var chooseRandom = function(arr){
 		return arr[Math.floor(Math.random() * arr.length)];
@@ -53,19 +55,24 @@
 
 	var space = (function(){
 		var shift = position(0,0);
-		var boxSize, maxY, maxX;
+		var boxSize, maxY, maxX, bottomPadding;
+		var getInnerHeight = function(){return h - (bottomPadding || 0);};
 		var setBoxSize = function(s){
-			boxSize = s;
-			maxY = Math.floor(h / boxSize);
+			boxSize = w * s;
+			maxY = Math.floor(getInnerHeight() / boxSize);
 			maxX = Math.floor(w / boxSize);
 		};
 		var mazePositionToScreenPosition = function(p){
+			if(p==null){
+				console.log("oeps");
+			}
 			return position(boxSize * (p.x + 1/2), boxSize * (p.y + 1/2)).plus(shift);
 		};
 
 		var representsSmallDistance = function(dx, dy){
 			return Math.abs(dx) + Math.abs(dy) < boxSize / 3;
 		};
+		var setBottomPadding = function(p){bottomPadding = p;};
 		return {
 			positionFromMazePosition:mazePositionToScreenPosition,
 			representsSmallDistance:representsSmallDistance,
@@ -73,10 +80,22 @@
 			getMaxY:function(){return maxY;},
 			setBoxSize:setBoxSize,
 			getBoxSize:function(){return boxSize;},
-			setShift:function(s){shift = s;}
+			setShift:function(s){shift = s;},
+			setBottomPadding:setBottomPadding,
+			getInnerHeight:getInnerHeight
 		};
 
 	})();
+	var weAreOnMobile = function(){
+		return h > w;
+	};
+
+	if(weAreOnMobile()){
+		var joystickSize = 350;
+		space.setBottomPadding(joystickSize);
+		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction)((w - joystickSize)/2,space.getInnerHeight(),joystickSize);
+		body.appendChild(joystick.svg);
+	}
 	var positionableThing = mazeGame.getPositionableThing(space, structureHelpers.copySet);
 	var direction = mazeMaker.direction;
 	var svgMazeDrawer = mazeGame.getSvgMazeDrawer(direction, structureHelpers.timeoutWhile, contourMaker, position, space.setShift);
@@ -88,7 +107,11 @@
 	var progressBar = mazeGame.getProgressBar(body);
 	var showPopup = mazeGame.getShowPopup(body, h);
 
-	var playLevelWithModel = function(svg, l, model, onSucceed, onFail){
+	
+
+	
+
+	var playLevelWithModel = function(svg, l, model, onSucceed, onFail, joystick){
 		var succeed, fail, succeeded = false, failed = false;
 		var circleThing = function(color, onMeeting){
 			var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
@@ -123,7 +146,7 @@
 		});
 		greenCircle.setPosition(space.positionFromMazePosition(initialGreenPosition));
 		var walkers = [
-			thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10),
+			thingWalker.controllableThingWalker(model, redCircle.setPosition, initialRedPosition, 2, 10, joystick),
 			thingWalker.autonomousThingWalker(model, greenCircle.setPosition,initialGreenPosition, 2,l.greenSpeed)
 			];
 
@@ -174,15 +197,15 @@
 		}
 	};
 
-	var playLevel = function(l, onSucceed, onFail){
+	var playLevel = function(l, onSucceed, onFail, joystick){
 		console.log("beginning to play level "+l.number);
 		space.setBoxSize(l.boxSize);
 		var createProgress = progressBar().createProgressPart;
 		var seq = structureHelpers.actionSequence();
 		mazeMaker.make(seq, space.getMaxX(), space.getMaxY(), createProgress);
-		svgMazeDrawer.draw(seq, createProgress, l.boxSize, false, w, h);
+		svgMazeDrawer.draw(seq, createProgress, space.getBoxSize(), false, w, space.getInnerHeight());
 		seq.add(function(soFar, done, update){
-			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail);
+			playLevelWithModel(soFar.svg, l, soFar.model, onSucceed, onFail, joystick);
 			update(1);
 			done();
 		},createProgress(""));
@@ -200,7 +223,7 @@
 				levelProvider.reset();
 				playAgain();
 			},function(){});
-		});
+		}, joystick);
 	};
 
 	playAgain();
