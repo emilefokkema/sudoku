@@ -3,7 +3,7 @@
 
 	window.mazeGame.getJoystickMaker = function(body, sender, direction){
 		return function(left, top, size){
-			var thickness = size/10, color = '#666';
+			var thickness = size/10, color = '#444';
 			var onSteer = sender();
 			var onRelease = sender();
 			var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');

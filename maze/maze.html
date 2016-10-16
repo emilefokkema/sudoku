@@ -91,8 +91,9 @@
 	};
 
 	if(weAreOnMobile()){
-		space.setBottomPadding(200);
-		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction)(0,space.getInnerHeight(),200);
+		var joystickSize = 350;
+		space.setBottomPadding(joystickSize);
+		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction)((w - joystickSize)/2,space.getInnerHeight(),joystickSize);
 		body.appendChild(joystick.svg);
 	}
 	var positionableThing = mazeGame.getPositionableThing(space, structureHelpers.copySet);
