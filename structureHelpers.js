@@ -297,13 +297,28 @@
 		};
 		return f;
 	};
+
+	var throttle = function(f, interval){
+		var going = false;
+		return function(){
+			if(!going){
+				var args = arguments;
+				going = true;
+				setTimeout(function(){
+					f.apply(null, args);
+					going = false;
+				}, interval);
+			}
+		};
+	};
 	window.structureHelpers = {
 		makeTrees: makeTrees,
 		allNodes: allNodes,
 		copySet:copySet,
 		actionSequence:actionSequence,
 		timeoutWhile:timeoutWhile,
-		sender:sender
+		sender:sender,
+		throttle:throttle
 	};
 })();
 

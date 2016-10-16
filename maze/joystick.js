@@ -1,7 +1,7 @@
 (function(){
 	window.mazeGame = window.mazeGame || {};
 
-	window.mazeGame.getJoystickMaker = function(body, sender, direction){
+	window.mazeGame.getJoystickMaker = function(body, sender, direction, throttle){
 		return function(left, top, size){
 			var thickness = size/10, color = '#666';
 			var onSteer = sender();
@@ -56,12 +56,12 @@
 				}
 				return direction.TOP;
 			};
-			body.addEventListener('touchmove',function(e){
+			body.addEventListener('touchmove',throttle(function(e){
 				var t = e.changedTouches.item(0);
 				var x = t.clientX - left, y = t.clientY - top;
 				stick.setPosition(x, y);
 				onSteer(directionOf(x,y));
-			});
+			},20));
 			body.addEventListener('touchend',function(){
 				stick.setPosition(size/2, size/2);
 				onRelease();

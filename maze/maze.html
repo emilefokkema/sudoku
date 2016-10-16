@@ -92,7 +92,7 @@
 
 	if(weAreOnMobile()){
 		space.setBottomPadding(200);
-		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction)(0,space.getInnerHeight(),200);
+		joystick = mazeGame.getJoystickMaker(body, structureHelpers.sender, mazeMaker.direction, structureHelpers.throttle)(0,space.getInnerHeight(),200);
 		body.appendChild(joystick.svg);
 	}
 	var positionableThing = mazeGame.getPositionableThing(space, structureHelpers.copySet);
