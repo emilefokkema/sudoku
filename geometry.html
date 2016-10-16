@@ -379,7 +379,7 @@
 				};
 			})();
 
-			passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL;};
+			passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL || f == shapeFilter.NOT_LOCUS;};
 
 			getSpecs = function(){
 				return {
@@ -443,7 +443,7 @@
 				}
 			};
 
-			passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH;};
+			passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH|| f == shapeFilter.NOT_LOCUS;};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
 				if(oldSpecs.p1.equals(newSpecs.p1)){
@@ -517,7 +517,7 @@
 				};
 			})();
 
-			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH;};
+			passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH|| f == shapeFilter.NOT_LOCUS;};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
 				if(p.equals(oldSpecs.p1)){
@@ -544,13 +544,11 @@
 
 			closestPointTo = function(p){return loc;};
 
-			passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
+			passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL|| f == shapeFilter.NOT_LOCUS;};
 
 			changer = {
 				setLocation: function(l){loc = l;}
 			};
-
-			passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL;};
 
 			getSpecs = function(){
 				return {
@@ -598,7 +596,8 @@
 		CIRCLE:5,
 		LOCUS: 6,
 		SEGMENT: 7,
-		LINE_ISH: 8
+		LINE_ISH: 8,
+		NOT_LOCUS: 9
 	};
 
 	var intersectionSet = function(){
@@ -1901,7 +1900,7 @@
 			});
 		};
 		var selectLocationOrShapeOrIntersection = function(send, suggest){
-			canvas.setMouseFilter(canvas.mouseFilter.ALL);
+			canvas.setMouseFilter(canvas.mouseFilter.NOT_LOCUS);
 			canvas.setShapeCursor(canvas.cursor.none);
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
