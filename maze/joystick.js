@@ -38,6 +38,7 @@
 					}
 					ring.setAttribute('cx',x);
 					ring.setAttribute('cy',y);
+					return d > size/8;
 				};
 				return {
 					setPosition:setPosition
@@ -59,8 +60,9 @@
 			body.addEventListener('touchmove',function(e){
 				var t = e.changedTouches.item(0);
 				var x = t.clientX - left, y = t.clientY - top;
-				stick.setPosition(x, y);
-				onSteer(directionOf(x,y));
+				if(stick.setPosition(x, y)){
+					onSteer(directionOf(x,y));
+				}
 			});
 			body.addEventListener('touchend',function(){
 				stick.setPosition(size/2, size/2);
