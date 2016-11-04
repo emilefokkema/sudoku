@@ -6,6 +6,7 @@
 <script src="../makeModule.js"></script>
 <script src="../makeNode.js"></script>
 <script src="../structureHelpers.js"></script>
+<script src="planeMath.js"></script>
 <script>
 (function(document, w,h){
 	var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
@@ -33,34 +34,8 @@
 			}
 		};
 	};
-	var sender = function(){
-		var todo= [];
-		var f = function(){
-			var args = arguments;
-			todo.map(function(g){
-				g.apply(null, args);
-			});
-		};
-		f.add = function(g){todo.push(g);return f;};
-		return f;
-	};
-	var point = function(x,y){
-		
-		return {
-			x:x,
-			y:y,
-			minus: function(p){return point(x - p.x, y - p.y);},
-			plus: function(p){return point(x + p.x, y + p.y);},
-			cross:function(p){return x*p.y - y*p.x;},
-			mod: function(){return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));},
-			scale: function(r){return point(r*x, r*y);},
-			unit: function(){return this.scale(1/this.mod());},
-			toString: function(){return "("+x+","+y+")";},
-			equals: function(p){return this == p|| (x == p.x && y == p.y);},
-			matrix:function(a,b,c,d){return point(a*x+b*y,c*x+d*y);},
-			dot:function(p){return x*p.x + y*p.y;}
-		};
-	};
+	var sender = structureHelpers.sender;
+	
 	var copySet = structureHelpers.copySet;
 	var distinctArray = function(arr){
 		var arr2 = arr.slice();
@@ -76,113 +51,20 @@
 			push:push
 		};
 	};
-	var isBetween = function(q, p1, p2){
-		return q.minus(p1).dot(q.minus(p2)) <= 0;
-	};
-
-	var intersectLines = function(p1,p2,q1,q2){
-		var x1 = p2.minus(p1);
-		var x2 = q2.minus(q1);
-		var cross = x2.cross(x1);
-		if(cross == 0){
-			return null;
-		}
-		var st = q1.minus(p1).matrix(-x2.y, x2.x, -x1.y, x1.x).scale(1/cross);
-		return p1.plus(p2.minus(p1).scale(st.x));
-	};
-
-	var intersectSegments = function(p1, p2, q1, q2){
-		var i = intersectLines(p1, p2, q1, q2);
-		var onFirst = isBetween(i,p1,p2), onSecond = isBetween(i,q1,p2);
-		if(onFirst && onSecond){
-			return i;
-		}
-		return null;
-	};
-
-	var intersectLineAndSegment = function(p1, p2, q1, q2){
-		var i = intersectLines(p1, p2, q1, q2);
-		var onSecond = isBetween(i,q1,q2);
-		if(onSecond){
-			return i;
-		}
-		return null;
-	};
-
-	var intersectSegmentAndCircle = function(p1, p2, c, r, index){
-		var i = intersectLineAndCircle(p1, p2, c, r, index);
-		if(i == null){
-			return null;
-		}
-		if(isBetween(i,p1, p2)){
-			return i;
-		}
-		return null;
-	};
-
-	var intersectCircles = function(p1, r1, p2, r2, index){
-		var sina, cosa, d = p1.minus(p2).mod();
-		if(r1 + r2 < d || r1 + d < r2 || r2 + d < r1 || d == 0){
-			return null;
-		}else if(r1 + r2 == d){
-			return p1.plus(p2.minus(p1).unit().scale(r1));
-		}else{
-			cosa = (r1 * r1 - r2 * r2 + d * d) / (2 * d * r1);
-			sina = Math.sqrt(1 - cosa * cosa) * (index == 0 ? 1 : -1);
-			return p1.plus(p2.minus(p1).unit().scale(r1).matrix(cosa, -sina, sina, cosa));
-		}
-	};
-
-	var intersectLineAndCircle = function(p1, p2, c, r, index){
-		var sina, cossign, cosa, x = c.minus(p1), y = p2.minus(p1);
-		var cross, dot = x.dot(y);
-		var closestToCenter = p1.plus(y.unit().scale(dot/y.mod()));
-		var d = closestToCenter.minus(c).mod();
-		if(d < 0.00001){
-			return c.plus(y.unit().scale(r * (index == 0 ? 1 : -1)));
-		}else if(d > r){
-			return null;
-		}else if(d == r){
-			return closestToCenter;
-		}else{
-			cossign = (x.cross(y) > 0 ? 1 : -1)
-			cosa = (d / r) * cossign;
-			
-			sina = Math.sqrt(1 - cosa * cosa) * (index == 0 ? 1 : -1);
-			return c.plus(closestToCenter.minus(c).unit().scale(r * cossign).matrix(cosa, -sina, sina, cosa));
-		}
-	};
-
-	var reflectPointInLine = function(p1, p2, p3){
-		var x = p2.minus(p1), y = p3.minus(p1), along = x.unit().scale(x.dot(y) / x.mod()), perp = y.minus(along);
-		return p1.plus(along).plus(perp.scale(-1));
-	};
-
-	var projectPointOnLine = function(p1, p2, p3){
-		var x = p2.minus(p1), y = p3.minus(p1), along = x.unit().scale(x.dot(y) / x.mod());
-		return p1.plus(along);
-	};
-
-	var getPointOnAngleBisector = function(p1, p2, p3){
-		var x = p1.minus(p2), y = p3.minus(p2), dot = x.dot(y), along = x.unit().scale(dot / x.mod()), perp = y.minus(along), cross = x.cross(y);
-		var cosx = dot / (x.mod() * y.mod()),
-			sinSq = (1 - cosx) / 2,
-			cosSq = 1 - sinSq,
-			sin = Math.sqrt(sinSq),
-			cos = Math.sqrt(cosSq) * (cross > 0 ? 1 : -1);
-		return p2.plus(x.matrix(cos, -sin, sin, cos));
-	};
+	var obj = {};
+	window.initGeometry(obj);
+	var planeMath = obj.planeMath;
 
 	var intersectWithBox = (function(){
 		
 		var sides = [
-			{p1:point(0,0), p2: point(w,0)},
-			{p1:point(w,0), p2: point(w,h)},
-			{p1:point(w,h), p2: point(0,h)},
-			{p1:point(0,h), p2: point(0,0)}
+			{p1:planeMath.point(0,0), p2: planeMath.point(w,0)},
+			{p1:planeMath.point(w,0), p2: planeMath.point(w,h)},
+			{p1:planeMath.point(w,h), p2: planeMath.point(0,h)},
+			{p1:planeMath.point(0,h), p2: planeMath.point(0,0)}
 		];
 		var intersectWithSide = function(p1, p2, side){
-			return intersectLines(p1, p2, side.p1, side.p2);
+			return planeMath.intersectLines(p1, p2, side.p1, side.p2);
 		};
 		
 
@@ -201,7 +83,7 @@
 		var getSpecs = function(){return {};},
 			changer = {},
 			useSpecs = function(_specs){},
-			closestPointTo = function(p){return point(0,0);},
+			closestPointTo = function(p){return planeMath.point(0,0);},
 			repositionPoint = function(){},
 			getChanger = function(){
 				var o = {useSpecs:useSpecs};
@@ -233,7 +115,7 @@
 			passesFilter = function(f){return true;},
 			available = true,
 			onchangeavailability = sender(),
-			getLabelLocation = function(){return point(0,0);},
+			getLabelLocation = function(){return planeMath.point(0,0);},
 			toString = function(){return '';},
 			movePointAround = function(p){return [p];};
 		this.expose({
@@ -256,7 +138,7 @@
 		this.extend('circle',function(){
 			var center, r;
 			useSpecs = function(_specs){
-				center = _specs.center || point(0,0);
+				center = _specs.center || planeMath.point(0,0);
 				r = _specs.r || 1;
 			};
 			useSpecs(specs);
@@ -300,7 +182,7 @@
 
 			getLabelLocation = function(){
 				var d = Math.sqrt(2) / 2;
-				return center.plus(point(1,0).scale(r+2).matrix(d, d, -d, d));
+				return center.plus(planeMath.point(1,0).scale(r+2).matrix(d, d, -d, d));
 			};
 
 			repositionPoint = function(p, oldSpecs, newSpecs){
@@ -315,14 +197,14 @@
 		this.extend('line',function(){
 			var p1, p2;
 			useSpecs = function(_specs){
-				p1 = _specs.p1 || point(0,0);
-				p2 = _specs.p2 || point(1,0);
+				p1 = _specs.p1 || planeMath.point(0,0);
+				p2 = _specs.p2 || planeMath.point(1,0);
 			};
 			toString = function(){return 'line('+p1.toString()+','+p2.toString()+')';};
 			useSpecs(specs);
 			
 			closestPointTo = function(p){
-				return projectPointOnLine(p1, p2, p);
+				return planeMath.projectPointOnLine(p1, p2, p);
 			};
 			distance = function(p){
 				return p.minus(closestPointTo(p)).mod();
@@ -371,8 +253,8 @@
 		this.extend('segment',function(){
 			var p1, p2, x;
 			useSpecs = function(_specs){
-				p1 = _specs.p1 || point(0,0);
-				p2 = _specs.p2 || point(1,0);
+				p1 = _specs.p1 || planeMath.point(0,0);
+				p2 = _specs.p2 || planeMath.point(1,0);
 			};
 			toString = function(){return 'segment('+p1.toString()+','+p2.toString()+')';};
 			useSpecs(specs);
@@ -380,7 +262,7 @@
 				var x = p2.minus(p1);
 				var dot1 = p.minus(p1).dot(x), dot2 = p.minus(p2).dot(x), sign = dot1 * dot2;
 				if(sign < 0){
-					return projectPointOnLine(p1, p2, p);
+					return planeMath.projectPointOnLine(p1, p2, p);
 				}else{
 					if(dot1 >= 0){
 						return p2;
@@ -444,7 +326,7 @@
 		this.extend('point',function(){
 			var loc;
 			useSpecs = function(_specs){
-				loc = _specs.location || point(0,0);
+				loc = _specs.location || planeMath.point(0,0);
 			};
 			toString = function(){return 'point'+loc.toString();};
 			useSpecs(specs);
@@ -529,7 +411,7 @@
 				makeForShapes: function(s1, s2){
 					return [
 						intersection(s1, s2, function(s1specs, s2specs){
-							return intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
+							return planeMath.intersectLines(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
 						}, 0)
 					];
 				}
@@ -541,7 +423,7 @@
 				makeForShapes: function(s1, s2){
 					return [
 						intersection(s1, s2, function(s1specs, s2specs){
-							return intersectSegments(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
+							return planeMath.intersectSegments(s1specs.p1, s1specs.p2, s2specs.p1, s2specs.p2);
 						}, 0)
 					];
 				}
@@ -553,7 +435,7 @@
 				makeForShapes: function(s1, s2){
 					return [
 						intersection(s1, s2, function(s1specs, s2specs){
-							return intersectLineAndSegment(s2specs.p1, s2specs.p2, s1specs.p1, s1specs.p2);
+							return planeMath.intersectLineAndSegment(s2specs.p1, s2specs.p2, s1specs.p1, s1specs.p2);
 						}, 0)
 					];
 				}
@@ -565,7 +447,7 @@
 				makeForShapes:function(s1, s2){
 					return [0,1].map(function(i){
 						return intersection(s1, s2, function(s1specs, s2specs){
-							return intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, i);
+							return planeMath.intersectCircles(s1specs.center, s1specs.r, s2specs.center, s2specs.r, i);
 						}, i);
 					});
 				}
@@ -576,7 +458,7 @@
 				makeForShapes:function(s1, s2){
 					return [0,1].map(function(i){
 						return intersection(s1, s2, function(s1specs, s2specs){
-							return intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, i);
+							return planeMath.intersectLineAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, i);
 						}, i);
 					});
 				}
@@ -587,7 +469,7 @@
 				makeForShapes:function(s1, s2){
 					return [0,1].map(function(i){
 						return intersection(s1, s2, function(s1specs, s2specs){
-							return intersectSegmentAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, i);
+							return planeMath.intersectSegmentAndCircle(s1specs.p1, s1specs.p2, s2specs.center, s2specs.r, i);
 						}, i);
 					});
 				}
@@ -597,7 +479,7 @@
 		
 		var getForShapes = function(s1, s2, p){
 			var candidates = all.filter(function(i){return i.s1 == s1 && i.s2 == s2 || i.s2 == s1 && i.s1 == s2;});
-			var result = candidates.lastMin(function(c){return (c.calculate()||point(0,0)).minus(p).mod();});
+			var result = candidates.lastMin(function(c){return (c.calculate()||planeMath.point(0,0)).minus(p).mod();});
 			if(result.calculate()){
 				return result;
 			}
@@ -1097,7 +979,7 @@
 			var toReturn = function(e){
 				var hitPoints, hitShape, hitIntersection, intersectingShape1, intersectingShape2, hitShapes = [];
 				shapes.map(function(s){
-					if(!s.toBeExcludedFromMouseEvents && s.isAvailable() && (!s.isHidden() || showHidden) && s.passesFilter(currentMouseFilter) && s.contains(point(e.clientX, e.clientY))){
+					if(!s.toBeExcludedFromMouseEvents && s.isAvailable() && (!s.isHidden() || showHidden) && s.passesFilter(currentMouseFilter) && s.contains(planeMath.point(e.clientX, e.clientY))){
 						hitShapes.push(s);
 						
 					}else{
@@ -1114,7 +996,7 @@
 						if(hitShapes.length == 1){
 							doToHitShape(hitShapes[hitShapes.length - 1], e);
 						}else{
-							hitIntersection = intersections.getForShapes(hitShapes[hitShapes.length - 2], hitShapes[hitShapes.length - 1], point(e.clientX, e.clientY));
+							hitIntersection = intersections.getForShapes(hitShapes[hitShapes.length - 2], hitShapes[hitShapes.length - 1], planeMath.point(e.clientX, e.clientY));
 							if(hitIntersection){
 								doToHitIntersection((function(i){
 									return intersectionWrapperSet.addFor(i);
@@ -1309,7 +1191,7 @@
 					console.log(label);
 					return function(){
 						var match = info.match(new RegExp("("+floatPattern+"),("+floatPattern+")"));
-						var p = point(parseFloat(match[1]), parseFloat(match[2]));
+						var p = planeMath.point(parseFloat(match[1]), parseFloat(match[2]));
 						p = canvas.addPoint({location:p});
 						if(label){
 							p.setLabel(label);
@@ -1326,7 +1208,7 @@
 				make:function(info, label, hidden){
 					return function(){
 						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),("+floatPattern+")"));
-						var c = canvas.addCircle({center:point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
+						var c = canvas.addCircle({center:planeMath.point(parseFloat(match[1]), parseFloat(match[2])),r:parseFloat(match[3])});
 						if(label){
 							c.setLabel(label);
 						}
@@ -1343,7 +1225,7 @@
 				make:function(info, label, hidden){
 					return function(){
 						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
-						var l = canvas.addLine({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+						var l = canvas.addLine({p1:planeMath.point(parseFloat(match[1]),parseFloat(match[2])),p2:planeMath.point(parseFloat(match[3]),parseFloat(match[4]))});
 						if(label){
 							l.setLabel(label);
 						}
@@ -1360,7 +1242,7 @@
 				make:function(info, label, hidden){
 					return function(){
 						var match = info.match(new RegExp("\\(("+floatPattern+"),("+floatPattern+")\\),\\(("+floatPattern+"),("+floatPattern+")\\)"));
-						var l = canvas.addSegment({p1:point(parseFloat(match[1]),parseFloat(match[2])),p2:point(parseFloat(match[3]),parseFloat(match[4]))});
+						var l = canvas.addSegment({p1:planeMath.point(parseFloat(match[1]),parseFloat(match[2])),p2:planeMath.point(parseFloat(match[3]),parseFloat(match[4]))});
 						if(label){
 							l.setLabel(label);
 						}
@@ -1378,7 +1260,7 @@
 					return function(argByIndex){
 						var matchWithId, matchWithPoint = info.match(new RegExp("(\\d+),(\\d+),\\(("+floatPattern+"),("+floatPattern+")\\)"));
 						if(matchWithPoint){
-							return canvas.getIntersectionForShapesAndPoint(argByIndex(matchWithPoint[1]), argByIndex(matchWithPoint[2]), point(parseFloat(matchWithPoint[3]), parseFloat(matchWithPoint[4])));
+							return canvas.getIntersectionForShapesAndPoint(argByIndex(matchWithPoint[1]), argByIndex(matchWithPoint[2]), planeMath.point(parseFloat(matchWithPoint[3]), parseFloat(matchWithPoint[4])));
 						}
 						else{
 							matchWithId = info.match(new RegExp("(\\d+),(\\d+),(\\d+)"));
@@ -1695,11 +1577,11 @@
 			},
 			pointLineReflection: function(canvasPoint, line, canvasPointReflection){
 				linkChange(canvasPointReflection, line, function(oldSpecs, newSpecs, changer, constants){
-					changer.setLocation(reflectPointInLine(newSpecs.p1, newSpecs.p2, constants[0].location));
+					changer.setLocation(planeMath.reflectPointInLine(newSpecs.p1, newSpecs.p2, constants[0].location));
 				}, [canvasPoint], 0);
 
 				linkChange(canvasPointReflection, canvasPoint, function(oldSpecs, newSpecs, changer, constants){
-					changer.setLocation(reflectPointInLine(constants[0].p1, constants[0].p2, newSpecs.location));
+					changer.setLocation(planeMath.reflectPointInLine(constants[0].p1, constants[0].p2, newSpecs.location));
 				}, [line], 0);
 			},
 			locus: function(canvasPoint1, locusShape, canvasPoint2){
@@ -1769,21 +1651,21 @@
 				linkChange(line, canvasPoint1, function(oldSpecs, newSpecs, changer, constants){
 					changer.together(function(){
 						this.setP1(constants[0].location);
-						this.setP2(getPointOnAngleBisector(newSpecs.location, constants[0].location, constants[1].location));
+						this.setP2(planeMath.getPointOnAngleBisector(newSpecs.location, constants[0].location, constants[1].location));
 					});
 				}, [canvasPoint2, canvasPoint3], 0);
 
 				linkChange(line, canvasPoint2, function(oldSpecs, newSpecs, changer, constants){
 					changer.together(function(){
 						this.setP1(newSpecs.location);
-						this.setP2(getPointOnAngleBisector(constants[0].location, newSpecs.location, constants[1].location));
+						this.setP2(planeMath.getPointOnAngleBisector(constants[0].location, newSpecs.location, constants[1].location));
 					});
 				}, [canvasPoint1, canvasPoint3], 0);
 
 				linkChange(line, canvasPoint3, function(oldSpecs, newSpecs, changer, constants){
 					changer.together(function(){
 						this.setP1(constants[1].location);
-						this.setP2(getPointOnAngleBisector(constants[0].location, constants[1].location, newSpecs.location));
+						this.setP2(planeMath.getPointOnAngleBisector(constants[0].location, constants[1].location, newSpecs.location));
 					});
 				}, [canvasPoint1, canvasPoint2], 0);
 			}
@@ -1797,16 +1679,16 @@
 			canvas.setMouseFilter(canvas.mouseFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.onmouseovernotshape(function(e){
-				suggest(point(e.clientX, e.clientY));
+				suggest(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onmouseovershape(function(s, e){
-				suggest(s.closestPointTo(point(e.clientX, e.clientY)));
+				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onclicknotshape(function(e){
-				send(point(e.clientX, e.clientY));
+				send(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onclickshape(function(s,e){
-				send(s.closestPointTo(point(e.clientX, e.clientY)), s);
+				send(s.closestPointTo(planeMath.point(e.clientX, e.clientY)), s);
 			});
 		};
 		var selectLocationOrShapeOrIntersection = function(send, suggest){
@@ -1815,19 +1697,19 @@
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
 			canvas.onmouseovernotshape(function(e){
-				suggest(point(e.clientX, e.clientY));
+				suggest(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onmouseovershape(function(s,e){
-				suggest(s.closestPointTo(point(e.clientX, e.clientY)));
+				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onmouseoverintersection(function(i, e){
 				suggest(i.calculate());
 			});
 			canvas.onclicknotshape(function(e){
-				send(point(e.clientX, e.clientY));
+				send(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onclickshape(function(s, e){
-				send(s.closestPointTo(point(e.clientX, e.clientY)), s);
+				send(s.closestPointTo(planeMath.point(e.clientX, e.clientY)), s);
 			});
 			canvas.onclickintersection(function(i){
 				send(null, null, i);
@@ -1843,10 +1725,10 @@
 				send(s);
 			});
 			canvas.onmouseovernotshape(function(e){
-				suggest(point(e.clientX, e.clientY));
+				suggest(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onmouseovershape(function(s, e){
-				suggest(s.closestPointTo(point(e.clientX, e.clientY)));
+				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 		};
 		var selectLine = function(send){
@@ -1914,7 +1796,7 @@
 				canvas.setShapeCursor(canvas.cursor.grabbing);
 				canvas.setNoShapeCursor(canvas.cursor.grabbing);
 				var doMove = function(e){
-					s.dragTo(point(e.clientX, e.clientY));
+					s.dragTo(planeMath.point(e.clientX, e.clientY));
 				};
 
 				canvas.onmouseupSingle(action.doNothing);
@@ -1925,7 +1807,7 @@
 			},
 			makePointStructure: function(res, stop){
 				var p = canvas.addPoint({
-					location: point(200,200)
+					location: planeMath.point(200,200)
 				}, true);
 				
 				selectLocationOrShapeOrIntersection(function(l, s, i){
@@ -1982,7 +1864,7 @@
 				var chosenP1, moveLine, line;
 				selectPoint(function(s){
 					chosenP1 = s;
-					line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(point(100,0))});
+					line = canvas.addLine({p1:chosenP1.getSpecs().location, p2:chosenP1.getSpecs().location.plus(planeMath.point(100,0))});
 					moveLine = function(p){line.getChanger().moveTo(p);};
 					selectLocationOrPoint(function(l, p){
 						if(p){
@@ -2009,7 +1891,7 @@
 				var revert = stop;
 				var moveSegment, segment;
 				selectPoint(function(p1){
-					segment = canvas.addSegment({p1:p1.getSpecs().location, p2:p1.getSpecs().location.plus(point(100,0))});
+					segment = canvas.addSegment({p1:p1.getSpecs().location, p2:p1.getSpecs().location.plus(planeMath.point(100,0))});
 					moveSegment = function(p){segment.getChanger().setP2(p);};
 					selectPoint(function(p2){
 						res(structure.segment(p1, segment, p2));
@@ -2087,7 +1969,7 @@
 				selectPoint(function(p){
 					selectLine(function(l){
 						var lSpecs = l.getSpecs();
-						var refl = canvas.addPoint({location: reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
+						var refl = canvas.addPoint({location: planeMath.reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
 						res(structure.pointLineReflection(p, l, refl));
 						stop();
 					});
