@@ -9,6 +9,7 @@
 <script src="planeMath.js"></script>
 <script src="shapeLogic.js"></script>
 <script src="intersectionSet.js"></script>
+<script src="canvas.js"></script>
 <script>
 (function(document, w,h){
 	var floatPattern = "-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?";
@@ -64,7 +65,7 @@
 		LINE_ISH: 8,
 		NOT_LOCUS: 9
 	};
-	var obj = {sender:sender,shapeFilter:shapeFilter};
+	var obj = {sender:sender,shapeFilter:shapeFilter,copySet:copySet, w:w, h:h};
 	window.initGeometry(obj);
 	var planeMath = obj.planeMath;
 	var shapeLogic = obj.shapeLogic;
@@ -92,7 +93,7 @@
 
 	var intersectionSet = obj.intersectionSet;
 
-	var canvas = (function(){
+	var canvas = (function(w, h){
 		var context, c = document.createElement('canvas');
 		c.setAttribute('width', w);
 		c.setAttribute('height', h);
@@ -382,10 +383,12 @@
 
 		var shapes = [];
 
+		var newShapeOnRemove = [];
+
 		var wrapperSet = copySet([], function(s){
 			var wrapper, onremove = sender();
-			onremove.add(function(){
-				log.removeCallsWithArgument(wrapper);
+			newShapeOnRemove.map(function(f){
+				onremove.add(f(function(){return wrapper;}));
 			});
 			s.onchange(onshapechange);
 			wrapper = {
@@ -652,6 +655,9 @@
 		c.addEventListener('click', clickHandler);
 
 		return {
+			newShapeOnRemove:function(f){
+				newShapeOnRemove.push(f);
+			},
 			addCircle: function(specs, toBeExcludedFromMouseEvents){
 				return addShape(shape.circle({stroke:'#d66'}, specs), toBeExcludedFromMouseEvents);
 			},
@@ -880,6 +886,11 @@
 				return !c.args.some(function(aa){return aa == a;});
 			});
 		};
+		canvas.newShapeOnRemove(function(getWrapper){
+			return function(){
+				removeCallsWithArgument(getWrapper());
+			};
+		});
 		return {
 			addCall: addCall,
 			register:register,
