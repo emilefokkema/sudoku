@@ -598,7 +598,6 @@
 			onmouseup:function(f){onmouseup.add(f);},
 			onmousedown:function(f){onmousedown.add(f);},
 			setMouseFilter: function(f){currentMouseFilter = f;},
-			mouseFilter: shapeFilter,
 			selectShape: function(s){selection.addShape(s);},
 			clearSelection: function(){selection.clear();},
 			removeSelection: function(){selection.removeAll();},
