@@ -7,6 +7,7 @@
 <script src="../makeNode.js"></script>
 <script src="../structureHelpers.js"></script>
 <script src="planeMath.js"></script>
+<script src="shapeFilter.js"></script>
 <script src="intersectWithBox.js"></script>
 <script src="shapeLogic.js"></script>
 <script src="intersectionSet.js"></script>
@@ -33,17 +34,6 @@
 
 	window.initGeometry({
 		sender:structureHelpers.sender,
-		shapeFilter:{
-			ALL: 1,
-			POINT: 2,
-			NONE:3,
-			LINE:4,
-			CIRCLE:5,
-			LOCUS: 6,
-			SEGMENT: 7,
-			LINE_ISH: 8,
-			NOT_LOCUS: 9
-		},
 		copySet:structureHelpers.copySet,
 		w:document.body.offsetWidth,
 		h:document.body.offsetHeight,

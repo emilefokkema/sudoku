@@ -33,12 +33,13 @@
 				},
 				distance = function(p){return Infinity;},
 				onchange = sender(),
-				passesFilter = function(f){return true;},
+				passesFilter = function(f){return shapeFilter.contains(f, filter);},
 				available = true,
 				onchangeavailability = sender(),
 				getLabelLocation = function(){return planeMath.point(0,0);},
 				toString = function(){return '';},
-				movePointAround = function(p){return [p];};
+				movePointAround = function(p){return [p];},
+				filter = shapeFilter.ALL;
 			this.expose({
 				isAvailable: function(){return available;},
 				makeAvailable: function(b){available = b;onchangeavailability(b);},
@@ -92,7 +93,7 @@
 					};
 				})();
 
-				passesFilter = function(f){return f == shapeFilter.CIRCLE || f == shapeFilter.ALL || f == shapeFilter.NOT_LOCUS;};
+				filter = shapeFilter.CIRCLE;
 
 				getSpecs = function(){
 					return {
@@ -156,7 +157,7 @@
 					}
 				};
 
-				passesFilter = function(f){return f == shapeFilter.LINE || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH|| f == shapeFilter.NOT_LOCUS;};
+				filter = shapeFilter.LINE;
 
 				repositionPoint = function(p, oldSpecs, newSpecs){
 					if(oldSpecs.p1.equals(newSpecs.p1)){
@@ -230,7 +231,7 @@
 					};
 				})();
 
-				passesFilter = function(f){return f == shapeFilter.SEGMENT || f == shapeFilter.ALL || f == shapeFilter.LINE_ISH|| f == shapeFilter.NOT_LOCUS;};
+				filter = shapeFilter.SEGMENT;
 
 				repositionPoint = function(p, oldSpecs, newSpecs){
 					if(p.equals(oldSpecs.p1)){
@@ -257,7 +258,7 @@
 
 				closestPointTo = function(p){return loc;};
 
-				passesFilter = function(f){return f == shapeFilter.POINT || f == shapeFilter.ALL|| f == shapeFilter.NOT_LOCUS;};
+				filter = shapeFilter.POINT;
 
 				changer = {
 					setLocation: function(l){loc = l;}
@@ -283,7 +284,7 @@
 					return allPoints.lastMin(function(pp){return pp.minus(p).mod();});
 				};
 
-				passesFilter = function(f){return f == shapeFilter.LOCUS || f == shapeFilter.ALL;};
+				filter = shapeFilter.LOCUS;
 
 				changer = {
 					setPointSets: function(ps){
