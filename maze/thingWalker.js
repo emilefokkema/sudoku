@@ -60,13 +60,13 @@
 			};
 			body.addEventListener('keyup',keyupListener);
 			var keyDownListener = function(e){
-				if(e.key === "ArrowUp"){
+				if(e.key === "ArrowUp" || e.keyCode == 38){
 					receiveDirection(direction.TOP);
-				}else if(e.key === "ArrowDown"){
+				}else if(e.key === "ArrowDown" || e.keyCode == 40){
 					receiveDirection(direction.BOTTOM);
-				}else if(e.key === "ArrowLeft"){
+				}else if(e.key === "ArrowLeft" || e.keyCode == 37){
 					receiveDirection(direction.LEFT);
-				}else if(e.key === "ArrowRight"){
+				}else if(e.key === "ArrowRight" || e.keyCode == 39){
 					receiveDirection(direction.RIGHT);
 				}
 			};
