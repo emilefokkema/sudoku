@@ -1,5 +1,5 @@
 (function(){
-	var makeStructure = function(planeMath, intersectionSet, copySet, log){
+	var makeStructure = function(planeMath, intersectionSet, copySet, log, distinctArray, sender, throttle){
 		var linkExistence;
 		var allLinks = [];
 		
@@ -356,7 +356,7 @@
 	window.initGeometry = (function(orig){
 		return function(obj){
 			orig(obj);
-			obj.structure = makeStructure(obj.planeMath, obj.intersectionSet, obj.copySet, obj.log);
+			obj.structure = makeStructure(obj.planeMath, obj.intersectionSet, obj.copySet, obj.log, obj.distinctArray, obj.sender, obj.throttle);
 		};
 	})(window.initGeometry || function(){});
 })();
