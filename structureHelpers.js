@@ -193,23 +193,76 @@
 		};
 	})();
 
-	// var progress = {update:function(x){console.log(x);}};
+	var permutatielijst=function(n, dontStartRandom){
+		var nullen=function(){
+			var l=[];
+			for(var i=0;i<n;i++){l.push(0);}
+			return l;
+		};
+		var klaar=false;
+		var tak=(function(){
+			var huidig=nullen();
+			var gaVerder=function(){
+				var p=n-1;
+				while(p>=0){
+					if(huidig[p]<n-1-p){
+						huidig[p]++;
+						return true;
+					}else{
+						huidig[p]=0;
+						p--;
+					}
+				}
+				return false;
+			};
+			var permutatie=(function(indexLijst){
+				return function(){
+					var p=nullen();
+					var i, j, k, index;
+					for(i=0;i<n;i++){
+						k=-1;
+						index=huidig[i];
+						for(j=0;j<n;j++){
+							if(p[j]==0){k++;}
+							if(k==index){
+								p[j]=indexLijst[i];
+								break;
+							}
+						}
+					}
+					return p;
+				};
+			})((function(n){
+				var oud=[];
+				for(var i=0;i<n;i++){
+					oud.push(i+1);
+				}
+				if(dontStartRandom){return oud;}
+				var nieuw=[];
+				while(oud.length>0){
+					nieuw.push(oud.splice(Math.floor(Math.random()*oud.length),1)[0]);
+				}
+				return nieuw;
+			})(n));
+			return {huidig:function(){return huidig;},gaVerder:gaVerder,permutatie:permutatie};
 
-	// actionSequence()
-	// .add(function(soFar, done, update){
-	// 	update(0);
-	// 	update(1);
-	// 	done(6);
-	// }, progress)
-	// .add(function(r, done, update){
-	// 	update(0);
-	// 	update(1);
-	// 	done(r + 1);
-	// }, progress).add(function(r, done){
-	// 	done(2*r);
-	// }).add(function(r, done){
-	// 	console.log(r);
-	// }).execute();
+		})();
+		var eerste=true;
+		var volgende=function(){
+			if(eerste){
+				eerste=false;
+				return tak.permutatie();
+			}else{
+				if(tak.gaVerder()){
+					return tak.permutatie();
+				}else{
+					klaar=true;
+					return null;
+				}
+			}
+		};
+		return {volgende:volgende,isKlaar:function(){return klaar;}};
+	};
 	
 
 	var copySet = function(origArray, mapper){
@@ -303,7 +356,8 @@
 		copySet:copySet,
 		actionSequence:actionSequence,
 		timeoutWhile:timeoutWhile,
-		sender:sender
+		sender:sender,
+		permutatielijst:permutatielijst
 	};
 })();
 

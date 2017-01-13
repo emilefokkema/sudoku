@@ -1,0 +1,35 @@
+<html>
+<body>
+	<div id="result"></div>
+</body>
+<script src="structureHelpers.js"></script>
+<script>
+(function(){
+	var result = document.getElementById("result");
+	var filler = (function(){
+		var word = window.location.hash ? window.location.hash.substr(1) : "abcd";
+		var permutaties = structureHelpers.permutatielijst(word.length);
+		return {
+			isDone:permutaties.isKlaar,
+			fill:function(){
+				var next = permutaties.volgende();
+				if(next){
+					result.innerHTML += next.map(function(i){return word[i-1];}).join("") + "<br/>";
+				}
+			}
+		};
+	})();
+	var getCurrentResultBottom = function(){
+		return result.getBoundingClientRect().bottom;
+	};
+	var fillScreen = (function(getBottom, filler){
+		return function(){
+			while(!filler.isDone() && getBottom() < window.scrollY + window.innerHeight + 500){
+				filler.fill();
+			}
+		};
+	})(getCurrentResultBottom, filler);
+	setInterval(fillScreen, 200);
+})();
+</script>
+</html>
