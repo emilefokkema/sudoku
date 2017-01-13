@@ -14,7 +14,11 @@
 			fill:function(){
 				var next = permutaties.volgende();
 				if(next){
-					result.innerHTML += next.map(function(i){return word[i-1];}).join("") + "<br/>";
+					var a = document.createElement("a");
+					a.appendChild(document.createTextNode(next.map(function(i){return word[i-1];}).join("")));
+
+					result.appendChild(a);
+					result.appendChild(document.createElement("br"));
 				}
 			}
 		};
