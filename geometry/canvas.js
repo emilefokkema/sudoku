@@ -14,6 +14,29 @@
 
 		var currentMouseFilter = shapeFilter.ALL;
 
+		var tooltip = (function(){
+			var x=100,y=100;
+			var visible = true;
+			var text = "hoi";
+			var setPosition = function(xx,yy){
+				x = xx;
+				y = yy;
+			};
+			var draw = function(ctx){
+				if(visible){
+					ctx.fillStyle = "#f00";
+					ctx.font = "12px Verdana";
+					ctx.fillText(text, x, y);
+				}
+			};
+			var setVisible = function(b){visible = b;};
+			return {
+				setVisible: setVisible,
+				draw: draw,
+				setPosition: setPosition
+			};
+		})();
+
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
@@ -367,6 +390,7 @@
 			shapes.map(function(s){
 				s.draw(context);
 			});
+			tooltip.draw(context);
 			ondraw();
 		}, 10);
 
@@ -456,6 +480,7 @@
 			doIfNotHitShape = doIfNotHitShape || function(){};
 			doToHitIntersection = doToHitIntersection || function(){};
 			var toReturn = function(e){
+				tooltip.setVisible(false);
 				var hitPoints, hitShape, hitIntersection, intersectingShape1, intersectingShape2, hitShapes = [];
 				shapes.map(function(s){
 					if(!s.toBeExcludedFromMouseEvents && s.isAvailable() && (!s.isHidden() || showHidden) && s.passesFilter(currentMouseFilter) && s.contains(planeMath.point(e.clientX, e.clientY))){
@@ -468,6 +493,8 @@
 				if(hitShapes.length == 0){
 					doIfNotHitShape(e);
 				}else{
+					tooltip.setPosition(e.clientX, e.clientY);
+					tooltip.setVisible(true);
 					hitPoints = hitShapes.filter(function(s){return s.passesFilter(shapeFilter.POINT);});
 					if(hitPoints.length > 0){
 						doToHitShape(hitPoints[hitPoints.length - 1], e);
