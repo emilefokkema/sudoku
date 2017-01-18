@@ -30,10 +30,12 @@
 				}
 			};
 			var setVisible = function(b){visible = b;};
+			var setText = function(t){text = t;};
 			return {
 				setVisible: setVisible,
 				draw: draw,
-				setPosition: setPosition
+				setPosition: setPosition,
+				setText:setText
 			};
 		})();
 
@@ -495,6 +497,7 @@
 				}else{
 					tooltip.setPosition(e.clientX, e.clientY);
 					tooltip.setVisible(true);
+					tooltip.setText("");
 					hitPoints = hitShapes.filter(function(s){return s.passesFilter(shapeFilter.POINT);});
 					if(hitPoints.length > 0){
 						doToHitShape(hitPoints[hitPoints.length - 1], e);
@@ -537,7 +540,7 @@
 			function(s, e){
 				shapeCursor();
 				s.onmouseover(e);
-				onmouseovershape(wrapperBelongingTo(s), e);
+				onmouseovershape(wrapperBelongingTo(s), e, function(t){tooltip.setText(t);});
 			},
 			function(s, e){
 				s.onmouseout(e);
@@ -547,7 +550,7 @@
 				onmouseovernotshape(e);
 			},
 			function(i, e){
-				onmouseoverintersection(i, e);
+				onmouseoverintersection(i, e, function(t){tooltip.setText(t);});
 			},
 			true
 		);

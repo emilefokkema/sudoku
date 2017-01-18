@@ -6,7 +6,8 @@
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s, e){
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip("this point");
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onclicknotshape(function(e){
