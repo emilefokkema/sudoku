@@ -1,13 +1,13 @@
 (function(){
 	var makeAction = function(canvas, shapeFilter, planeMath, structure){
-		var selectLocationOrPoint = function(send, suggest){
+		var selectLocationOrPoint = function(send, suggest, tooltipMessage){
 			canvas.setMouseFilter(shapeFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
 			canvas.onmouseovershape(function(s, e, tooltip){
-				tooltip("this point");
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onclicknotshape(function(e){
@@ -41,7 +41,7 @@
 				send(null, null, i);
 			});
 		};
-		var selectPoint = function(send, suggest){
+		var selectPoint = function(send, suggest, tooltipMessage){
 			suggest = suggest || function(){};
 			canvas.setMouseFilter(shapeFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
@@ -53,7 +53,8 @@
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s, e){
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 		};
@@ -174,13 +175,13 @@
 						}
 					},function(l){
 						growCircle(l);
-					});
+					}, "this circumference point");
 					
 					revert = function(){
 						circle.remove();
 						stop();
 					};
-				});
+				}, function(){}, "center here");
 				return function(){
 					revert();
 				};
