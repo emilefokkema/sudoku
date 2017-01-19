@@ -119,7 +119,7 @@
 				ondrag: ondrag,
 				onchange: function(f){logic.onchange(f);},
 				setName: function(n){name = n;},
-				toString:function(){return '['+name+']';},
+				toString:function(){return name;},
 				toConstructionString:function(){
 					return logic.toString() + (label ? '.{'+label+'}' : '') + (hidden ? 'h' : '');
 				},
@@ -540,7 +540,12 @@
 			function(s, e){
 				shapeCursor();
 				s.onmouseover(e);
-				onmouseovershape(wrapperBelongingTo(s), e, function(t){tooltip.setText(t);});
+				var tooltipText = "";
+				var wrapped = wrapperBelongingTo(s);
+				onmouseovershape(wrapped, e, function(tooltipSetter){
+					tooltipText = tooltipSetter(wrapped) || "";
+				});
+				tooltip.setText(tooltipText);
 			},
 			function(s, e){
 				s.onmouseout(e);

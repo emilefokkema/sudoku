@@ -17,7 +17,7 @@
 				send(s.closestPointTo(planeMath.point(e.clientX, e.clientY)), s);
 			});
 		};
-		var selectLocationOrShapeOrIntersection = function(send, suggest){
+		var selectLocationOrShapeOrIntersection = function(send, suggest, tooltipMessage){
 			canvas.setMouseFilter(shapeFilter.NOT_LOCUS);
 			canvas.setShapeCursor(canvas.cursor.none);
 			canvas.setNoShapeCursor(canvas.cursor.none);
@@ -25,7 +25,8 @@
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s,e){
+			canvas.onmouseovershape(function(s,e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onmouseoverintersection(function(i, e){
@@ -151,7 +152,7 @@
 					stop();
 				},function(l){
 					p.getChanger().setLocation(l);
-				});
+				},function(s){return "on this " + s.toString();});
 				
 				return function(){
 					p.remove();
@@ -175,13 +176,13 @@
 						}
 					},function(l){
 						growCircle(l);
-					}, "this circumference point");
+					}, function(){return "this circumference point";});
 					
 					revert = function(){
 						circle.remove();
 						stop();
 					};
-				}, function(){}, "center here");
+				}, function(){}, function(){return "center here";});
 				return function(){
 					revert();
 				};
@@ -203,13 +204,13 @@
 						}
 					},function(l){
 						moveLine(l);
-					});
+					},function(){return "...and this point";});
 					
 					revert = function(){
 						line.remove();
 						stop();
 					};
-				});
+				}, function(){}, function(){return "through this point...";});
 				return function(){
 					revert();
 				};
