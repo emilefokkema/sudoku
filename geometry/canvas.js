@@ -535,7 +535,17 @@
 
 		var shapeCursor = cursorSetter.none;
 		var noShapeCursor = cursorSetter.none;
-
+		var getTooltipTextFromSetter = function(wrappedShape, tooltipSetter){
+			var result = "";
+			var type = typeof tooltipSetter;
+			if(type === "string"){
+				return tooltipSetter;
+			}
+			if(type === "function"){
+				return tooltipSetter(wrappedShape);
+			}
+			return result;
+		};
 		var moveHandler = mouseActionHandler(
 			function(s, e){
 				shapeCursor();
@@ -543,7 +553,7 @@
 				var tooltipText = "";
 				var wrapped = wrapperBelongingTo(s);
 				onmouseovershape(wrapped, e, function(tooltipSetter){
-					tooltipText = tooltipSetter(wrapped) || "";
+					tooltipText = getTooltipTextFromSetter(wrapped, tooltipSetter);
 				});
 				tooltip.setText(tooltipText);
 			},

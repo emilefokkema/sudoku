@@ -62,13 +62,15 @@
 		var selectLine = function(send){
 			selectShape(send, shapeFilter.LINE);
 		};
-		var selectShape = function(send, mouseFilter){
+		var selectShape = function(send, mouseFilter, tooltipMessage){
 			mouseFilter = mouseFilter || shapeFilter.ALL;
 			canvas.setMouseFilter(mouseFilter);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
-			canvas.onmouseovershape();
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip(tooltipMessage);
+			});
 			canvas.onmouseovernotshape();
 			canvas.onclickshape(function(s, e){
 				send(s);
@@ -176,13 +178,13 @@
 						}
 					},function(l){
 						growCircle(l);
-					}, function(){return "this circumference point";});
+					}, "this circumference point");
 					
 					revert = function(){
 						circle.remove();
 						stop();
 					};
-				}, function(){}, function(){return "center here";});
+				}, function(){}, "center here");
 				return function(){
 					revert();
 				};
@@ -245,8 +247,8 @@
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.perpendicularLine(chosenPoint, perpLine, l));
 						stop();
-					}, shapeFilter.LINE | shapeFilter.SEGMENT);
-				});
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "perpendicular to this "+s.toString();});
+				},function(){},"through this point");
 				return function(){
 					revert();
 				};
