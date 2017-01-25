@@ -86,7 +86,7 @@
 	window.initGeometry = (function(orig){
 		return function(obj){
 			orig(obj);
-			obj.hash = makeHash(obj.log, obj.floatPattern);
+			obj.hash = makeHash(obj.log, obj.floatPattern, obj.canvas);
 		};
 	})(window.initGeometry || function(){});
 })();
