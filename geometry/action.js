@@ -297,13 +297,13 @@
 			},
 			makePointLineReflection: function(res, stop){
 				selectPoint(function(p){
-					selectLine(function(l){
+					selectShape(function(l){
 						var lSpecs = l.getSpecs();
 						var refl = canvas.addPoint({location: planeMath.reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
 						res(structure.pointLineReflection(p, l, refl));
 						stop();
-					});
-				});
+					}, shapeFilter.LINE, "with respect to this line");
+				}, function(){}, "reflect this point");
 				return stop;
 			},
 			makeMidpoint: function(res, stop){
