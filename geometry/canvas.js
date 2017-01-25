@@ -367,7 +367,8 @@
 				toConstructionString:function(getShapeName){
 					var currentLoc = i.calculate();
 					return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+','+(currentLoc ? currentLoc.toString() : i.id.toString())+')';
-				}
+				},
+				toString:function(){return "intersection";}
 			};
 		});
 
@@ -565,7 +566,11 @@
 				onmouseovernotshape(e);
 			},
 			function(i, e){
-				onmouseoverintersection(i, e, function(t){tooltip.setText(t);});
+				var tooltipText = "";
+				onmouseoverintersection(i, e, function(tooltipSetter){
+					tooltipText = getTooltipTextFromSetter(i, tooltipSetter);
+				});
+				tooltip.setText(tooltipText);
 			},
 			true
 		);

@@ -29,7 +29,8 @@
 				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
-			canvas.onmouseoverintersection(function(i, e){
+			canvas.onmouseoverintersection(function(i, e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(i.calculate());
 			});
 			canvas.onclicknotshape(function(e){
@@ -154,7 +155,9 @@
 					stop();
 				},function(l){
 					p.getChanger().setLocation(l);
-				},function(s){return "on this " + s.toString();});
+				},function(s){
+					return "on this " + s.toString();
+				});
 				
 				return function(){
 					p.remove();
