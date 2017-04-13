@@ -209,13 +209,13 @@
 						}
 					},function(l){
 						moveLine(l);
-					},function(){return "...and this point";});
+					},"...and this point");
 					
 					revert = function(){
 						line.remove();
 						stop();
 					};
-				}, function(){}, function(){return "through this point...";});
+				}, function(){}, "through this point...");
 				return function(){
 					revert();
 				};
@@ -231,12 +231,12 @@
 						stop();
 					},function(l){
 						moveSegment(l);
-					});
+					},"...to this point");
 					revert = function(){
 						segment.remove();
 						stop();
 					};
-				});
+				}, function(){}, "from this point...");
 				return function(){
 					revert();
 				};
@@ -265,8 +265,8 @@
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.parallelLine(chosenPoint, perpLine, l));
 						stop();
-					}, shapeFilter.LINE | shapeFilter.SEGMENT);
-				});
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "...parallel to this "+s.toString();});
+				},function(){},"through this point...");
 				return function(){
 					revert();
 				};
@@ -282,8 +282,8 @@
 						});
 						res(structure.perpendicularBisector(p1, perpBis, p2));
 						stop();
-					});
-				});
+					},function(){},"...and this point");
+				},function(){},"between this point...");
 				return function(){
 					revert();
 				};
@@ -294,8 +294,8 @@
 					selectPoint(function(point2){
 						res(structure.locus(point1, canvas.addLocus({}), point2));
 						stop();
-					});
-				});
+					},function(){},"...with respect to this point");
+				},function(){},"the locus of this point...");
 				return stop;
 			},
 			makePointLineReflection: function(res, stop){
@@ -305,7 +305,7 @@
 						var refl = canvas.addPoint({location: planeMath.reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
 						res(structure.pointLineReflection(p, l, refl));
 						stop();
-					}, shapeFilter.LINE, "with respect to this line");
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "...with respect to this "+s.toString();});
 				}, function(){}, "reflect this point");
 				return stop;
 			},
@@ -315,8 +315,8 @@
 						var p = canvas.addPoint({location:p1.getSpecs().location.plus(p2.getSpecs().location).scale(0.5)});
 						res(structure.midpoint(p1, p, p2));
 						stop();
-					});
-				});
+					},function(){},"...and this point");
+				},function(){},"the point between this point...");
 				return stop;
 			},
 			makeAngleBisector: function(res, stop){
@@ -324,13 +324,13 @@
 					selectPoint(function(p2){
 						selectPoint(function(p3){
 							var p1Loc = p1.getSpecs().location, p2loc = p2.getSpecs().location, p3Loc = p3.getSpecs().location;
-							var p = getPointOnAngleBisector(p1Loc, p2loc, p3Loc);
+							var p = planeMath.getPointOnAngleBisector(p1Loc, p2loc, p3Loc);
 							var l = canvas.addLine({p1: p2loc, p2: p});
 							res(structure.angleBisector(p1, p2, p3, l));
 							stop();
-						});
-					});
-				});
+						},function(){},"...this point.");
+					},function(){},", this point, and...");
+				},function(){},"bisect angle defined by this point, ...");
 				return stop;
 			},
 			setLabel:function(res, stop){
