@@ -14,6 +14,31 @@
 
 		var currentMouseFilter = shapeFilter.ALL;
 
+		var tooltip = (function(){
+			var x=100,y=100;
+			var visible = true;
+			var text = "hoi";
+			var setPosition = function(xx,yy){
+				x = xx;
+				y = yy;
+			};
+			var draw = function(ctx){
+				if(visible){
+					ctx.fillStyle = "#f00";
+					ctx.font = "12px Verdana";
+					ctx.fillText(text, x, y);
+				}
+			};
+			var setVisible = function(b){visible = b;};
+			var setText = function(t){text = t;};
+			return {
+				setVisible: setVisible,
+				draw: draw,
+				setPosition: setPosition,
+				setText:setText
+			};
+		})();
+
 		var shape = makeModule(function(specs){
 			var fill = specs.fill || 'transparent';
 			var stroke = specs.stroke || 'black';
@@ -94,7 +119,7 @@
 				ondrag: ondrag,
 				onchange: function(f){logic.onchange(f);},
 				setName: function(n){name = n;},
-				toString:function(){return '['+name+']';},
+				toString:function(){return name;},
 				toConstructionString:function(){
 					return logic.toString() + (label ? '.{'+label+'}' : '') + (hidden ? 'h' : '');
 				},
@@ -342,7 +367,8 @@
 				toConstructionString:function(getShapeName){
 					var currentLoc = i.calculate();
 					return 'intersection('+getShapeName(this.s1)+','+getShapeName(this.s2)+','+(currentLoc ? currentLoc.toString() : i.id.toString())+')';
-				}
+				},
+				toString:function(){return "intersection";}
 			};
 		});
 
@@ -367,6 +393,7 @@
 			shapes.map(function(s){
 				s.draw(context);
 			});
+			tooltip.draw(context);
 			ondraw();
 		}, 10);
 
@@ -456,6 +483,7 @@
 			doIfNotHitShape = doIfNotHitShape || function(){};
 			doToHitIntersection = doToHitIntersection || function(){};
 			var toReturn = function(e){
+				tooltip.setVisible(false);
 				var hitPoints, hitShape, hitIntersection, intersectingShape1, intersectingShape2, hitShapes = [];
 				shapes.map(function(s){
 					if(!s.toBeExcludedFromMouseEvents && s.isAvailable() && (!s.isHidden() || showHidden) && s.passesFilter(currentMouseFilter) && s.contains(planeMath.point(e.clientX, e.clientY))){
@@ -468,6 +496,9 @@
 				if(hitShapes.length == 0){
 					doIfNotHitShape(e);
 				}else{
+					tooltip.setPosition(e.clientX, e.clientY);
+					tooltip.setVisible(true);
+					tooltip.setText("");
 					hitPoints = hitShapes.filter(function(s){return s.passesFilter(shapeFilter.POINT);});
 					if(hitPoints.length > 0){
 						doToHitShape(hitPoints[hitPoints.length - 1], e);
@@ -505,12 +536,27 @@
 
 		var shapeCursor = cursorSetter.none;
 		var noShapeCursor = cursorSetter.none;
-
+		var getTooltipTextFromSetter = function(wrappedShape, tooltipSetter){
+			var result = "";
+			var type = typeof tooltipSetter;
+			if(type === "string"){
+				return tooltipSetter;
+			}
+			if(type === "function"){
+				return tooltipSetter(wrappedShape);
+			}
+			return result;
+		};
 		var moveHandler = mouseActionHandler(
 			function(s, e){
 				shapeCursor();
 				s.onmouseover(e);
-				onmouseovershape(wrapperBelongingTo(s), e);
+				var tooltipText = "";
+				var wrapped = wrapperBelongingTo(s);
+				onmouseovershape(wrapped, e, function(tooltipSetter){
+					tooltipText = getTooltipTextFromSetter(wrapped, tooltipSetter);
+				});
+				tooltip.setText(tooltipText);
 			},
 			function(s, e){
 				s.onmouseout(e);
@@ -520,7 +566,11 @@
 				onmouseovernotshape(e);
 			},
 			function(i, e){
-				onmouseoverintersection(i, e);
+				var tooltipText = "";
+				onmouseoverintersection(i, e, function(tooltipSetter){
+					tooltipText = getTooltipTextFromSetter(i, tooltipSetter);
+				});
+				tooltip.setText(tooltipText);
 			},
 			true
 		);

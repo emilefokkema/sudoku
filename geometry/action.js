@@ -1,12 +1,13 @@
 (function(){
 	var makeAction = function(canvas, shapeFilter, planeMath, structure){
-		var selectLocationOrPoint = function(send, suggest){
+		var selectLocationOrPoint = function(send, suggest, tooltipMessage){
 			canvas.setMouseFilter(shapeFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s, e){
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 			canvas.onclicknotshape(function(e){
@@ -16,7 +17,7 @@
 				send(s.closestPointTo(planeMath.point(e.clientX, e.clientY)), s);
 			});
 		};
-		var selectLocationOrShapeOrIntersection = function(send, suggest){
+		var selectLocationOrShapeOrIntersection = function(send, suggest, tooltipMessage){
 			canvas.setMouseFilter(shapeFilter.NOT_LOCUS);
 			canvas.setShapeCursor(canvas.cursor.none);
 			canvas.setNoShapeCursor(canvas.cursor.none);
@@ -24,10 +25,12 @@
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s,e){
+			canvas.onmouseovershape(function(s,e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
-			canvas.onmouseoverintersection(function(i, e){
+			canvas.onmouseoverintersection(function(i, e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(i.calculate());
 			});
 			canvas.onclicknotshape(function(e){
@@ -40,7 +43,7 @@
 				send(null, null, i);
 			});
 		};
-		var selectPoint = function(send, suggest){
+		var selectPoint = function(send, suggest, tooltipMessage){
 			suggest = suggest || function(){};
 			canvas.setMouseFilter(shapeFilter.POINT);
 			canvas.setShapeCursor(canvas.cursor.pointer);
@@ -52,20 +55,23 @@
 			canvas.onmouseovernotshape(function(e){
 				suggest(planeMath.point(e.clientX, e.clientY));
 			});
-			canvas.onmouseovershape(function(s, e){
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip(tooltipMessage);
 				suggest(s.closestPointTo(planeMath.point(e.clientX, e.clientY)));
 			});
 		};
 		var selectLine = function(send){
 			selectShape(send, shapeFilter.LINE);
 		};
-		var selectShape = function(send, mouseFilter){
+		var selectShape = function(send, mouseFilter, tooltipMessage){
 			mouseFilter = mouseFilter || shapeFilter.ALL;
 			canvas.setMouseFilter(mouseFilter);
 			canvas.setShapeCursor(canvas.cursor.pointer);
 			canvas.setNoShapeCursor(canvas.cursor.none);
 			canvas.onmousedownonshape();
-			canvas.onmouseovershape();
+			canvas.onmouseovershape(function(s, e, tooltip){
+				tooltip(tooltipMessage);
+			});
 			canvas.onmouseovernotshape();
 			canvas.onclickshape(function(s, e){
 				send(s);
@@ -149,6 +155,8 @@
 					stop();
 				},function(l){
 					p.getChanger().setLocation(l);
+				},function(s){
+					return "on this " + s.toString();
 				});
 				
 				return function(){
@@ -173,13 +181,13 @@
 						}
 					},function(l){
 						growCircle(l);
-					});
+					}, "this circumference point");
 					
 					revert = function(){
 						circle.remove();
 						stop();
 					};
-				});
+				}, function(){}, "center here");
 				return function(){
 					revert();
 				};
@@ -201,13 +209,13 @@
 						}
 					},function(l){
 						moveLine(l);
-					});
+					},"...and this point");
 					
 					revert = function(){
 						line.remove();
 						stop();
 					};
-				});
+				}, function(){}, "through this point...");
 				return function(){
 					revert();
 				};
@@ -223,12 +231,12 @@
 						stop();
 					},function(l){
 						moveSegment(l);
-					});
+					},"...to this point");
 					revert = function(){
 						segment.remove();
 						stop();
 					};
-				});
+				}, function(){}, "from this point...");
 				return function(){
 					revert();
 				};
@@ -242,8 +250,8 @@
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.perpendicularLine(chosenPoint, perpLine, l));
 						stop();
-					}, shapeFilter.LINE | shapeFilter.SEGMENT);
-				});
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "perpendicular to this "+s.toString();});
+				},function(){},"through this point");
 				return function(){
 					revert();
 				};
@@ -257,8 +265,8 @@
 						var perpLine = canvas.addLine({p1:p1, p2:p2});
 						res(structure.parallelLine(chosenPoint, perpLine, l));
 						stop();
-					}, shapeFilter.LINE | shapeFilter.SEGMENT);
-				});
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "...parallel to this "+s.toString();});
+				},function(){},"through this point...");
 				return function(){
 					revert();
 				};
@@ -274,8 +282,8 @@
 						});
 						res(structure.perpendicularBisector(p1, perpBis, p2));
 						stop();
-					});
-				});
+					},function(){},"...and this point");
+				},function(){},"between this point...");
 				return function(){
 					revert();
 				};
@@ -286,19 +294,19 @@
 					selectPoint(function(point2){
 						res(structure.locus(point1, canvas.addLocus({}), point2));
 						stop();
-					});
-				});
+					},function(){},"...with respect to this point");
+				},function(){},"the locus of this point...");
 				return stop;
 			},
 			makePointLineReflection: function(res, stop){
 				selectPoint(function(p){
-					selectLine(function(l){
+					selectShape(function(l){
 						var lSpecs = l.getSpecs();
 						var refl = canvas.addPoint({location: planeMath.reflectPointInLine(lSpecs.p1, lSpecs.p2, p.getSpecs().location)});
 						res(structure.pointLineReflection(p, l, refl));
 						stop();
-					});
-				});
+					}, shapeFilter.LINE | shapeFilter.SEGMENT, function(s){return "...with respect to this "+s.toString();});
+				}, function(){}, "reflect this point");
 				return stop;
 			},
 			makeMidpoint: function(res, stop){
@@ -307,8 +315,8 @@
 						var p = canvas.addPoint({location:p1.getSpecs().location.plus(p2.getSpecs().location).scale(0.5)});
 						res(structure.midpoint(p1, p, p2));
 						stop();
-					});
-				});
+					},function(){},"...and this point");
+				},function(){},"the point between this point...");
 				return stop;
 			},
 			makeAngleBisector: function(res, stop){
@@ -316,13 +324,13 @@
 					selectPoint(function(p2){
 						selectPoint(function(p3){
 							var p1Loc = p1.getSpecs().location, p2loc = p2.getSpecs().location, p3Loc = p3.getSpecs().location;
-							var p = getPointOnAngleBisector(p1Loc, p2loc, p3Loc);
+							var p = planeMath.getPointOnAngleBisector(p1Loc, p2loc, p3Loc);
 							var l = canvas.addLine({p1: p2loc, p2: p});
 							res(structure.angleBisector(p1, p2, p3, l));
 							stop();
-						});
-					});
-				});
+						},function(){},"...this point.");
+					},function(){},", this point, and...");
+				},function(){},"bisect angle defined by this point, ...");
 				return stop;
 			},
 			setLabel:function(res, stop){
