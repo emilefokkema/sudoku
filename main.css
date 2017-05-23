@@ -1,0 +1,74 @@
+.sudoku-container{
+	width:450px;
+	height:450px;
+	position: relative;
+}
+
+.sudoku-table{
+	position:absolute;
+	left:0px;
+	top:0px;
+	width:100%;
+	height:100%;
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+	color:inherit;
+}
+
+.sudoku-table-row{
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+}
+
+.sudoku-table-cell{
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+	height:50px;
+	width:50px;
+}
+
+.sudoku-table-cell:nth-child(3n+1){
+	border-right:0.5pt solid #000;
+	border-left:2pt solid #000;
+}
+
+.sudoku-table-cell:nth-child(3n+2){
+	border-right:0.5pt solid #000;
+}
+
+.sudoku-table-cell:nth-child(9n+9){
+	border-right:2pt solid #000;
+}
+
+.sudoku-table-row:nth-child(3n+1) td{
+	border-top:2pt solid #000;
+	border-bottom: 0.5pt solid #000;
+}
+
+.sudoku-table-row:nth-child(3n+2) td{
+	border-bottom: 0.5pt solid #000;
+}
+
+.sudoku-table-row:nth-child(9n+9) td{
+	border-bottom:2pt solid #000;
+}
+
+.sudoku-cell-container{
+	position:relative;
+	width:100%;
+	height:100%;
+}
+
+.sudoku-cell-input{
+	text-align:center;
+	border:0px;
+	width:50%;
+	font-size:20px;
+	position:relative;
+	top:50%;
+	transform:translateY(-50%);
+	background-color:transparent;
+}

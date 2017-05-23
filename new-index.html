@@ -1,0 +1,25 @@
+<html>
+<head>
+	<meta name="viewport" content="width=475,user-scalable=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
+	<LINK href="main.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<script type="text/template" id="editor">
+	<div id="1" class="sudoku-container">
+		<table class="sudoku-table">
+			<tr template-id="2" class="sudoku-table-row">
+				<td template-id="1" class="sudoku-table-cell">
+					<div class="sudoku-cell-container" align="center">
+						<input id="1" type="text" maxlength="1" class="sudoku-cell-input"/>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+</script>
+<script src="require-element.min.js"></script>
+<script data-main="scripts/main" src="require.js"></script>
+</body>
+</html>
