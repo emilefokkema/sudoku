@@ -62,6 +62,10 @@
 	height:100%;
 }
 
+.sudoku-cell-container.error{
+	background-color: #f00;
+}
+
 .sudoku-cell-input{
 	text-align:center;
 	border:0px;
