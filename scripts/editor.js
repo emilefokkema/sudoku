@@ -1,13 +1,35 @@
-define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
+define(["sudokuGrid","setClass","getSolution"],function(sudokuGrid, setClass, getSolution){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
 	};
-	var makeCell = function(makeElement){
+	var makeCell = function(makeElement, suggestSolutionValue, setSolutionValue){
 		return makeElement(function(input, container){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
+			var inputtingValue, inputValid, removeError;
+			input.addEventListener('keyup',function(){
+				var match = input.value.match(/^[1-9]$/);
+				if(!match){
+					setError(true);
+					removeError = function(){setError(false);};
+					return;
+				}
+				inputtingValue = parseInt(input.value);
+				removeError = suggestSolutionValue(inputtingValue);
+				if(!removeError){
+					inputValid = true;
+				}
+			});
+			input.addEventListener('blur',function(){
+				if(inputValid){
+					setSolutionValue(inputtingValue);
+				}else{
+					input.value = '';
+				}
+				removeError && removeError();
+			});
 			return {
 				setError:setError
 			};
@@ -31,12 +53,34 @@ define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
 			normal){
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
+				var solution = getSolution();
 				var currentKind = kind.NORMAL;
-
+				var setSubdivisionError = function(kind, index, bool){
+					grid.subdivisions.map(function(s){
+						if(s.kind == kind){
+							s[index].map(function(cell){cell.setError(bool);});
+						}
+					});
+				};
+				var addCell = function(row, column, makeElement){
+					var setSolutionValue = function(n){
+						solution.add(row, column, n);
+					};
+					var suggestSolutionValue = function(n){
+						var objection = solution.getObjectionToAdding(row, column, n);
+						if(objection){
+							setSubdivisionError(objection.kind, objection.index, true);
+							return function(){
+								setSubdivisionError(objection.kind, objection.index, false);
+							}
+						}
+					};
+					grid.add(row, column, makeCell(makeElement, suggestSolutionValue, setSolutionValue));
+				};
 				for(var i=0;i<9;i++){
 					row(function(cell){
 						for(j=0;j<9;j++){
-							grid.add(i, j, makeCell(cell));
+							addCell(i, j, cell);
 						}
 					});
 				}
@@ -59,12 +103,6 @@ define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
 				normal.addEventListener('click',function(){
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
-				});
-
-				grid.subdivisions.map(function(s){
-					if(s.kind == sudokuGrid.subdivision.ROW){
-						s[1][1].setError(true);
-					}
 				});
 			});
 })

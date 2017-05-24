@@ -15,7 +15,8 @@ define([],function(){
 					one:row,
 					two:column
 				};
-			}
+			},
+			name:"ROW"
 		},
 		COLUMN:{
 			getIndices:function(row, column){
@@ -23,7 +24,8 @@ define([],function(){
 					one:column,
 					two:row
 				};
-			}
+			},
+			name:"COLUMN"
 		},
 		SQUARE:{
 			getIndices:function(row, column){
@@ -33,7 +35,8 @@ define([],function(){
 					one: squareIndex(smallRow, smallColumn),
 					two: squareIndex(row - 3 * smallRow, column - 3 * smallColumn)
 				};
-			}
+			},
+			name:"SQUARE"
 		}
 	};
 	var makeSubdivision = function(kind){
