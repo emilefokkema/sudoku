@@ -10,6 +10,10 @@ define(["sudokuGrid","setClass","getSolution"],function(sudokuGrid, setClass, ge
 			};
 			var inputtingValue, inputValid, removeError;
 			input.addEventListener('keyup',function(){
+				if(!input.value){
+					removeError && removeError();
+					return;
+				}
 				var match = input.value.match(/^[1-9]$/);
 				if(!match){
 					setError(true);
