@@ -102,6 +102,12 @@ define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid
 				});
 
 				nrc.addEventListener('click',function(){
+					var valid = solution.checkAll(subdivision.NRC);
+					if(!valid){
+						nrc.checked = false;
+						normal.checked = true;
+						return;
+					}
 					currentKind = kind.NRC;
 					setKindClass(div, currentKind);
 				});
