@@ -16,11 +16,7 @@ define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
 	var setKindClass = function(el, k){
 		for(var kk in kind){
 			if(kind.hasOwnProperty(kk)){
-				if(kind[kk] == k){
-					setClass(el, kind[kk].className, true);
-				}else{
-					setClass(el, kind[kk].className, false);
-				}
+				setClass(el, kind[kk].className, kind[kk] == k);
 			}
 		}
 	};
@@ -40,8 +36,7 @@ define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
 				for(var i=0;i<9;i++){
 					row(function(cell){
 						for(j=0;j<9;j++){
-							var gridPosition;
-							gridPosition = grid.add(i, j, makeCell(cell));
+							grid.add(i, j, makeCell(cell));
 						}
 					});
 				}
@@ -64,6 +59,12 @@ define(["sudokuGrid","setClass"],function(sudokuGrid, setClass){
 				normal.addEventListener('click',function(){
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
+				});
+
+				grid.subdivisions.map(function(s){
+					if(s.kind == sudokuGrid.subdivision.ROW){
+						s[1][1].setError(true);
+					}
 				});
 			});
 })
