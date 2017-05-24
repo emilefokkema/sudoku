@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","getSolution"],function(sudokuGrid, setClass, getSolution){
+define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid, setClass, getSolution, subdivision){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -12,6 +12,8 @@ define(["sudokuGrid","setClass","getSolution"],function(sudokuGrid, setClass, ge
 			input.addEventListener('keyup',function(){
 				if(!input.value){
 					removeError && removeError();
+					inputValid = false;
+					setSolutionValue();
 					return;
 				}
 				var match = input.value.match(/^[1-9]$/);
@@ -71,7 +73,7 @@ define(["sudokuGrid","setClass","getSolution"],function(sudokuGrid, setClass, ge
 						solution.add(row, column, n);
 					};
 					var suggestSolutionValue = function(n){
-						var objection = solution.getObjectionToAdding(row, column, n);
+						var objection = solution.getObjectionToAdding(row, column, n, currentKind == kind.NRC ? subdivision.NRC : null);
 						if(objection){
 							setSubdivisionError(objection.kind, objection.index, true);
 							return function(){

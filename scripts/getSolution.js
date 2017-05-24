@@ -1,18 +1,22 @@
-define(["sudokuGrid"],function(sudokuGrid){
+define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 	return function(){
 		var grid = new sudokuGrid();
-		var getObjectionToAdding = function(row, column, number){
+		var getObjectionToAdding = function(row, column, number, extraKind){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
-				var index = subdivision.kind.getIndices(row,column).one;
-				
-					if(subdivision[index].some(function(n){return n == number;})){
-						return {
-							kind:subdivision.kind,
-							index: index
-						};
-					}
-				
+				var kind = subdivision.kind;
+				if(kind != sudokuSubdivision.ROW && kind != sudokuSubdivision.COLUMN && extraKind != kind){
+					continue;
+				}
+				var indices = subdivision.kind.getIndices(row,column);
+				if(!indices){continue;}
+				var index = indices.one;
+				if(subdivision[index].some(function(n){return n == number;})){
+					return {
+						kind:subdivision.kind,
+						index: index
+					};
+				}
 			}
 		};
 
@@ -20,9 +24,14 @@ define(["sudokuGrid"],function(sudokuGrid){
 			grid.add(row, column, number);
 		};
 
+		var clear = function(row, column){
+			grid.add(row, column, undefined);
+		};
+
 		return {
 			getObjectionToAdding:getObjectionToAdding,
-			add:add
+			add:add,
+			clear:clear
 		};
 	}
 })
