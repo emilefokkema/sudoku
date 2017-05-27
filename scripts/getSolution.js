@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
+define(["sudokuGrid","subdivision","permutator"],function(sudokuGrid,sudokuSubdivision,permutator){
 	var containsDouble = function(arr){
 		var found = [];
 		for(var i=0;i<arr.length;i++){
