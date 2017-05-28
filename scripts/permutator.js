@@ -39,11 +39,4 @@ define([],function(){
 		};
 
 	};
-
-	var twoPermutator = permutator(4);
-	var nextValue;
-	while(!(nextValue = twoPermutator.next()).done){
-		console.log(nextValue.value.join(""));
-	}
-	console.log(nextValue.value.join(""));
 })

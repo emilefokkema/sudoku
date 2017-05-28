@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision","permutator"],function(sudokuGrid,sudokuSubdivision,permutator){
+define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 	var containsDouble = function(arr){
 		var found = [];
 		for(var i=0;i<arr.length;i++){
@@ -9,7 +9,7 @@ define(["sudokuGrid","subdivision","permutator"],function(sudokuGrid,sudokuSubdi
 		}
 		return false;
 	};
-	return function(){
+	var getSolution = function(){
 		var grid = new sudokuGrid();
 		var getObjectionToAdding = function(row, column, number, extraKind){
 			for(var i=0;i<grid.subdivisions.length;i++){
@@ -53,11 +53,28 @@ define(["sudokuGrid","subdivision","permutator"],function(sudokuGrid,sudokuSubdi
 			grid.add(row, column, undefined);
 		};
 
+		var clone = function(){
+			var result = getSolution();
+			getRows().map(function(row, rowIndex){
+				row.map(function(n, columnIndex){
+					result.add(rowIndex, columnIndex, n);
+				});
+			});
+			return result;
+		};
+
+		var getRows = function(){
+			return grid.subdivisions.filter(function(s){return s.kind == sudokuSubdivision.ROW;})[0];
+		};
+
 		return {
 			getObjectionToAdding:getObjectionToAdding,
 			add:add,
 			clear:clear,
-			checkAll:checkAll
+			checkAll:checkAll,
+			clone:clone,
+			getRows:getRows
 		};
-	}
+	};
+	return getSolution;
 })

@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid, setClass, getSolution, subdivision){
+define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],function(sudokuGrid, setClass, getSolution, subdivision, getSolver){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -60,6 +60,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
 				var solution = getSolution();
+				var solver = getSolver(solution);
 				var currentKind = kind.NORMAL;
 				var setSubdivisionError = function(kind, index, bool){
 					grid.subdivisions.map(function(s){
@@ -71,6 +72,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid
 				var addCell = function(row, column, makeElement){
 					var setSolutionValue = function(n){
 						solution.add(row, column, n);
+						solver.reset();
 					};
 					var suggestSolutionValue = function(n){
 						var objection = solution.getObjectionToAdding(row, column, n, currentKind == kind.NRC ? subdivision.NRC : null);
@@ -110,11 +112,13 @@ define(["sudokuGrid","setClass","getSolution","subdivision"],function(sudokuGrid
 					}
 					currentKind = kind.NRC;
 					setKindClass(div, currentKind);
+					solver.reset();
 				});
 
 				normal.addEventListener('click',function(){
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
+					solver.reset();
 				});
 			});
 })
