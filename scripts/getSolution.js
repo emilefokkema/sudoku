@@ -70,6 +70,9 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			return grid.subdivisions.filter(function(s){return s.kind == sudokuSubdivision.ROW;})[0];
 		};
 
+		var toString = function(){
+			return getRows().map(function(row){return "["+row.join("")+"]";}).join("");
+		};
 	
 		return {
 			getObjectionToAdding:getObjectionToAdding,
@@ -77,7 +80,8 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			clear:clear,
 			checkAll:checkAll,
 			clone:clone,
-			getRows:getRows
+			getRows:getRows,
+			toString:toString
 		};
 	};
 	return getSolution;

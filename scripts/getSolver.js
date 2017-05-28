@@ -1,5 +1,5 @@
 define(["permutator"],function(permutator){
-	var batchSize = 1000;
+	var batchSize = 5000;
 	return function(solution){
 		var clone,
 			reset,
@@ -13,7 +13,7 @@ define(["permutator"],function(permutator){
 			getRowFiller,
 			go,
 			solveState,
-			batchCount;
+			currentSolveState;
 
 		solveState = {
 			NO_SOLUTION:0,
@@ -68,7 +68,7 @@ define(["permutator"],function(permutator){
 				console.log("nothing left to solve");
 				return;
 			}
-			useRowFiller(0);
+			currentSolveState = useRowFiller(0);
 		};
 		useRowFiller = function(i){
 			if(i == currentRowFillerIndex){
@@ -86,42 +86,30 @@ define(["permutator"],function(permutator){
 			console.log("moved to row "+currentRowFiller.rowIndex);
 			return solveState.SOLVING;
 		};
-		doStep = function(after){
-			var result;
+		doStep = function(){
 			if(!currentRowFiller.fillNext()){
 				currentRowFiller.reset();
-				result = useRowFiller(currentRowFillerIndex - 1);
+				currentSolveState = useRowFiller(currentRowFillerIndex - 1);
 			}
 			else if(clone.checkAll()){
-				result = useRowFiller(currentRowFillerIndex + 1);
+				currentSolveState = useRowFiller(currentRowFillerIndex + 1);
 			}else{
-				result = useRowFiller(currentRowFillerIndex);
+				currentSolveState = useRowFiller(currentRowFillerIndex);
 			}
-			after && after(result);
 		};
 		go = function(){
-			batchCount = 0;
-			var toDoAfter = function(s){
+			var batchCount = 0;
+			while(batchCount < batchSize && currentSolveState == solveState.SOLVING){
+				doStep();
 				batchCount++;
-				if(s == solveState.SOLVING){
-					if(batchCount == batchSize){
-						batchCount = 0;
-						console.log("done "+batchSize);
-						setTimeout(function(){
-							doStep(toDoAfter);
-						},1);
-					}else{
-						doStep(toDoAfter);
-					}
-				}else if(s == solveState.NO_SOLUTION){
-					console.log("no solution");
-					return;
-				}else{
-					console.log("found solution");
-					return;
-				}
-			};
-			doStep(toDoAfter);
+			}
+			if(currentSolveState == solveState.SOLVING){
+				console.log("finish batch");
+				setTimeout(go,1);
+			}
+			else if(currentSolveState == solveState.SOLUTION){
+				console.log("found solution: "+clone.toString());
+			}
 		};
 		reset();
 		go();
