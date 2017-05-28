@@ -13,7 +13,10 @@ define(["permutator"],function(permutator){
 			getRowFiller,
 			go,
 			solveState,
-			currentSolveState;
+			currentSolveState,
+			going,
+			doBatch,
+			stop;
 
 		solveState = {
 			NO_SOLUTION:0,
@@ -57,6 +60,7 @@ define(["permutator"],function(permutator){
 		};
 		reset = function(){
 			console.log("resetting solver");
+			stop();
 			clone = solution.clone();
 			rowFillers = [];
 			clone.getRows().map(function(row, rowIndex){
@@ -69,6 +73,7 @@ define(["permutator"],function(permutator){
 				return;
 			}
 			currentSolveState = useRowFiller(0);
+			go();
 		};
 		useRowFiller = function(i){
 			if(i == currentRowFillerIndex){
@@ -97,22 +102,33 @@ define(["permutator"],function(permutator){
 				currentSolveState = useRowFiller(currentRowFillerIndex);
 			}
 		};
-		go = function(){
+		doBatch = function(){
+			if(!going){return;}
 			var batchCount = 0;
-			while(batchCount < batchSize && currentSolveState == solveState.SOLVING){
+			while(batchCount < batchSize && currentSolveState == solveState.SOLVING && going){
 				doStep();
 				batchCount++;
 			}
-			if(currentSolveState == solveState.SOLVING){
+			if(currentSolveState == solveState.SOLVING && going){
 				console.log("finish batch");
-				setTimeout(go,1);
+				setTimeout(doBatch,1);
 			}
 			else if(currentSolveState == solveState.SOLUTION){
 				console.log("found solution: "+clone.toString());
+			}else{
+				console.log("no solution")
 			}
 		};
+		go = function(){
+			console.log("going");
+			going = true;
+			doBatch();
+		};
+		stop = function(){
+			console.log("stopping");
+			going = false;
+		};
 		reset();
-		go();
 		return {
 			reset:reset
 		};
