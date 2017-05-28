@@ -33,7 +33,10 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
 				var kind = subdivision.kind;
-				if(kind != sudokuSubdivision.ROW && kind != sudokuSubdivision.COLUMN && kind != sudokuSubdivision.SQUARE && extraKind != kind){
+				if(kind != sudokuSubdivision.ROW &&
+					kind != sudokuSubdivision.COLUMN &&
+					kind != sudokuSubdivision.SQUARE &&
+					extraKind != kind){
 					continue;
 				}
 				for(var j=0;j<subdivision.length;j++){
@@ -67,6 +70,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			return grid.subdivisions.filter(function(s){return s.kind == sudokuSubdivision.ROW;})[0];
 		};
 
+	
 		return {
 			getObjectionToAdding:getObjectionToAdding,
 			add:add,

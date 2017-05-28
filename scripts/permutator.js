@@ -39,4 +39,5 @@ define([],function(){
 		};
 
 	};
+	return permutator;
 })

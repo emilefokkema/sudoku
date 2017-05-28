@@ -1,4 +1,5 @@
 define(["permutator"],function(permutator){
+	var batchSize = 1000;
 	return function(solution){
 		var clone,
 			reset,
@@ -9,8 +10,16 @@ define(["permutator"],function(permutator){
 			moveBackwards,
 			moveForwards,
 			doStep,
-			getRowFiller;
+			getRowFiller,
+			go,
+			solveState,
+			batchCount;
 
+		solveState = {
+			NO_SOLUTION:0,
+			SOLUTION:1,
+			SOLVING:2
+		};
 		getRowFiller = function(row, rowIndex){
 			var unfilledIndices = [],
 				numbersToUse = [1,2,3,4,5,6,7,8,9],
@@ -32,15 +41,18 @@ define(["permutator"],function(permutator){
 				_permutator = permutator(unfilledIndices.length);
 			};
 			fillNext = function(){
-				if(currentPermutation.done){return false;}
+				if(currentPermutation && currentPermutation.done){return false;}
 				currentPermutation = _permutator.next();
-				unfilledIndices.map(function(i,j){
-					clone.add(rowIndex, currentPermutation[i], numbersToUse[j]);
-				});
+				for(var i=0;i<unfilledIndices.length;i++){
+					clone.add(rowIndex, unfilledIndices[currentPermutation.value[i]], numbersToUse[i]);
+				}
+				return true;
 			};
+			reset();
 			return {
 				reset:reset,
-				fillNext:fillNext
+				fillNext:fillNext,
+				rowIndex:rowIndex
 			};
 		};
 		reset = function(){
@@ -59,16 +71,60 @@ define(["permutator"],function(permutator){
 			useRowFiller(0);
 		};
 		useRowFiller = function(i){
-			if(i < 0 || i > rowFillers.length - 1){
-				return;
+			if(i == currentRowFillerIndex){
+				currentRowFiller = rowFillers[currentRowFillerIndex];
+				return solveState.SOLVING;
+			}
+			if(i == -1){
+				return solveState.NO_SOLUTION;
+			}
+			if(i == rowFillers.length){
+				return solveState.SOLUTION;
 			}
 			currentRowFillerIndex = i;
 			currentRowFiller = rowFillers[currentRowFillerIndex];
+			console.log("moved to row "+currentRowFiller.rowIndex);
+			return solveState.SOLVING;
 		};
-		doStep = function(){
-
+		doStep = function(after){
+			var result;
+			if(!currentRowFiller.fillNext()){
+				currentRowFiller.reset();
+				result = useRowFiller(currentRowFillerIndex - 1);
+			}
+			else if(clone.checkAll()){
+				result = useRowFiller(currentRowFillerIndex + 1);
+			}else{
+				result = useRowFiller(currentRowFillerIndex);
+			}
+			after && after(result);
+		};
+		go = function(){
+			batchCount = 0;
+			var toDoAfter = function(s){
+				batchCount++;
+				if(s == solveState.SOLVING){
+					if(batchCount == batchSize){
+						batchCount = 0;
+						console.log("done "+batchSize);
+						setTimeout(function(){
+							doStep(toDoAfter);
+						},1);
+					}else{
+						doStep(toDoAfter);
+					}
+				}else if(s == solveState.NO_SOLUTION){
+					console.log("no solution");
+					return;
+				}else{
+					console.log("found solution");
+					return;
+				}
+			};
+			doStep(toDoAfter);
 		};
 		reset();
+		go();
 		return {
 			reset:reset
 		};
