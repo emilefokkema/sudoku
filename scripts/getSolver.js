@@ -1,4 +1,4 @@
-define(["permutator"],function(permutator){
+define(["permutator","postponer"],function(permutator, postponer){
 	var batchSize = 10000;
 	return function(solution){
 		var clone,
@@ -58,9 +58,8 @@ define(["permutator"],function(permutator){
 				rowIndex:rowIndex
 			};
 		};
-		reset = function(){
+		reset = postponer(function(){
 			console.log("resetting solver");
-			stop();
 			clone = solution.clone();
 			rowFillers = [];
 			clone.getRows().map(function(row, rowIndex){
@@ -74,7 +73,7 @@ define(["permutator"],function(permutator){
 			}
 			currentSolveState = useRowFiller(0);
 			go();
-		};
+		}, 3000);
 		useRowFiller = function(i){
 			if(i == currentRowFillerIndex){
 				currentRowFiller = rowFillers[currentRowFillerIndex];
@@ -130,7 +129,10 @@ define(["permutator"],function(permutator){
 		};
 		reset();
 		return {
-			reset:reset
+			reset:function(){
+				stop();
+				reset();
+			}
 		};
 	};
 })
