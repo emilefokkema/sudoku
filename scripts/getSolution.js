@@ -73,6 +73,25 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 		var toString = function(){
 			return getRows().map(function(row){return "["+row.join("")+"]";}).join("");
 		};
+
+		var checkRow = function(rowIndex, extraKind){
+			for(var i=0;i<grid.subdivisions.length;i++){
+				var kind = grid.subdivisions[i].kind;
+				if(kind != sudokuSubdivision.ROW && (kind == sudokuSubdivision.COLUMN || kind == sudokuSubdivision.SQUARE || (extraKind && kind == extraKind))){
+					var checked = [];
+					for(var j=0;j<9;j++){
+						var indices = kind.getIndices(rowIndex, j);
+						var one = indices.one;
+						if(checked[one]){continue;}
+						checked[one] = true;
+						if(containsDouble(grid.subdivisions[i][one])){
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		};
 	
 		return {
 			getObjectionToAdding:getObjectionToAdding,
@@ -81,7 +100,8 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			checkAll:checkAll,
 			clone:clone,
 			getRows:getRows,
-			toString:toString
+			toString:toString,
+			checkRow:checkRow
 		};
 	};
 	return getSolution;

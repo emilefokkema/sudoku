@@ -1,5 +1,5 @@
 define(["permutator"],function(permutator){
-	var batchSize = 5000;
+	var batchSize = 10000;
 	return function(solution){
 		var clone,
 			reset,
@@ -96,7 +96,7 @@ define(["permutator"],function(permutator){
 				currentRowFiller.reset();
 				currentSolveState = useRowFiller(currentRowFillerIndex - 1);
 			}
-			else if(clone.checkAll()){
+			else if(clone.checkRow(currentRowFiller.rowIndex)){
 				currentSolveState = useRowFiller(currentRowFillerIndex + 1);
 			}else{
 				currentSolveState = useRowFiller(currentRowFillerIndex);
