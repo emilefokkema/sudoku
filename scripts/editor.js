@@ -68,9 +68,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 				};
 				var addCell = function(row, column, makeElement){
 					var setSolutionValue = function(n){
-
 						solution.add(row, column, n);
-						if(!n){return;}
 						solver.reset();
 					};
 					var suggestSolutionValue = function(n){

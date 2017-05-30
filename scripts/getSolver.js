@@ -66,23 +66,18 @@ define(["permutator","postponer"],function(permutator, postponer){
 			console.log("resetting solver");
 			clone = solution.clone();
 			foundSolutions = foundSolutions.filter(function(s){return s.contains(clone);});
-			if(foundSolutions.length == 0){
-				console.log("none of the found solutions match this one");
-				rowFillers = [];
-				clone.getRows().map(function(row, rowIndex){
-					if(row.some(function(x){return !x;})){
-						rowFillers.push(getRowFiller(row, rowIndex));
-					}
-				});
-				if(rowFillers.length == 0){
-					console.log("nothing left to solve");
-					return;
+			rowFillers = [];
+			clone.getRows().map(function(row, rowIndex){
+				if(row.some(function(x){return !x;})){
+					rowFillers.push(getRowFiller(row, rowIndex));
 				}
-				currentSolveState = useRowFiller(0);
-				go();
-			}else{
-				console.log("already found one for this");
+			});
+			if(rowFillers.length == 0){
+				console.log("nothing left to solve");
+				return;
 			}
+			currentSolveState = useRowFiller(0);
+			go();
 		}, 3000);
 		foundSolutions = [];
 		useRowFiller = function(i){
