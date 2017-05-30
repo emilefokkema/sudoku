@@ -71,7 +71,11 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 		};
 
 		var toString = function(){
-			return getRows().map(function(row){return "["+row.join("")+"]";}).join("");
+			return getRows().map(function(row){return row.map(function(n,i){return ""+n+(i==2||i==5?"|":" ");}).join("");})
+			.map(function(r,i){
+				return r+(i==2||i==5?"\r\n------------------":"");
+			})
+			.join("\r\n");
 		};
 
 		var checkRow = function(rowIndex, extraKind){

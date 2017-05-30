@@ -7,8 +7,6 @@ define(["permutator","postponer"],function(permutator, postponer){
 			rowFillers,
 			currentRowFillerIndex,
 			useRowFiller,
-			moveBackwards,
-			moveForwards,
 			doStep,
 			getRowFiller,
 			go,
@@ -117,7 +115,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 				setTimeout(doBatch,1);
 			}
 			else if(currentSolveState == solveState.SOLUTION){
-				console.log("found solution: "+clone.toString());
+				console.log("found solution: \r\n"+clone.toString());
 			}else{
 				console.log("no solution")
 			}
