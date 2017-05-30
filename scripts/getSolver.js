@@ -42,6 +42,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 					clone.add(rowIndex, i, null);
 				});
 				_permutator = permutator(unfilledIndices.length);
+				currentPermutation = null;
 			};
 			fillNext = function(){
 				if(currentPermutation && currentPermutation.done){return false;}
@@ -55,7 +56,10 @@ define(["permutator","postponer"],function(permutator, postponer){
 			return {
 				reset:reset,
 				fillNext:fillNext,
-				rowIndex:rowIndex
+				rowIndex:rowIndex,
+				done:function(){
+					return currentPermutation.done;
+				}
 			};
 		};
 		reset = postponer(function(){
