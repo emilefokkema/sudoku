@@ -8,11 +8,10 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
-			var inputtingValue, inputValid, removeError;
+			var removeError;
 			input.addEventListener('keyup',function(){
 				if(!input.value){
 					removeError && removeError();
-					inputValid = false;
 					setSolutionValue();
 					return;
 				}
@@ -22,19 +21,17 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 					removeError = function(){setError(false);};
 					return;
 				}
-				inputtingValue = parseInt(input.value);
+				var inputtingValue = parseInt(input.value);
 				removeError = suggestSolutionValue(inputtingValue);
 				if(!removeError){
-					inputValid = true;
+					setSolutionValue(inputtingValue);
 				}
 			});
 			input.addEventListener('blur',function(){
-				if(inputValid){
-					setSolutionValue(inputtingValue);
-				}else{
+				if(removeError){
+					removeError();
 					input.value = '';
 				}
-				removeError && removeError();
 			});
 			return {
 				setError:setError
@@ -71,7 +68,9 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 				};
 				var addCell = function(row, column, makeElement){
 					var setSolutionValue = function(n){
+
 						solution.add(row, column, n);
+						if(!n){return;}
 						solver.reset();
 					};
 					var suggestSolutionValue = function(n){

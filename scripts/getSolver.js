@@ -14,7 +14,8 @@ define(["permutator","postponer"],function(permutator, postponer){
 			currentSolveState,
 			going,
 			doBatch,
-			stop;
+			stop,
+			foundSolutions;
 
 		solveState = {
 			NO_SOLUTION:0,
@@ -60,22 +61,30 @@ define(["permutator","postponer"],function(permutator, postponer){
 				}
 			};
 		};
+
 		reset = postponer(function(){
 			console.log("resetting solver");
 			clone = solution.clone();
-			rowFillers = [];
-			clone.getRows().map(function(row, rowIndex){
-				if(row.some(function(x){return !x;})){
-					rowFillers.push(getRowFiller(row, rowIndex));
+			foundSolutions = foundSolutions.filter(function(s){return s.contains(clone);});
+			if(foundSolutions.length == 0){
+				console.log("none of the found solutions match this one");
+				rowFillers = [];
+				clone.getRows().map(function(row, rowIndex){
+					if(row.some(function(x){return !x;})){
+						rowFillers.push(getRowFiller(row, rowIndex));
+					}
+				});
+				if(rowFillers.length == 0){
+					console.log("nothing left to solve");
+					return;
 				}
-			});
-			if(rowFillers.length == 0){
-				console.log("nothing left to solve");
-				return;
+				currentSolveState = useRowFiller(0);
+				go();
+			}else{
+				console.log("already found one for this");
 			}
-			currentSolveState = useRowFiller(0);
-			go();
 		}, 3000);
+		foundSolutions = [];
 		useRowFiller = function(i){
 			if(i == currentRowFillerIndex){
 				currentRowFiller = rowFillers[currentRowFillerIndex];
@@ -111,11 +120,17 @@ define(["permutator","postponer"],function(permutator, postponer){
 				batchCount++;
 			}
 			if(currentSolveState == solveState.SOLVING && going){
-				console.log("finish batch");
 				setTimeout(doBatch,1);
 			}
 			else if(currentSolveState == solveState.SOLUTION){
-				console.log("found solution: \r\n"+clone.toString());
+				console.log("found solution:", {string:clone.toString()});
+				foundSolutions.push(clone.clone());
+				currentSolveState = useRowFiller(currentRowFillerIndex);
+				if(foundSolutions.length < 20){
+					setTimeout(doBatch,1);
+				}else{
+					console.log("done finding new solutions");
+				}
 			}else{
 				console.log("no solution")
 			}

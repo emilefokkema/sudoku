@@ -9,6 +9,14 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 		}
 		return false;
 	};
+	var arrayContains = function(arr1, arr2){
+		for(var i=0;i<arr2.length;i++){
+			if(arr2[i] && arr1[i] != arr2[i]){
+				return false;
+			}
+		}
+		return true;
+	};
 	var getSolution = function(){
 		var grid = new sudokuGrid();
 		var getObjectionToAdding = function(row, column, number, extraKind){
@@ -70,6 +78,17 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			return grid.subdivisions.filter(function(s){return s.kind == sudokuSubdivision.ROW;})[0];
 		};
 
+		var contains = function(otherOne){
+			var rows = getRows();
+			var otherRows = otherOne.getRows();
+			for(var i=0;i<9;i++){
+				if(!arrayContains(rows[i], otherRows[i])){
+					return false;
+				}
+			}
+			return true;
+		};
+
 		var toString = function(){
 			return getRows().map(function(row){return row.map(function(n,i){return ""+n+(i==2||i==5?"|":" ");}).join("");})
 			.map(function(r,i){
@@ -96,12 +115,13 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			}
 			return true;
 		};
-	
+
 		return {
 			getObjectionToAdding:getObjectionToAdding,
 			add:add,
 			clear:clear,
 			checkAll:checkAll,
+			contains:contains,
 			clone:clone,
 			getRows:getRows,
 			toString:toString,
