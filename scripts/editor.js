@@ -8,8 +8,11 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
-			var removeError;
+			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
+				if(input.value == inputOnFocus){
+					return;
+				}
 				if(!input.value){
 					removeError && removeError();
 					setSolutionValue();
@@ -27,7 +30,11 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],functio
 					setSolutionValue(inputtingValue);
 				}
 			});
+			input.addEventListener('focus',function(){
+				inputOnFocus = input.value;
+			});
 			input.addEventListener('blur',function(){
+				inputOnFocus = '';
 				if(removeError){
 					removeError();
 					input.value = '';

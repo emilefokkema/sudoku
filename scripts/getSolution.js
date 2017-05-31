@@ -1,14 +1,18 @@
 define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 	var containsDouble = function(arr){
-		var found = [];
-		for(var i=0;i<arr.length;i++){
-			if(found.some(function(n){return n && arr[i] && n == arr[i];})){
+		var toFind, arri, l = arr.length, found = 0;
+		for(var i=0;i<l;i++){
+			arri = arr[i];
+			if(!arri){continue;}
+			toFind = 1 << (arri - 1);
+			if(found & toFind){
 				return true;
 			}
-			found.push(arr[i]);
+			found |= toFind;
 		}
 		return false;
 	};
+
 	var arrayContains = function(arr1, arr2){
 		for(var i=0;i<arr2.length;i++){
 			if(arr2[i] && arr1[i] != arr2[i]){

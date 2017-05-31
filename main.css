@@ -126,26 +126,10 @@
 	background-color: #ccc;
 }
 
-.nrc tr:nth-child(9n+1) .sudoku-table-cell{
+.nrc tr:nth-child(4n+1) .sudoku-table-cell{
 	background-color: #fff;
 }
 
-.nrc tr:nth-child(9n+5) .sudoku-table-cell{
-	background-color: #fff;
-}
-
-.nrc tr:nth-child(9n+0) .sudoku-table-cell{
-	background-color: #fff;
-}
-
-.nrc .sudoku-table-cell:nth-child(9n+1) {
-	background-color: #fff;
-}
-
-.nrc .sudoku-table-cell:nth-child(9n+5) {
-	background-color: #fff;
-}
-
-.nrc .sudoku-table-cell:nth-child(9n+0) {
+.nrc .sudoku-table-cell:nth-child(4n+1) {
 	background-color: #fff;
 }

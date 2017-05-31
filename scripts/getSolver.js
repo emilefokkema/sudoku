@@ -1,5 +1,14 @@
 define(["permutator","postponer"],function(permutator, postponer){
-	var batchSize = 10000;
+	var batchSize = 5000;
+	var maxNumberOfSolutions = 2;
+	var inRandomOrder = function(arr){
+		var result = [];
+		var l = arr.length;
+		for(var i=0;i<l;i++){
+			result.push(arr.splice(Math.floor(Math.random() * arr.length), 1)[0]);
+		};
+		return result;
+	};
 	return function(solution){
 		var clone,
 			reset,
@@ -24,7 +33,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 		};
 		getRowFiller = function(row, rowIndex){
 			var unfilledIndices = [],
-				numbersToUse = [1,2,3,4,5,6,7,8,9],
+				numbersToUse = inRandomOrder([1,2,3,4,5,6,7,8,9]),
 				_permutator,
 				reset,
 				currentPermutation,
@@ -118,10 +127,10 @@ define(["permutator","postponer"],function(permutator, postponer){
 				setTimeout(doBatch,1);
 			}
 			else if(currentSolveState == solveState.SOLUTION){
-				console.log("found solution:", {string:clone.toString()});
+				console.log("found solution:\r\n"+clone.toString());
 				foundSolutions.push(clone.clone());
 				currentSolveState = useRowFiller(currentRowFillerIndex);
-				if(foundSolutions.length < 20){
+				if(foundSolutions.length < maxNumberOfSolutions){
 					setTimeout(doBatch,1);
 				}else{
 					console.log("done finding new solutions");
