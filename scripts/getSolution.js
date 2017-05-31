@@ -79,7 +79,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 		};
 
 		var getRows = function(){
-			return grid.subdivisions.filter(function(s){return s.kind == sudokuSubdivision.ROW;})[0];
+			return grid.rows;
 		};
 
 		var contains = function(otherOne){
@@ -101,17 +101,22 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			.join("\r\n");
 		};
 
+
+
 		var checkRow = function(rowIndex, extraKind){
-			for(var i=0;i<grid.subdivisions.length;i++){
-				var kind = grid.subdivisions[i].kind;
-				if(kind != sudokuSubdivision.ROW && (kind == sudokuSubdivision.COLUMN || kind == sudokuSubdivision.SQUARE || (extraKind && kind == extraKind))){
-					var checked = [];
+			for(var i=0;i<4;i++){
+				var subdivision = grid.subdivisions[i];
+				var kind = subdivision.kind;
+				if(kind == sudokuSubdivision.COLUMN || kind == sudokuSubdivision.SQUARE || kind == extraKind){
+					var checked = 0;
 					for(var j=0;j<9;j++){
 						var indices = kind.getIndices(rowIndex, j);
+						if(!indices){continue;}
 						var one = indices.one;
-						if(checked[one]){continue;}
-						checked[one] = true;
-						if(containsDouble(grid.subdivisions[i][one])){
+						var maskOne = 1 << one;
+						if(checked & maskOne){continue;}
+						checked |= maskOne;
+						if(containsDouble(subdivision[one])){
 							return false;
 						}
 					}

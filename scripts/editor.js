@@ -32,13 +32,16 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 						}
 					});
 				};
+				var getExtraSubdivision = function(){
+					return currentKind == kind.NRC ? subdivision.NRC : null;
+				};
 				var addCell = function(row, column, makeElement){
 					var setSolutionValue = function(n){
 						solution.add(row, column, n);
-						solver.reset();
+						solver.reset(getExtraSubdivision());
 					};
 					var suggestSolutionValue = function(n){
-						var objection = solution.getObjectionToAdding(row, column, n, currentKind == kind.NRC ? subdivision.NRC : null);
+						var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
 						if(objection){
 							setSubdivisionError(objection.kind, objection.index, true);
 							return function(){
@@ -75,11 +78,13 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 					}
 					currentKind = kind.NRC;
 					setKindClass(div, currentKind);
+					solver.reset(getExtraSubdivision());
 				});
 
 				normal.addEventListener('click',function(){
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
+					solver.reset(getExtraSubdivision());
 				});
 			});
 })

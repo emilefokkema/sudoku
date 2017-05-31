@@ -24,7 +24,8 @@ define(["permutator","postponer"],function(permutator, postponer){
 			going,
 			doBatch,
 			stop,
-			foundSolutions;
+			foundSolutions,
+			extraKind;
 
 		solveState = {
 			NO_SOLUTION:0,
@@ -33,7 +34,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 		};
 		getRowFiller = function(row, rowIndex){
 			var unfilledIndices = [],
-				numbersToUse = inRandomOrder([1,2,3,4,5,6,7,8,9]),
+				numbersToUse = [1,2,3,4,5,6,7,8,9],
 				_permutator,
 				reset,
 				currentPermutation,
@@ -51,6 +52,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 				});
 				_permutator = permutator(unfilledIndices.length);
 				currentPermutation = null;
+				numbersToUse = inRandomOrder(numbersToUse);
 			};
 			fillNext = function(){
 				if(currentPermutation && currentPermutation.done){return false;}
@@ -71,10 +73,13 @@ define(["permutator","postponer"],function(permutator, postponer){
 			};
 		};
 
-		reset = postponer(function(){
-			console.log("resetting solver");
+		reset = postponer(function(_extraKind){
+			extraKind = _extraKind;
+			console.log("resetting solver, extraKind=");
 			clone = solution.clone();
-			foundSolutions = foundSolutions.filter(function(s){return s.contains(clone);});
+			foundSolutions = foundSolutions.filter(function(s){
+				return s.contains(clone) && s.checkAll(extraKind);
+			});
 			rowFillers = [];
 			clone.getRows().map(function(row, rowIndex){
 				if(row.some(function(x){return !x;})){
@@ -110,7 +115,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 				currentRowFiller.reset();
 				currentSolveState = useRowFiller(currentRowFillerIndex - 1);
 			}
-			else if(clone.checkRow(currentRowFiller.rowIndex)){
+			else if(clone.checkRow(currentRowFiller.rowIndex, extraKind)){
 				currentSolveState = useRowFiller(currentRowFillerIndex + 1);
 			}else{
 				currentSolveState = useRowFiller(currentRowFillerIndex);
@@ -150,9 +155,9 @@ define(["permutator","postponer"],function(permutator, postponer){
 		};
 		reset();
 		return {
-			reset:function(){
+			reset:function(extraKind){
 				stop();
-				reset();
+				reset(extraKind);
 			}
 		};
 	};

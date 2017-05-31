@@ -1,4 +1,4 @@
-define([],function(){
+define(["setClass"],function(setClass){
 	return function(makeElement, suggestSolutionValue, setSolutionValue){
 		return makeElement(function(input, container){
 			var setError = function(val){
