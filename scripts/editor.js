@@ -1,50 +1,9 @@
-define(["sudokuGrid","setClass","getSolution","subdivision","getSolver"],function(sudokuGrid, setClass, getSolution, subdivision, getSolver){
+define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCell"],function(sudokuGrid, setClass, getSolution, subdivision, getSolver, makeCell){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
 	};
-	var makeCell = function(makeElement, suggestSolutionValue, setSolutionValue){
-		return makeElement(function(input, container){
-			var setError = function(val){
-				setClass(container,"error",val);
-			};
-			var inputOnFocus,removeError;
-			input.addEventListener('keyup',function(){
-				if(input.value == inputOnFocus){
-					return;
-				}
-				if(!input.value){
-					removeError && removeError();
-					setSolutionValue();
-					return;
-				}
-				var match = input.value.match(/^[1-9]$/);
-				if(!match){
-					setError(true);
-					removeError = function(){setError(false);};
-					return;
-				}
-				var inputtingValue = parseInt(input.value);
-				removeError = suggestSolutionValue(inputtingValue);
-				if(!removeError){
-					setSolutionValue(inputtingValue);
-				}
-			});
-			input.addEventListener('focus',function(){
-				inputOnFocus = input.value;
-			});
-			input.addEventListener('blur',function(){
-				inputOnFocus = '';
-				if(removeError){
-					removeError();
-					input.value = '';
-				}
-			});
-			return {
-				setError:setError
-			};
-		});
-	};
+	
 	var setKindClass = function(el, k){
 		for(var kk in kind){
 			if(kind.hasOwnProperty(kk)){
