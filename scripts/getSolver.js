@@ -25,13 +25,15 @@ define(["permutator","postponer"],function(permutator, postponer){
 			doBatch,
 			stop,
 			foundSolutions,
-			extraKind;
+			extraKind,
+			onStartStopping;
 
 		solveState = {
 			NO_SOLUTION:0,
 			SOLUTION:1,
 			SOLVING:2
 		};
+		onStartStopping = function(){};
 		getRowFiller = function(row, rowIndex){
 			var unfilledIndices = [],
 				numbersToUse = [1,2,3,4,5,6,7,8,9],
@@ -138,27 +140,29 @@ define(["permutator","postponer"],function(permutator, postponer){
 				if(foundSolutions.length < maxNumberOfSolutions){
 					setTimeout(doBatch,1);
 				}else{
-					console.log("done finding new solutions");
+					onStartStopping(false);
 				}
 			}else{
-				console.log("no solution")
+				onStartStopping(false);
 			}
 		};
 		go = function(){
-			console.log("going");
 			going = true;
+			onStartStopping(going);
 			doBatch();
 		};
 		stop = function(){
-			console.log("stopping");
 			going = false;
+			onStartStopping(going);
 		};
 		reset();
 		return {
 			reset:function(extraKind){
 				stop();
 				reset(extraKind);
-			}
+			},
+			onStartStopping:function(f){onStartStopping = f;},
+			getNumberOfSolutions:function(){return foundSolutions.length;}
 		};
 	};
 })

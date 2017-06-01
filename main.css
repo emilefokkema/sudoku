@@ -133,3 +133,23 @@
 .nrc .sudoku-table-cell:nth-child(4n+1) {
 	background-color: #fff;
 }
+
+.state .state{
+	display: none;
+}
+
+.state.busy .busy{
+	display: initial;
+}
+
+.state.no-solution .no-solution{
+	display: initial;
+}
+
+.state.many-solutions .many-solutions{
+	display: initial;
+}
+
+.state.one-solution .one-solution{
+	display: initial;
+}
