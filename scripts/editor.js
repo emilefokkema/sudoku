@@ -26,15 +26,13 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 				var solution = getSolution();
 				var solver = getSolver(solution);
 				solver.onStartStopping(function(going){
-					setClass(solverStateDiv, "busy", false);
 					setClass(solverStateDiv, "no-solution", false);
 					setClass(solverStateDiv, "one-solution", false);
 					setClass(solverStateDiv, "many-solutions", false);
+					setClass(solverStateDiv, "busy", going);
 					var number = solver.getNumberOfSolutions();
 					if(number == 0){
-						if(going){
-							setClass(solverStateDiv, "busy", true);
-						}else{
+						if(!going){
 							setClass(solverStateDiv, "no-solution", true);
 						}
 					}else if(number == 1){
