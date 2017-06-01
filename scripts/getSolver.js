@@ -50,7 +50,7 @@ define(["permutator","postponer"],function(permutator, postponer){
 				unfilledIndices.map(function(i){
 					clone.add(rowIndex, i, null);
 				});
-				_permutator = permutator(unfilledIndices.length);
+				_permutator = new permutator(unfilledIndices.length);
 				currentPermutation = null;
 				numbersToUse = inRandomOrder(numbersToUse);
 			};

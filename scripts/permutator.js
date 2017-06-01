@@ -1,43 +1,43 @@
 define([],function(){
 	var permutator = function(n){
-		var next;
-		if(n == 1){
-			next = function(){
-				return {
-					value:[0],
-					done:true
-				};
+		this.n = n;
+		this.currentParentPosition = -1;
+	}
+	permutator.prototype.next = function(){
+		if(this.n == 1){
+			return {
+				value:[0],
+				done:true
 			};
 		}else{
-			var childPermutator, childDone;
-			var currentParentPosition = -1;
-			next = function(){
-				if(!childPermutator){
-					currentParentPosition++;
-					childPermutator = permutator(n - 1);
-					childDone = false;
+			var childDone;
+			if(!this.childPermutator){
+				this.currentParentPosition++;
+				this.childPermutator = new permutator(this.n - 1);
+				childDone = false;
+			}
+			var childNext = this.childPermutator.next();
+			childDone = childNext.done;
+			var value = [];
+			for(var i=0;i<this.n;i++){
+				if(i<this.currentParentPosition){
+					value.push(childNext.value[i]);
+				}else if(i == this.currentParentPosition){
+					value.push(this.n - 1);
 				}else{
-
+					value.push(childNext.value[i-1]);
 				}
-				var childNext = childPermutator.next();
-				childDone = childNext.done;
-				var value = childNext.value.slice(0,currentParentPosition)
-							.concat([n-1])
-							.concat(childNext.value.slice(currentParentPosition));
-				var done = currentParentPosition == n - 1 && childDone;
-				if(childDone){
-					childPermutator = null;
-				}
-				return {
-					value:value,
-					done:done
-				};
+			}
+			var done = this.currentParentPosition == this.n - 1 && childDone;
+			if(childDone){
+				this.childPermutator = null;
+			}
+			return {
+				value:value,
+				done:done
 			};
 		}
-		return {
-			next:next
-		};
-
 	};
+	
 	return permutator;
 })

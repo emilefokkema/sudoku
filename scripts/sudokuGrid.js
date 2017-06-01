@@ -23,12 +23,13 @@ define(["subdivision"],function(subdivision){
 		this.nrcs = this.subdivisions.filter(function(s){return s.kind == subdivision.NRC;})[0];
 	};
 	grid.prototype.add = function(r, c, something){
-		this.subdivisions.map(function(s){
+		for(var i=0;i<this.subdivisions.length;i++){
+			var s = this.subdivisions[i];
 			var indices = s.kind.getIndices(r, c);
 			if(indices){
 				s[indices.one][indices.two] = something;
 			}
-		});
+		}
 	};
 	return grid;
 })
