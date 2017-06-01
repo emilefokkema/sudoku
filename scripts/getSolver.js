@@ -135,7 +135,9 @@ define(["permutator","postponer"],function(permutator, postponer){
 			}
 			else if(currentSolveState == solveState.SOLUTION){
 				console.log("found solution:\r\n"+clone.toString());
-				foundSolutions.push(clone.clone());
+				if(!foundSolutions.some(function(s){return s.equals(clone);})){
+					foundSolutions.push(clone.clone());
+				}
 				currentSolveState = useRowFiller(currentRowFillerIndex);
 				if(foundSolutions.length < maxNumberOfSolutions){
 					setTimeout(doBatch,1);

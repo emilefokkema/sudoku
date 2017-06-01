@@ -21,6 +21,15 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 		}
 		return true;
 	};
+
+	var arrayEquals = function(arr1, arr2){
+		for(var i=0;i<arr1.length;i++){
+			if(arr1[i] != arr2[i]){
+				return false;
+			}
+		}
+		return true;
+	};
 	var getSolution = function(){
 		var grid = new sudokuGrid();
 		var getObjectionToAdding = function(row, column, number, extraKind){
@@ -93,6 +102,17 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			return true;
 		};
 
+		var equals = function(otherOne){
+			var rows = getRows();
+			var otherRows = otherOne.getRows();
+			for(var i=0;i<9;i++){
+				if(!arrayEquals(rows[i], otherRows[i])){
+					return false;
+				}
+			}
+			return true;
+		};
+
 		var toString = function(){
 			return getRows().map(function(row){return row.map(function(n,i){return ""+n+(i==2||i==5?"|":" ");}).join("");})
 			.map(function(r,i){
@@ -132,6 +152,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			checkAll:checkAll,
 			contains:contains,
 			clone:clone,
+			equals:equals,
 			getRows:getRows,
 			toString:toString,
 			checkRow:checkRow
