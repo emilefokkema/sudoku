@@ -7,6 +7,7 @@ define(["setClass"],function(setClass){
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
 				if(input.value == inputOnFocus){
+					removeError && removeError();
 					return;
 				}
 				if(!input.value){
@@ -37,7 +38,10 @@ define(["setClass"],function(setClass){
 				}
 			});
 			return {
-				setError:setError
+				setError:setError,
+				setValue:function(n){
+					input.value = n;
+				}
 			};
 		});
 	};

@@ -54,21 +54,21 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 				var getExtraSubdivision = function(){
 					return currentKind == kind.NRC ? subdivision.NRC : null;
 				};
-				var addCell = function(row, column, makeElement){
-					var setSolutionValue = function(n){
-						solution.add(row, column, n);
-						solver.reset(getExtraSubdivision());
-					};
-					var suggestSolutionValue = function(n){
-						var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
-						if(objection){
-							setSubdivisionError(objection.kind, objection.index, true);
-							return function(){
-								setSubdivisionError(objection.kind, objection.index, false);
-							}
+				var setSolutionValue = function(row, column, n){
+					solution.add(row, column, n);
+					solver.reset(getExtraSubdivision());
+				};
+				var suggestSolutionValue = function(row, column, n){
+					var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
+					if(objection){
+						setSubdivisionError(objection.kind, objection.index, true);
+						return function(){
+							setSubdivisionError(objection.kind, objection.index, false);
 						}
-					};
-					grid.add(row, column, makeCell(makeElement, suggestSolutionValue, setSolutionValue));
+					}
+				};
+				var addCell = function(row, column, makeElement){
+					grid.add(row, column, makeCell(makeElement, function(n){return suggestSolutionValue(row, column, n);}, function(n){setSolutionValue(row, column, n);}));
 				};
 				for(var i=0;i<9;i++){
 					row(function(cell){
@@ -105,5 +105,12 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 					setKindClass(div, currentKind);
 					solver.reset(getExtraSubdivision());
 				});
+
+				return {
+					setSolutionValue:function(row, column, n){
+						if(n){grid.rows[row][column].setValue(n);}
+						setSolutionValue(row, column, n);
+					}
+				};
 			});
 })
