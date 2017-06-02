@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCell"],function(sudokuGrid, setClass, getSolution, subdivision, getSolver, makeCell){
+define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -23,8 +23,6 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 			solverStateDiv){
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
-				var solution = getSolution();
-				var solver = getSolver(solution);
 				solver.onStartStopping(function(going){
 					setClass(solverStateDiv, "no-solution", false);
 					setClass(solverStateDiv, "one-solution", false);
@@ -54,7 +52,6 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 				};
 				var setSolutionValue = function(row, column, n){
 					solution.add(row, column, n);
-					solver.reset(getExtraSubdivision());
 				};
 				var suggestSolutionValue = function(row, column, n){
 					var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
@@ -95,13 +92,13 @@ define(["sudokuGrid","setClass","getSolution","subdivision","getSolver","makeCel
 					}
 					currentKind = kind.NRC;
 					setKindClass(div, currentKind);
-					solver.reset(getExtraSubdivision());
+					solution.setExtraKind(getExtraSubdivision());
 				});
 
 				normal.addEventListener('click',function(){
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
-					solver.reset(getExtraSubdivision());
+					solution.setExtraKind(getExtraSubdivision());
 				});
 
 				return {

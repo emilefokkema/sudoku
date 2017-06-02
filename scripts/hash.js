@@ -11,6 +11,9 @@ define([],function(){
 					setValue(i - 1, j, parseInt(n) | null);
 				});
 			}
+		},
+		write:function(rows){
+			window.location.hash = rows.map(function(r){return r.map(function(n){return n?""+n:"0";}).join("");}).join("")
 		}
 	};
 })

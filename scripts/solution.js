@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
+define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivision,sender){
 	var containsDouble = function(arr){
 		var toFind, arri, l = arr.length, found = 0;
 		for(var i=0;i<l;i++){
@@ -32,7 +32,10 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 	};
 	var getSolution = function(){
 		var grid = new sudokuGrid();
-		var getObjectionToAdding = function(row, column, number, extraKind){
+		var extraKind = null;
+		var onSetExtraKind = sender();
+		var onAdd = sender();
+		var getObjectionToAdding = function(row, column, number){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
 				var kind = subdivision.kind;
@@ -50,7 +53,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 				}
 			}
 		};
-		var checkAll = function(extraKind){
+		var checkAll = function(){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
 				var kind = subdivision.kind;
@@ -71,6 +74,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 
 		var add = function(row, column, number){
 			grid.add(row, column, number);
+			onAdd(row, column, number);
 		};
 
 		var clear = function(row, column){
@@ -84,6 +88,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 					result.add(rowIndex, columnIndex, n);
 				});
 			});
+			result.setExtraKind(extraKind);
 			return result;
 		};
 
@@ -121,9 +126,12 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			.join("\r\n");
 		};
 
+		var setExtraKind = function(e){
+			extraKind = e;
+			onSetExtraKind(e);
+		};
 
-
-		var checkRow = function(rowIndex, extraKind){
+		var checkRow = function(rowIndex){
 			for(var i=0;i<4;i++){
 				var subdivision = grid.subdivisions[i];
 				var kind = subdivision.kind;
@@ -154,9 +162,12 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid,sudokuSubdivision){
 			clone:clone,
 			equals:equals,
 			getRows:getRows,
+			onSetExtraKind:function(f){onSetExtraKind.add(f);},
+			onAdd:function(f){onAdd.add(f);},
+			setExtraKind:setExtraKind,
 			toString:toString,
 			checkRow:checkRow
 		};
 	};
-	return getSolution;
+	return getSolution();
 })
