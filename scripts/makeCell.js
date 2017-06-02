@@ -1,11 +1,12 @@
 define(["setClass"],function(setClass){
 	return function(makeElement, suggestSolutionValue, setSolutionValue){
-		return makeElement(function(input, container){
+		return makeElement(function(input, container, revealer){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
+				setClass(container, "has-value", !!input.value);
 				if(input.value == inputOnFocus){
 					removeError && removeError();
 					return;
@@ -13,6 +14,7 @@ define(["setClass"],function(setClass){
 				if(!input.value){
 					removeError && removeError();
 					setSolutionValue();
+					inputOnFocus = '';
 					return;
 				}
 				var match = input.value.match(/^[1-9]$/);
@@ -40,7 +42,11 @@ define(["setClass"],function(setClass){
 			return {
 				setError:setError,
 				setValue:function(n){
+					setClass(container, "has-value", !!n);
 					input.value = n;
+				},
+				setRevealerValue:function(n){
+					revealer.value = n || '';
 				}
 			};
 		});

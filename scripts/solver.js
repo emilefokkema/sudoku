@@ -79,10 +79,10 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 	};
 	reset = postponer(function(){
 		console.log("resetting solver");
-		var somethingWasAdded = false;
+		var somethingWasRemoved = false;
 		var newOne = solution.clone();
-		if(solutionOnLastReset && newOne.contains(solutionOnLastReset) && !newOne.equals(solutionOnLastReset)){
-			somethingWasAdded = true;
+		if(solutionOnLastReset && solutionOnLastReset.contains(newOne) && !solutionOnLastReset.equals(newOne)){
+			somethingWasRemoved = true;
 		}
 		solutionOnLastReset = newOne;
 		clone = newOne.clone();
@@ -93,7 +93,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 				solutionsLeft.push(foundSolutions[i]);
 			}
 		}
-		if(solutionsLeft.length == foundSolutions.length && somethingWasAdded && currentSolveState == solveState.NO_SOLUTION){
+		if(solutionsLeft.length == foundSolutions.length && !somethingWasRemoved && currentSolveState == solveState.NO_SOLUTION){
 			console.log("addition agrees with all found solutions");
 			return;
 		}
@@ -194,7 +194,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 	reset();
 	return {
 		onStartStopping:function(f){onStartStopping = f;},
-		getNumberOfSolutions:function(){return foundSolutions.length;}
+		getSolutions:function(){return foundSolutions.map(function(s){return s.clone();});}
 	};
 	
 })

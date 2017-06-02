@@ -3,11 +3,25 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
 	};
+
+	var solverState = {
+		NO_SOLUTION:{className:"no-solution"},
+		ONE_SOLUTION:{className:"one-solution"},
+		MANY_SOLUTIONS:{className:"many-solutions"}
+	};
 	
 	var setKindClass = function(el, k){
 		for(var kk in kind){
 			if(kind.hasOwnProperty(kk)){
 				setClass(el, kind[kk].className, kind[kk] == k);
+			}
+		}
+	};
+
+	var setSolverStateClass = function(el, k){
+		for(var ss in solverState){
+			if(solverState.hasOwnProperty(ss)){
+				setClass(el, solverState[ss].className, solverState[ss] == k);
 			}
 		}
 	};
@@ -20,23 +34,40 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 			closeSettingsButton,
 			nrc,
 			normal,
-			solverStateDiv){
+			solverStateDiv,
+			revealSolutionCheckbox){
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
+				var setSingleSolution = function(s){
+					if(s){
+						var rows = s.getRows();
+						grid.rows.map(function(row, rowIndex){
+							row.map(function(cell, columnIndex){
+								cell.setRevealerValue(rows[rowIndex][columnIndex]);
+							});
+						});
+					}else{
+						grid.rows.map(function(row, rowIndex){
+							row.map(function(cell, columnIndex){
+								cell.setRevealerValue();
+							});
+						});
+					}
+				};
 				solver.onStartStopping(function(going){
-					setClass(solverStateDiv, "no-solution", false);
-					setClass(solverStateDiv, "one-solution", false);
-					setClass(solverStateDiv, "many-solutions", false);
 					setClass(solverStateDiv, "busy", going);
-					var number = solver.getNumberOfSolutions();
+					setSingleSolution(null);
+					var solutions = solver.getSolutions();
+					var number = solutions.length;
 					if(number == 0){
 						if(!going){
-							setClass(solverStateDiv, "no-solution", true);
+							setSolverStateClass(div, solverState.NO_SOLUTION);
 						}
 					}else if(number == 1){
-						setClass(solverStateDiv, "one-solution", true);
+						setSolverStateClass(div, solverState.ONE_SOLUTION);
+						setSingleSolution(solutions[0]);
 					}else{
-						setClass(solverStateDiv, "many-solutions", true);
+						setSolverStateClass(div, solverState.MANY_SOLUTIONS);
 					}
 				});
 				var currentKind = kind.NORMAL;
@@ -99,6 +130,10 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 					currentKind = kind.NORMAL;
 					setKindClass(div, currentKind);
 					solution.setExtraKind(getExtraSubdivision());
+				});
+
+				revealSolutionCheckbox.addEventListener('click',function(){
+					setClass(div,"reveal-solution",revealSolutionCheckbox.checked);
 				});
 
 				return {

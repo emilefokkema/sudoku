@@ -119,11 +119,15 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		};
 
 		var toString = function(){
-			return getRows().map(function(row){return row.map(function(n,i){return ""+n+(i==2||i==5?"|":" ");}).join("");})
+			return getRows().map(function(row){return row.map(function(n,i){return ""+(n||0)+(i==2||i==5?"|":" ");}).join("");})
 			.map(function(r,i){
 				return r+(i==2||i==5?"\r\n------------------":"");
 			})
 			.join("\r\n");
+		};
+
+		var log = function(){
+			console.log(toString());
 		};
 
 		var setExtraKind = function(e){
@@ -162,6 +166,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			checkAll:checkAll,
 			contains:contains,
 			clone:clone,
+			log:log,
 			equals:equals,
 			getRows:getRows,
 			onSetExtraKind:function(f){onSetExtraKind.add(f);},
