@@ -11,6 +11,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 	};
 	
 	var clone,
+		solutionOnLastReset,
 		reset,
 		currentRowFiller,
 		rowFillers,
@@ -75,10 +76,25 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 	};
 	reset = postponer(function(){
 		console.log("resetting solver");
-		clone = solution.clone();
-		foundSolutions = foundSolutions.filter(function(s){
-			return s.contains(clone) && s.checkAll();
-		});
+		var somethingWasAdded = false;
+		var newOne = solution.clone();
+		if(solutionOnLastReset && newOne.contains(solutionOnLastReset) && !newOne.equals(solutionOnLastReset)){
+			somethingWasAdded = true;
+		}
+		solutionOnLastReset = newOne;
+		clone = newOne.clone();
+		var solutionsLeft = [];
+		for(var i=0;i<foundSolutions.length;i++){
+			foundSolutions[i].setExtraKind(clone.getExtraKind());
+			if(foundSolutions[i].checkAll() && foundSolutions[i].contains(clone)){
+				solutionsLeft.push(foundSolutions[i]);
+			}
+		}
+		if(solutionsLeft.length == foundSolutions.length && somethingWasAdded && foundSolutions.length == maxNumberOfSolutions){
+			console.log("addition agrees with all found solutions");
+			return;
+		}
+		foundSolutions = solutionsLeft;
 		rowFillers = [];
 		clone.getRows().map(function(row, rowIndex){
 			if(row.some(function(x){return !x;})){

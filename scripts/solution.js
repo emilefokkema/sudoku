@@ -131,6 +131,8 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			onSetExtraKind(e);
 		};
 
+		var getExtraKind = function(){return extraKind;};
+
 		var checkRow = function(rowIndex){
 			for(var i=0;i<4;i++){
 				var subdivision = grid.subdivisions[i];
@@ -165,6 +167,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			onSetExtraKind:function(f){onSetExtraKind.add(f);},
 			onAdd:function(f){onAdd.add(f);},
 			setExtraKind:setExtraKind,
+			getExtraKind:getExtraKind,
 			toString:toString,
 			checkRow:checkRow
 		};
