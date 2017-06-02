@@ -90,7 +90,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 				solutionsLeft.push(foundSolutions[i]);
 			}
 		}
-		if(solutionsLeft.length == foundSolutions.length && somethingWasAdded && foundSolutions.length == maxNumberOfSolutions){
+		if(solutionsLeft.length == foundSolutions.length && somethingWasAdded && currentSolveState == solveState.NO_SOLUTION){
 			console.log("addition agrees with all found solutions");
 			return;
 		}
