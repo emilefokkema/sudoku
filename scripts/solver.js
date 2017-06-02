@@ -26,7 +26,10 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 		doBatch,
 		stop,
 		foundSolutions,
-		onStartStopping;
+		onStartStopping,
+		stay,
+		goForward,
+		goBack;
 
 	solveState = {
 		NO_SOLUTION:0,
@@ -105,7 +108,8 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			console.log("nothing left to solve");
 			return;
 		}
-		currentSolveState = useRowFiller(0);
+		currentRowFillerIndex = 0;
+		stay();
 		go();
 	}, 3000);
 	solution.onAdd(function(){
@@ -133,15 +137,24 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 		console.log("moved to row "+currentRowFiller.rowIndex);
 		return solveState.SOLVING;
 	};
+	stay = function(){
+		currentSolveState = useRowFiller(currentRowFillerIndex);
+	};
+	goForward = function(){
+		currentSolveState = useRowFiller(currentRowFillerIndex + 1);
+	};
+	goBack = function(){
+		currentSolveState = useRowFiller(currentRowFillerIndex - 1);
+	};
 	doStep = function(){
 		if(!currentRowFiller.fillNext()){
 			currentRowFiller.reset();
-			currentSolveState = useRowFiller(currentRowFillerIndex - 1);
+			goBack();
 		}
 		else if(clone.checkRow(currentRowFiller.rowIndex)){
-			currentSolveState = useRowFiller(currentRowFillerIndex + 1);
+			goForward();
 		}else{
-			currentSolveState = useRowFiller(currentRowFillerIndex);
+			stay();
 		}
 	};
 	doBatch = function(){
@@ -159,7 +172,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			if(!foundSolutions.some(function(s){return s.equals(clone);})){
 				foundSolutions.push(clone.clone());
 			}
-			currentSolveState = useRowFiller(currentRowFillerIndex);
+			stay();
 			if(foundSolutions.length < maxNumberOfSolutions){
 				setTimeout(doBatch,1);
 			}else{
