@@ -6,7 +6,7 @@ define(["setClass"],function(setClass){
 			};
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
-				setClass(container, "has-value", !!input.value);
+				setClass(container, "empty", !input.value);
 				if(input.value == inputOnFocus){
 					removeError && removeError();
 					return;
@@ -42,7 +42,7 @@ define(["setClass"],function(setClass){
 			return {
 				setError:setError,
 				setValue:function(n){
-					setClass(container, "has-value", !!n);
+					setClass(container, "empty", !n);
 					input.value = n;
 				},
 				setRevealerValue:function(n){

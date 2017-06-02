@@ -171,10 +171,10 @@
 	display: initial;
 }
 
-.sudoku-reveal-solution{
+.sodoku-reveal-container{
 	display: none;
 }
 
-.sudoku-container.reveal-solution .sudoku-reveal-solution{
+.sudoku-container.reveal-solution .empty .sodoku-reveal-container{
 	display: initial;
 }
