@@ -108,6 +108,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		};
 
 		var equals = function(otherOne){
+			if(extraKind != otherOne.getExtraKind()){return false;}
 			var rows = getRows();
 			var otherRows = otherOne.getRows();
 			for(var i=0;i<9;i++){

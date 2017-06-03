@@ -86,9 +86,7 @@
 	font-family: Arial;
 }
 
-.sodoku-reveal-container .sudoku-cell-input{
-	color:#ccc;
-}
+
 
 .settings-button {
 	width: 12px;
@@ -139,12 +137,24 @@
 	background-color: #ccc;
 }
 
+.sodoku-reveal-container .sudoku-cell-input{
+	color:#eee;
+}
+
 .nrc tr:nth-child(4n+1) .sudoku-table-cell{
 	background-color: #fff;
 }
 
+.nrc tr:nth-child(4n+1) .sodoku-reveal-container .sudoku-cell-input{
+	color:#ddd;
+}
+
 .nrc .sudoku-table-cell:nth-child(4n+1) {
 	background-color: #fff;
+}
+
+.nrc .sudoku-table-cell:nth-child(4n+1) .sodoku-reveal-container .sudoku-cell-input{
+	color:#ddd;
 }
 
 .state .state {
