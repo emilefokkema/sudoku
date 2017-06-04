@@ -23,6 +23,7 @@ define(["setClass"],function(setClass){
 					removeError = function(){setError(false);};
 					return;
 				}
+				removeError && removeError();
 				var inputtingValue = parseInt(input.value);
 				removeError = suggestSolutionValue(inputtingValue);
 				if(!removeError){
