@@ -70,6 +70,14 @@
 	top:0px;
 }
 
+.distribution {
+	font-family: Arial;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	font-size: 12px;
+}
+
 .sudoku-cell-container.error{
 	background-color: #f00;
 }
@@ -181,10 +189,23 @@
 	display: initial;
 }
 
+.busy-state.busy .one-solution{
+	display: none;
+}
+
 .sodoku-reveal-container{
 	display: none;
 }
 
-.sudoku-container.reveal-solution .empty .sodoku-reveal-container{
+.sudoku-container.one-solution.reveal-solution .empty .sodoku-reveal-container{
 	display: initial;
 }
+
+.distribution {
+	display: none;
+}
+
+.sudoku-container.many-solutions.reveal-distribution .empty .distribution{
+	display: initial;
+}
+

@@ -1,6 +1,6 @@
 define(["setClass"],function(setClass){
 	return function(makeElement, suggestSolutionValue, setSolutionValue){
-		return makeElement(function(input, container, revealer){
+		return makeElement(function(input, container, revealer, distribution){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
@@ -48,6 +48,13 @@ define(["setClass"],function(setClass){
 				},
 				setRevealerValue:function(n){
 					revealer.value = n || '';
+				},
+				setDistribution:function(entries){
+					if(entries.length > 1){
+						distribution.innerHTML = entries.map(function(e){return e.n;}).join("");
+					}else{
+						distribution.innerHTML = "";
+					}
 				}
 			};
 		});

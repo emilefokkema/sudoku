@@ -1,6 +1,6 @@
 define(["permutator","postponer","solution"],function(permutator, postponer, solution){
 	var batchSize = 5000;
-	var maxNumberOfSolutions = 2;
+	var maxNumberOfSolutions = 20;
 	var inRandomOrder = function(arr){
 		var result = [];
 		var l = arr.length;
@@ -174,6 +174,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			}
 			stay();
 			if(foundSolutions.length < maxNumberOfSolutions){
+				onStartStopping(true);
 				setTimeout(doBatch,1);
 			}else{
 				onStartStopping(false);

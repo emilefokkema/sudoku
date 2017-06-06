@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell){
+define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","getDistribution"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell, getDistribution){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -35,7 +35,8 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 			nrc,
 			normal,
 			solverStateDiv,
-			revealSolutionCheckbox){
+			revealSolutionCheckbox,
+			revealDistributionCheckbox){
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
 				var setSingleSolution = function(s){
@@ -54,6 +55,14 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 						});
 					}
 				};
+				var setManySolutions = function(solutions){
+					var divergenceMap = getDistribution(solutions);
+					grid.rows.map(function(row, rowIndex){
+						row.map(function(cell, columnIndex){
+							cell.setDistribution(divergenceMap[rowIndex][columnIndex].entries);
+						});
+					});
+				};
 				solver.onStartStopping(function(going){
 					setClass(solverStateDiv, "busy", going);
 					setSingleSolution(null);
@@ -68,6 +77,7 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 						setSingleSolution(solutions[0]);
 					}else{
 						setSolverStateClass(div, solverState.MANY_SOLUTIONS);
+						setManySolutions(solutions);
 					}
 				});
 				var currentKind = kind.NORMAL;
@@ -134,6 +144,10 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell"],fu
 
 				revealSolutionCheckbox.addEventListener('click',function(){
 					setClass(div,"reveal-solution",revealSolutionCheckbox.checked);
+				});
+
+				revealDistributionCheckbox.addEventListener('click',function(){
+					setClass(div,"reveal-distribution",revealDistributionCheckbox.checked);
 				});
 
 				return {
