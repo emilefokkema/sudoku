@@ -378,7 +378,7 @@
 }
 
 .sudoku-container.show-settings .settings-content{
-	display: initial;
+	display: inherit;
 }
 
 .close-settings-button{
@@ -393,8 +393,7 @@
 .sudoku-container.show-settings .settings-button {
 	width: 450px;
 	height: 450px;
-	background-color: rgba(255,255,255,0.75);
-
+	background-color: rgba(255,255,255,0.9);
 }
 
 .settings-option{
@@ -440,19 +439,19 @@
 }
 
 .busy-state.busy .busy{
-	display: initial;
+	display: inherit;
 }
 
 .state.no-solution .no-solution{
-	display: initial;
+	display: inherit;
 }
 
 .state.many-solutions .many-solutions{
-	display: initial;
+	display: inherit;
 }
 
 .state.one-solution .one-solution{
-	display: initial;
+	display: inherit;
 }
 
 .busy-state.busy .one-solution{
@@ -464,7 +463,7 @@
 }
 
 .sudoku-container.one-solution.reveal-solution .empty .sodoku-reveal-container{
-	display: initial;
+	display: inherit;
 }
 
 .distribution {
@@ -472,6 +471,17 @@
 }
 
 .sudoku-container.many-solutions.reveal-distribution .empty .distribution{
-	display: initial;
+	display: inherit;
+}
+
+.settings-part{
+	padding: 5px;
+}
+
+.diagnosis{
+	background-color:#eee;
+	color:#888;
+	border: 0.5pt solid #888;
+	border-radius: 3px;
 }
 

@@ -3,7 +3,9 @@
 	<meta name="viewport" content="width=475,user-scalable=no" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="mobile-web-app-capable" content="yes" />
+	
 	<LINK href="main.css" rel="stylesheet" type="text/css" />
+	<LINK href="font-awesome.min.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 <script type="text/template" id="editor">
@@ -28,16 +30,18 @@
 					<input type="radio" name="variation" id="6" checked/>Normal
 				</div>
 				<div id="7" class="settings-option sudoku-text">
-					<span class="state no-solution">No solution</span>
+					<div class="state no-solution">
+						<div class="diagnosis settings-part"><span class="fa fa-ban"></span> No solution</div>
+					</div>
 					<div class="state one-solution">
-						One solution
-						<input id="8" type="checkbox"/> Reveal
+						<div class="diagnosis settings-part"><span class="fa fa-check"></span> One solution</div>
+						<div class="settings-part"><input id="8" type="checkbox"/> Reveal</div>
 					</div>
 					<div class="state many-solutions">
-						Many solutions
-						<input id="9" type="checkbox"/> Show distribution
+						<div class="diagnosis settings-part"><span class="fa fa-exclamation-triangle"></span> Many solutions</div>
+						<div class="settings-part"><input id="9" type="checkbox"/> Show distribution</div>
 					</div>
-					<span class="busy-state busy">Busy...</span>
+					<span class="busy-state busy fa fa-spinner fa-spin"></span>
 				</div>
 				<div id="4" class="close-settings-button"></div>
 			</div>
