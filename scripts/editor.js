@@ -64,7 +64,7 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 					});
 				};
 				solver.onStartStopping(function(going){
-					setClass(solverStateDiv, "busy", going);
+					setClass(div, "busy", going);
 					setSingleSolution(null);
 					var solutions = solver.getSolutions();
 					var number = solutions.length;
