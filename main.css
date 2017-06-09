@@ -1,24 +1,24 @@
 @keyframes borderbusyright{
 	0% {border-right-color: #000;}
-	50% {border-right-color: #999;}
+	50% {border-right-color: #aaa;}
 	100% {border-right-color: #000;}
 }
 
 @keyframes borderbusyleft{
 	0% {border-left-color: #000;}
-	50% {border-left-color: #999;}
+	50% {border-left-color: #aaa;}
 	100% {border-left-color: #000;}
 }
 
 @keyframes borderbusytop{
 	0% {border-top-color: #000;}
-	50% {border-top-color: #999;}
+	50% {border-top-color: #aaa;}
 	100% {border-top-color: #000;}
 }
 
 @keyframes borderbusybottom{
 	0% {border-bottom-color: #000;}
-	50% {border-bottom-color: #999;}
+	50% {border-bottom-color: #aaa;}
 	100% {border-bottom-color: #000;}
 }
 
@@ -28,8 +28,8 @@
 		border-right-color: #000;
 	}
 	50% {
-		border-top-color: #999;
-		border-right-color: #999;
+		border-top-color: #aaa;
+		border-right-color: #aaa;
 	}
 	100% {
 		border-top-color: #000;
@@ -43,8 +43,8 @@
 		border-left-color: #000;
 	}
 	50% {
-		border-top-color: #999;
-		border-left-color: #999;
+		border-top-color: #aaa;
+		border-left-color: #aaa;
 	}
 	100% {
 		border-top-color: #000;
@@ -58,8 +58,8 @@
 		border-right-color: #000;
 	}
 	50% {
-		border-bottom-color: #999;
-		border-right-color: #999;
+		border-bottom-color: #aaa;
+		border-right-color: #aaa;
 	}
 	100% {
 		border-bottom-color: #000;
@@ -73,8 +73,8 @@
 		border-left-color: #000;
 	}
 	50% {
-		border-bottom-color: #999;
-		border-left-color: #999;
+		border-bottom-color: #aaa;
+		border-left-color: #aaa;
 	}
 	100% {
 		border-bottom-color: #000;
