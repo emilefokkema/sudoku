@@ -142,49 +142,49 @@
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+1) td{
 	animation-name: borderbusytop;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+9) td{
 	animation-name: borderbusybottom;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-cell:nth-child(9n+9){
 	animation-name: borderbusyright;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-cell:nth-child(9n+1){
 	animation-name: borderbusyleft;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+1) td:nth-child(9n+9){
 	animation-name: borderbusytopright;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+1) td:nth-child(9n+1){
 	animation-name: borderbusytopleft;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+9) td:nth-child(9n+1){
 	animation-name: borderbusybottomleft;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
 .busy-state.busy .sudoku-table-row:nth-child(9n+9) td:nth-child(9n+9){
 	animation-name: borderbusybottomright;
-	animation-duration: 0.8s;
+	animation-duration: 1.6s;
 	animation-iteration-count: infinite;
 }
 
@@ -351,11 +351,10 @@
 }
 
 .sudoku-cell-input{
-	font-weight: bold;
 	text-align:center;
 	border:0px;
 	width:50%;
-	font-size:20px;
+	font-size:26px;
 	position:relative;
 	top:50%;
 	transform:translateY(-50%);
