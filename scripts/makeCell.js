@@ -47,7 +47,7 @@ define(["setClass"],function(setClass){
 					input.value = n;
 				},
 				setRevealerValue:function(n){
-					revealer.value = n || '';
+					revealer.innerHTML = n || '';
 				},
 				setDistribution:function(entries){
 					if(entries.length > 1){
