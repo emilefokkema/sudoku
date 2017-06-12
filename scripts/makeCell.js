@@ -7,7 +7,7 @@ define(["setClass"],function(setClass){
 			var setSelected = function(val){
 				setClass(container,"selected",val);
 			};
-			overlay.addEventListener('click', select);
+			overlay.addEventListener('mousedown', select);
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
 				setClass(container, "empty", !input.value);
