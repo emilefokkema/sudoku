@@ -1,9 +1,13 @@
 define(["setClass"],function(setClass){
-	return function(makeElement, suggestSolutionValue, setSolutionValue){
-		return makeElement(function(input, container, revealer, distribution){
+	return function(makeElement, suggestSolutionValue, setSolutionValue, select){
+		return makeElement(function(input, container, revealer, distribution, overlay){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
+			var setSelected = function(val){
+				setClass(container,"selected",val);
+			};
+			overlay.addEventListener('click', select);
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
 				setClass(container, "empty", !input.value);
@@ -31,9 +35,11 @@ define(["setClass"],function(setClass){
 				}
 			});
 			input.addEventListener('focus',function(){
+				setClass(container, 'selected',true);
 				inputOnFocus = input.value;
 			});
 			input.addEventListener('blur',function(){
+				setClass(container, 'selected',false);
 				inputOnFocus = '';
 				if(removeError){
 					removeError();
@@ -42,6 +48,7 @@ define(["setClass"],function(setClass){
 			});
 			return {
 				setError:setError,
+				setSelected:setSelected,
 				setValue:function(n){
 					setClass(container, "empty", !n);
 					input.value = n;

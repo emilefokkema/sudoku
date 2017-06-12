@@ -39,6 +39,7 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 			revealDistributionCheckbox){
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
+				var currentlySelected = null;
 				var setSingleSolution = function(s){
 					if(s){
 						var rows = s.getRows();
@@ -104,7 +105,19 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 					}
 				};
 				var addCell = function(row, column, makeElement){
-					grid.add(row, column, makeCell(makeElement, function(n){return suggestSolutionValue(row, column, n);}, function(n){setSolutionValue(row, column, n);}));
+					var cell = makeCell(
+						makeElement,
+						function(n){return suggestSolutionValue(row, column, n);},
+						function(n){setSolutionValue(row, column, n);},
+						function(){
+							if(currentlySelected){
+								currentlySelected.setSelected(false);
+							}
+							currentlySelected = cell;
+							currentlySelected.setSelected(true);
+						}
+					);
+					grid.add(row, column, cell);
 				};
 				for(var i=0;i<9;i++){
 					row(function(cell){
