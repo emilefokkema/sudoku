@@ -1,9 +1,28 @@
 define(["setClass"],function(setClass){
-	return function(makeElement, suggestSolutionValue, setSolutionValue){
-		return makeElement(function(input, container, revealer, distribution){
+	return function(makeElement, suggestSolutionValue, setSolutionValue, select){
+		return makeElement(function(input, container, revealer, distribution, overlay){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
+			var setSelected = function(val){
+				setClass(container,"selected",val);
+				if(!val){
+					inputOnFocus = '';
+					if(removeError){
+						clear();
+					}
+				}else{
+					inputOnFocus = input.value;
+				}
+			};
+			var clear = function(){
+				removeError && removeError();
+				setSolutionValue();
+				input.value = '';
+				inputOnFocus = '';
+				setClass(container, "empty", true);
+			};
+			overlay.addEventListener('mousedown', select);
 			var inputOnFocus,removeError;
 			input.addEventListener('keyup',function(){
 				setClass(container, "empty", !input.value);
@@ -12,9 +31,7 @@ define(["setClass"],function(setClass){
 					return;
 				}
 				if(!input.value){
-					removeError && removeError();
-					setSolutionValue();
-					inputOnFocus = '';
+					clear();
 					return;
 				}
 				var match = input.value.match(/^[1-9]$/);
@@ -31,23 +48,29 @@ define(["setClass"],function(setClass){
 				}
 			});
 			input.addEventListener('focus',function(){
-				inputOnFocus = input.value;
+				setSelected(true);
 			});
 			input.addEventListener('blur',function(){
-				inputOnFocus = '';
-				if(removeError){
-					removeError();
-					input.value = '';
-				}
+				setSelected(false);
 			});
 			return {
 				setError:setError,
+				setSelected:setSelected,
 				setValue:function(n){
 					setClass(container, "empty", !n);
 					input.value = n;
 				},
+				suggestValue:function(n){
+					removeError && removeError();
+					input.value = n;
+					setClass(container, "empty", false);
+					removeError = suggestSolutionValue(n);
+					if(!removeError){
+						setSolutionValue(n);
+					}
+				},
 				setRevealerValue:function(n){
-					revealer.value = n || '';
+					revealer.innerHTML = n || '';
 				},
 				setDistribution:function(entries){
 					if(entries.length > 1){
@@ -55,6 +78,13 @@ define(["setClass"],function(setClass){
 					}else{
 						distribution.innerHTML = "";
 					}
+				},
+				clear:function(){
+					removeError && removeError();
+					setSolutionValue();
+					input.value = '';
+					inputOnFocus = '';
+					setClass(container, "empty", true);
 				}
 			};
 		});

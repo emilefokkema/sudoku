@@ -14,11 +14,14 @@
 			<tr template-id="2" class="sudoku-table-row">
 				<td template-id="1" class="sudoku-table-cell">
 					<div id="2" class="sudoku-cell-container empty" align="center">
-						<div class="sodoku-reveal-container">
-							<input id="3" class="sudoku-cell-input sudoku-text sudoku-text-grey" type="text" value="a" disabled="true" />
+						<div class="sodoku-inner-container error"></div>
+						<div class="sodoku-inner-container selected"></div>
+						<div class="sodoku-reveal-container sodoku-inner-container">
+							<span id="3" class="sudoku-cell-input sudoku-text sudoku-text-grey"></span>
 						</div>
 						<div id="4" class="distribution sudoku-text sudoku-text-grey">hoi</div>
 						<input id="1" type="text" maxlength="1" class="sudoku-cell-input sudoku-text"/>
+						<div class="sodoku-inner-container mobile-overlay" id="5"></div>
 					</div>
 				</td>
 			</tr>
@@ -45,6 +48,14 @@
 				</div>
 				<div id="4" class="close-settings-button"></div>
 			</div>
+		</div>
+	</div>
+</script>
+<script type="text/template" id="mobileButtons">
+	<div id="1" class="mobile-buttons">
+		<div id="1" template-id="2" class="mobile-button" align="center">
+			<span id="2" class="sudoku-cell-input sudoku-text"></span>
+			<div class="sodoku-inner-container mobile-overlay"></div>
 		</div>
 	</div>
 </script>
