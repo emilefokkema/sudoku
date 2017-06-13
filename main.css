@@ -508,10 +508,10 @@
 	box-sizing: border-box;
 }
 .mobile-button:nth-child(9n+1){
-	width:47px;
+	width:46px;
 }
 .mobile-button:nth-child(9n+9){
-	width:47px;
+	width:46px;
 }
 .mobile-buttons {
 	display: none;
