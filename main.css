@@ -401,6 +401,8 @@
 .sudoku-container.show-settings .settings-button {
 	width: 450px;
 	height: 450px;
+	border:2.5pt solid #888;
+	box-sizing: border-box;
 	background-color: rgba(255,255,255,0.9);
 }
 
@@ -500,16 +502,24 @@
 .mobile-button{
 	width:50px;
 	height: 50px;
-	background-color: #ddd;
+	color: #888;
 	display:inline-block;
 	position: relative;
 	box-sizing: border-box;
-	border-right: 1pt solid #eee;
-	border-left: 1pt solid #eee;
+}
+.mobile-button:nth-child(9n+1){
+	width:47px;
+}
+.mobile-button:nth-child(9n+9){
+	width:47px;
 }
 .mobile-buttons {
 	display: none;
 	max-width: 450px;
+	box-sizing: border-box;
+	border-left: 2.5pt solid #888;
+	border-right: 2.5pt solid #888;
+	border-bottom: 2.5pt solid #888;
 }
 
 @media(max-width: 500px){
@@ -520,4 +530,3 @@
 		display: inherit;
 	}
 }
-
