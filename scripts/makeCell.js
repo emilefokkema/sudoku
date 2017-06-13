@@ -6,6 +6,16 @@ define(["setClass"],function(setClass){
 			};
 			var setSelected = function(val){
 				setClass(container,"selected",val);
+				if(!val){
+					inputOnFocus = '';
+					if(removeError){
+						removeError();
+						input.value = '';
+						setClass(container, "empty", true);
+					}
+				}else{
+					inputOnFocus = input.value;
+				}
 			};
 			overlay.addEventListener('mousedown', select);
 			var inputOnFocus,removeError;
@@ -35,16 +45,10 @@ define(["setClass"],function(setClass){
 				}
 			});
 			input.addEventListener('focus',function(){
-				setClass(container, 'selected',true);
-				inputOnFocus = input.value;
+				setSelected(true);
 			});
 			input.addEventListener('blur',function(){
-				setClass(container, 'selected',false);
-				inputOnFocus = '';
-				if(removeError){
-					removeError();
-					input.value = '';
-				}
+				setSelected(false);
 			});
 			return {
 				setError:setError,
@@ -52,6 +56,15 @@ define(["setClass"],function(setClass){
 				setValue:function(n){
 					setClass(container, "empty", !n);
 					input.value = n;
+				},
+				suggestValue:function(n){
+					removeError && removeError();
+					input.value = n;
+					setClass(container, "empty", false);
+					removeError = suggestSolutionValue(n);
+					if(!removeError){
+						setSolutionValue(n);
+					}
 				},
 				setRevealerValue:function(n){
 					revealer.innerHTML = n || '';

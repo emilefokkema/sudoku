@@ -4,4 +4,5 @@ requirejs(["mobileButtons", "editor","hash","solution"],function(mobileButtons, 
 		hash.write(solution.getRows());
 	});
 	mobileButtons.append();
+	mobileButtons.init(editor);
 });

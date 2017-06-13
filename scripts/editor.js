@@ -167,6 +167,11 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 					setSolutionValue:function(row, column, n){
 						if(n){grid.rows[row][column].setValue(n);}
 						setSolutionValue(row, column, n);
+					},
+					suggestValueForSelected:function(n){
+						if(currentlySelected){
+							currentlySelected.suggestValue(n);
+						}
 					}
 				};
 			});
