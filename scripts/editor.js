@@ -172,6 +172,11 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						if(currentlySelected){
 							currentlySelected.suggestValue(n);
 						}
+					},
+					clearCurrentlySelected:function(){
+						if(currentlySelected){
+							currentlySelected.clear();
+						}
 					}
 				};
 			});

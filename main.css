@@ -509,6 +509,7 @@
 }
 .mobile-buttons {
 	display: none;
+	max-width: 450px;
 }
 
 @media(max-width: 500px){

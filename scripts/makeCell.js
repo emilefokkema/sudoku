@@ -9,13 +9,18 @@ define(["setClass"],function(setClass){
 				if(!val){
 					inputOnFocus = '';
 					if(removeError){
-						removeError();
-						input.value = '';
-						setClass(container, "empty", true);
+						clear();
 					}
 				}else{
 					inputOnFocus = input.value;
 				}
+			};
+			var clear = function(){
+				removeError && removeError();
+				setSolutionValue();
+				input.value = '';
+				inputOnFocus = '';
+				setClass(container, "empty", true);
 			};
 			overlay.addEventListener('mousedown', select);
 			var inputOnFocus,removeError;
@@ -26,9 +31,7 @@ define(["setClass"],function(setClass){
 					return;
 				}
 				if(!input.value){
-					removeError && removeError();
-					setSolutionValue();
-					inputOnFocus = '';
+					clear();
 					return;
 				}
 				var match = input.value.match(/^[1-9]$/);
@@ -75,6 +78,13 @@ define(["setClass"],function(setClass){
 					}else{
 						distribution.innerHTML = "";
 					}
+				},
+				clear:function(){
+					removeError && removeError();
+					setSolutionValue();
+					input.value = '';
+					inputOnFocus = '';
+					setClass(container, "empty", true);
 				}
 			};
 		});
