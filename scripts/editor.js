@@ -34,7 +34,6 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 			closeSettingsButton,
 			nrc,
 			normal,
-			solverStateDiv,
 			revealSolutionCheckbox,
 			revealDistributionCheckbox){
 				document.body.appendChild(div);
@@ -89,14 +88,11 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						}
 					});
 				};
-				var getExtraSubdivision = function(){
-					return currentKind == kind.NRC ? subdivision.NRC : null;
-				};
 				var setSolutionValue = function(row, column, n){
 					solution.add(row, column, n);
 				};
 				var suggestSolutionValue = function(row, column, n){
-					var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
+					var objection = solution.getObjectionToAdding(row, column, n);
 					if(objection){
 						setSubdivisionError(objection.kind, objection.index, true);
 						return function(){

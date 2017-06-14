@@ -134,7 +134,6 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 		}
 		currentRowFillerIndex = i;
 		currentRowFiller = rowFillers[currentRowFillerIndex];
-		console.log("moved to row "+currentRowFiller.rowIndex);
 		return solveState.SOLVING;
 	};
 	stay = function(){
