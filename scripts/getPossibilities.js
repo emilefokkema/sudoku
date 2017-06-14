@@ -36,10 +36,11 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 				var reverse = reverseMap(list);
 				for(var two=0;two<9;two++){
 					var s = list[two];
-					if(!s.occupiedBy && s.possibilities.length == 1 && reverse[s.possibilities()[0]].length > 1){
+					var possibilities = s.possibilities();
+					if(!s.occupiedBy && possibilities.length == 1 && reverse[possibilities[0]].length > 1){
 						return {
 							list:list,
-							numbers:[s.possibilities()[0]],
+							numbers:[possibilities[0]],
 							indices:[two]
 						}
 					}
