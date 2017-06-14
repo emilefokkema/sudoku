@@ -45,6 +45,7 @@ define(["setClass"],function(setClass){
 				removeError = suggestSolutionValue(inputtingValue);
 				if(!removeError){
 					setSolutionValue(inputtingValue);
+					inputOnFocus = input.value;
 				}
 			});
 			input.addEventListener('focus',function(){
