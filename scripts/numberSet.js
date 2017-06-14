@@ -26,6 +26,9 @@ define([],function(){
 					n ^= p;
 				}
 			},
+			add:function(nn){
+				n |= (1<<nn);
+			},
 			toArray:function(){return numberToArray(n);},
 			contains:function(nn){return (n & (1<<nn)) > 0;}
 		};

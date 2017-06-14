@@ -28,22 +28,30 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 		}
 		return result;
 	};
-	var findPartWithContainedSet = function(grid){
+	var findContainedSet = function(list){
+		var reverse = reverseMap(list);
+		for(var two=0;two<9;two++){
+			var s = list[two];
+			var possibilities = s.possibilities();
+			if(!s.occupiedBy && possibilities.length == 1 && reverse[possibilities[0]].length > 1){
+				return {
+					numbers:[possibilities[0]],
+					indices:[two]
+				}
+			}
+		}
+	};
+	var findPartWithContainedSet = function(grid, extraKind){
 		for(var i=0;i<grid.subdivisions.length;i++){
 			var sub = grid.subdivisions[i];
+			if(sub.kind == subdivision.NRC && !extraKind){continue;}
 			for(var one = 0;one<sub.kind.number;one++){
-				var list = sub[one];
-				var reverse = reverseMap(list);
-				for(var two=0;two<9;two++){
-					var s = list[two];
-					var possibilities = s.possibilities();
-					if(!s.occupiedBy && possibilities.length == 1 && reverse[possibilities[0]].length > 1){
-						return {
-							list:list,
-							numbers:[possibilities[0]],
-							indices:[two]
-						}
-					}
+				var containedSet = findContainedSet(sub[one]);
+				if(containedSet){
+					containedSet.list = sub[one];
+					containedSet.one = one;
+					containedSet.kind = sub.kind;
+					return containedSet;
 				}
 			}
 		}
@@ -82,9 +90,9 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 			}
 		}
 		var partWithContainedSet;
-		partWithContainedSet = findPartWithContainedSet(grid);
-		if(partWithContainedSet){
-			console.log(partWithContainedSet);
+		while(partWithContainedSet = findPartWithContainedSet(grid, extraKind)){
+			console.log("cleaning part with contained set");
+			cleanPartWithContainedSet(partWithContainedSet);
 		}
 		return grid.map(function(s){
 			if(s.occupiedBy){return null;}
