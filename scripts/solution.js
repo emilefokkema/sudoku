@@ -31,6 +31,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		return true;
 	};
 	var getSolution = function(){
+		var self;
 		var grid = new sudokuGrid();
 		var extraKind = null;
 		var onSetExtraKind = sender();
@@ -134,6 +135,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		var setExtraKind = function(e){
 			extraKind = e;
 			onSetExtraKind(e);
+			return self;
 		};
 
 		var getExtraKind = function(){return extraKind;};
@@ -160,7 +162,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			return true;
 		};
 
-		return {
+		self = {
 			getObjectionToAdding:getObjectionToAdding,
 			add:add,
 			clear:clear,
@@ -177,6 +179,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			toString:toString,
 			checkRow:checkRow
 		};
+		return self;
 	};
 	return getSolution();
 })

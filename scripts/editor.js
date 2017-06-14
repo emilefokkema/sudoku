@@ -80,7 +80,6 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						setManySolutions(solutions);
 					}
 				});
-				var currentKind = kind.NORMAL;
 				var setSubdivisionError = function(kind, index, bool){
 					grid.subdivisions.map(function(s){
 						if(s.kind == kind){
@@ -134,21 +133,19 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 				});
 
 				nrc.addEventListener('click',function(){
-					var valid = solution.checkAll(subdivision.NRC);
+					var valid = solution.clone().setExtraKind(subdivision.NRC).checkAll();
 					if(!valid){
 						nrc.checked = false;
 						normal.checked = true;
 						return;
 					}
-					currentKind = kind.NRC;
-					setKindClass(div, currentKind);
-					solution.setExtraKind(getExtraSubdivision());
+					setKindClass(div, kind.NRC);
+					solution.setExtraKind(subdivision.NRC);
 				});
 
 				normal.addEventListener('click',function(){
-					currentKind = kind.NORMAL;
-					setKindClass(div, currentKind);
-					solution.setExtraKind(getExtraSubdivision());
+					setKindClass(div, kind.NORMAL);
+					solution.setExtraKind(null);
 				});
 
 				revealSolutionCheckbox.addEventListener('click',function(){
