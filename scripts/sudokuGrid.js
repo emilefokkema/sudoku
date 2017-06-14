@@ -17,10 +17,10 @@ define(["subdivision"],function(subdivision){
 				this.subdivisions.push(makeSubdivision(subdivision[p]));
 			}
 		}
-		this.rows = this.subdivisions.filter(function(s){return s.kind == subdivision.ROW;})[0];
-		this.columns = this.subdivisions.filter(function(s){return s.kind == subdivision.COLUMN;})[0];
-		this.squares = this.subdivisions.filter(function(s){return s.kind == subdivision.SQUARE;})[0];
-		this.nrcs = this.subdivisions.filter(function(s){return s.kind == subdivision.NRC;})[0];
+		this.rows = this.subdivisionFor(subdivision.ROW);
+		this.columns = this.subdivisionFor(subdivision.COLUMN);
+		this.squares = this.subdivisionFor(subdivision.SQUARE);
+		this.nrcs = this.subdivisionFor(subdivision.NRC);
 	};
 	grid.prototype.add = function(r, c, something){
 		for(var i=0;i<this.subdivisions.length;i++){
@@ -30,6 +30,19 @@ define(["subdivision"],function(subdivision){
 				s[indices.one][indices.two] = something;
 			}
 		}
+	};
+	grid.prototype.subdivisionFor = function(kind){
+		return this.subdivisions.filter(function(s){return s.kind == kind;})[0];
+	};
+	grid.prototype.map = function(mapper){
+		var result = new grid();
+		var rows = this.rows;
+		for(var r=0;r<9;r++){
+			for(var c=0;c<9;c++){
+				result.add(r, c, mapper(rows[r][c]));
+			}
+		}
+		return result;
 	};
 	return grid;
 })

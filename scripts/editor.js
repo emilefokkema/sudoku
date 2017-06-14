@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","getDistribution"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell, getDistribution){
+define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","getDistribution","getPossibilities"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell, getDistribution, getPossibilities){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -97,11 +97,22 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						}
 					}
 				};
+				var setPossibilities = function(){
+					var possibilities = getPossibilities(solution);
+					for(var i=0;i<9;i++){
+						for(var j=0;j<9;j++){
+							grid.rows[i][j].setPossibilities(possibilities[i][j]);
+						}
+					}
+				};
 				var addCell = function(row, column, makeElement){
 					var cell = makeCell(
 						makeElement,
 						function(n){return suggestSolutionValue(row, column, n);},
-						function(n){solution.add(row, column, n);},
+						function(n){
+							solution.add(row, column, n);
+							setPossibilities();
+						},
 						function(){
 							if(currentlySelected){
 								currentlySelected.setSelected(false);
@@ -155,7 +166,11 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 				});
 
 				eliminatePossibilities.addEventListener('click',function(){
-					setClass(div,"possibilities",eliminatePossibilities.checked);
+					var checked = eliminatePossibilities.checked;
+					if(checked){
+						setPossibilities();
+					}
+					setClass(div,"possibilities",checked);
 				});
 
 				return {
