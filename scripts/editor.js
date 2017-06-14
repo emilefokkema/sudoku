@@ -34,7 +34,6 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 			closeSettingsButton,
 			nrc,
 			normal,
-			solverStateDiv,
 			revealSolutionCheckbox,
 			revealDistributionCheckbox){
 				document.body.appendChild(div);
@@ -81,7 +80,6 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						setManySolutions(solutions);
 					}
 				});
-				var currentKind = kind.NORMAL;
 				var setSubdivisionError = function(kind, index, bool){
 					grid.subdivisions.map(function(s){
 						if(s.kind == kind){
@@ -89,14 +87,11 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						}
 					});
 				};
-				var getExtraSubdivision = function(){
-					return currentKind == kind.NRC ? subdivision.NRC : null;
-				};
 				var setSolutionValue = function(row, column, n){
 					solution.add(row, column, n);
 				};
 				var suggestSolutionValue = function(row, column, n){
-					var objection = solution.getObjectionToAdding(row, column, n, getExtraSubdivision());
+					var objection = solution.getObjectionToAdding(row, column, n);
 					if(objection){
 						setSubdivisionError(objection.kind, objection.index, true);
 						return function(){
@@ -138,21 +133,19 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 				});
 
 				nrc.addEventListener('click',function(){
-					var valid = solution.checkAll(subdivision.NRC);
+					var valid = solution.clone().setExtraKind(subdivision.NRC).checkAll();
 					if(!valid){
 						nrc.checked = false;
 						normal.checked = true;
 						return;
 					}
-					currentKind = kind.NRC;
-					setKindClass(div, currentKind);
-					solution.setExtraKind(getExtraSubdivision());
+					setKindClass(div, kind.NRC);
+					solution.setExtraKind(subdivision.NRC);
 				});
 
 				normal.addEventListener('click',function(){
-					currentKind = kind.NORMAL;
-					setKindClass(div, currentKind);
-					solution.setExtraKind(getExtraSubdivision());
+					setKindClass(div, kind.NORMAL);
+					solution.setExtraKind(null);
 				});
 
 				revealSolutionCheckbox.addEventListener('click',function(){
