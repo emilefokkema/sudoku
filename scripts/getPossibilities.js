@@ -1,18 +1,15 @@
-define(["sudokuGrid","subdivision"],function(sudokuGrid, subdivision){
+define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision, numberSet){
 	var set = function(){
 		var self;
-		var all = [1,2,3,4,5,6,7,8,9];
+		var all = numberSet([1,2,3,4,5,6,7,8,9]);
 		var eliminate = function(n){
-			var ind = all.indexOf(n);
-			if(ind > -1){
-				all.splice(ind,1);
-			}
+			all.remove(n);
 		};
 		var contains = function(n){
-			return !self.occupiedBy && all.indexOf(n) > -1;
+			return !self.occupiedBy && all.contains(n);
 		};
 		self = {
-			possibilities:all,
+			possibilities:function(){return all.toArray();},
 			eliminate:eliminate,
 			occupiedBy:null,
 			contains:contains
@@ -39,10 +36,10 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid, subdivision){
 				var reverse = reverseMap(list);
 				for(var two=0;two<9;two++){
 					var s = list[two];
-					if(!s.occupiedBy && s.possibilities.length == 1 && reverse[s.possibilities[0]].length > 1){
+					if(!s.occupiedBy && s.possibilities.length == 1 && reverse[s.possibilities()[0]].length > 1){
 						return {
 							list:list,
-							numbers:[s.possibilities[0]],
+							numbers:[s.possibilities()[0]],
 							indices:[two]
 						}
 					}
@@ -90,7 +87,7 @@ define(["sudokuGrid","subdivision"],function(sudokuGrid, subdivision){
 		}
 		return grid.map(function(s){
 			if(s.occupiedBy){return null;}
-			return s.possibilities;
+			return s.possibilities();
 		}).rows;
 	};
 })

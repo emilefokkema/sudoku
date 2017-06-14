@@ -167,7 +167,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			setTimeout(doBatch,1);
 		}
 		else if(currentSolveState == solveState.SOLUTION){
-			console.log("found solution:\r\n"+clone.toString());
+			//console.log("found solution:\r\n"+clone.toString());
 			if(!foundSolutions.some(function(s){return s.equals(clone);})){
 				foundSolutions.push(clone.clone());
 			}
