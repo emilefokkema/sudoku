@@ -521,6 +521,16 @@
 	border-right: 2.5pt solid #888;
 	border-bottom: 2.5pt solid #888;
 }
+.possibilities .show-possibilities{
+	display: inherit;
+}
+.reveal .possibilities{
+	display: none;
+}
+.show-possibilities{
+	display: none;
+}
+
 
 @media(max-width: 500px){
 	.mobile-buttons {
