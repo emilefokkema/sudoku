@@ -1,4 +1,4 @@
-define(["permutator","postponer","solution"],function(permutator, postponer, solution){
+define(["permutator","postponer","solution","getPossibilities"],function(permutator, postponer, solution, getPossibilities){
 	var batchSize = 5000;
 	var maxNumberOfSolutions = 20;
 	var inRandomOrder = function(arr){
@@ -25,6 +25,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 		going,
 		doBatch,
 		stop,
+		saveSolution,
 		foundSolutions,
 		onStartStopping,
 		stay,
@@ -98,6 +99,15 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			return;
 		}
 		foundSolutions = solutionsLeft;
+		var possibilities = getPossibilities(clone);
+		possibilities.map(function(r, ri){
+			r.map(function(c, ci){
+				if(c && c.length == 1){
+					console.log("filling in single possibility");
+					clone.add(ri, ci, c[0]);
+				}
+			});
+		});
 		rowFillers = [];
 		clone.getRows().map(function(row, rowIndex){
 			if(row.some(function(x){return !x;})){
@@ -105,7 +115,8 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			}
 		});
 		if(rowFillers.length == 0){
-			console.log("nothing left to solve");
+			saveSolution();
+			onStartStopping(false);
 			return;
 		}
 		currentRowFillerIndex = 0;
@@ -156,6 +167,11 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 			stay();
 		}
 	};
+	saveSolution = function(){
+		if(!foundSolutions.some(function(s){return s.equals(clone);})){
+			foundSolutions.push(clone.clone());
+		}
+	};
 	doBatch = function(){
 		if(!going){return;}
 		var batchCount = 0;
@@ -168,9 +184,7 @@ define(["permutator","postponer","solution"],function(permutator, postponer, sol
 		}
 		else if(currentSolveState == solveState.SOLUTION){
 			//console.log("found solution:\r\n"+clone.toString());
-			if(!foundSolutions.some(function(s){return s.equals(clone);})){
-				foundSolutions.push(clone.clone());
-			}
+			saveSolution();
 			stay();
 			if(foundSolutions.length < maxNumberOfSolutions){
 				onStartStopping(true);
