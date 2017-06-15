@@ -1,25 +1,37 @@
 define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision, numberSet){
 	
-	var reverseMap = function(setArray){
-		var result = [];
-		for(var n=1;n<=9;n++){
-			result[n] = [];
-			for(var i=0;i<setArray.length;i++){
-				if(setArray[i] && setArray[i].contains(n)){
-					result[n].push(i);
-				}
+	var reverse = function(possibilities, list){
+		var indices = numberSet();
+		for(var i=0;i<list.length;i++){
+			if(list[i] && list[i].intersectWith(possibilities).length){
+				indices.add(i);
 			}
 		}
+		return indices;
+	};
+	var image = function(indices, list){
+		var result = numberSet();
+		indices.toArray().map(function(i){
+			result = result.plus(list[i] || numberSet());
+		});
 		return result;
 	};
 	var findContainedSet = function(list){
-		var reverse = reverseMap(list);
 		for(var two=0;two<9;two++){
-			var possibilities = list[two] ? list[two].toArray() : [];
-			if(possibilities.length == 1 && reverse[possibilities[0]].length > 1){
+			var possibilities = list[two] || numberSet();
+			if(possibilities.length == 1 && reverse(possibilities, list).length > 1){
 				return {
-					numbers:[possibilities[0]],
-					indices:[two]
+					numbers:possibilities,
+					indices:numberSet([two])
+				}
+			}
+		}
+		for(var n=1;n<=9;n++){
+			var where = reverse(numberSet([n]), list);
+			if(where.length == 1 && image(where, list).length > 1){
+				return {
+					numbers:numberSet([n]),
+					indices:where
 				}
 			}
 		}
@@ -40,10 +52,18 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 		}
 	};
 	var cleanPartWithContainedSet = function(part){
+		var numbers = part.numbers.toArray();
+		var indices = part.indices.toArray();
 		for(var i=0;i<9;i++){
-			if(part.indices.indexOf(i) == -1){
-				for(var j=0;j<part.numbers.length;j++){
-					part.list[i] && part.list[i].remove(part.numbers[j]);
+			if(!part.indices.contains(i)){
+				for(var j=0;j<numbers.length;j++){
+					part.list[i] && part.list[i].remove(numbers[j]);
+				}
+			}else{
+				for(var n=1;n<=9;n++){
+					if(!part.numbers.contains(n)){
+						part.list[i] && part.list[i].remove(n);
+					}
 				}
 			}
 		}

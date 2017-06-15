@@ -15,23 +15,40 @@ define([],function(){
 		}
 		return result;
 	};
+	var lengthOfNumber = function(n){
+		return numberToArray(n).length;
+	};
 	var numberSet = function(arr){
 		var n = arr ? arrayToNumber(arr) : 0;
-		return {
+		var self = {
+			length:lengthOfNumber(n),
 			getNumber:function(){return n;},
 			equals:function(other){return other.getNumber() == n;},
 			remove:function(nn){
 				var p = 1 << nn;
 				if(n & p){
+					this.length--;
 					n ^= p;
 				}
 			},
+			intersectWith:function(other){
+				return numberSet(numberToArray(n & other.getNumber()));
+			},
+			plus:function(other){
+				return numberSet(numberToArray(n | other.getNumber()));
+			},
 			add:function(nn){
-				n |= (1<<nn);
+				var p = 1 << nn;
+				if(!(n & p)){
+					this.length++;
+					n |= p;
+				}
 			},
 			toArray:function(){return numberToArray(n);},
 			contains:function(nn){return (n & (1<<nn)) > 0;}
 		};
+		return self;
 	};
+	window.numberSet = numberSet;
 	return numberSet;
 })
