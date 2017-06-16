@@ -16,7 +16,13 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 		});
 		return result;
 	};
-	var findContainedSetOne = function(list){
+	var findContainedSetOne = function(list, n){
+		// var maker = combinationMaker([0,1,2,3,4,5,6,7,8], n);
+		// var latestCombination = maker.next();
+
+		// while(!latestCombination.done){
+
+		// }
 		for(var two=0;two<9;two++){
 			var possibilities = list[two] || numberSet();
 			if(possibilities.length == 1 && reverse(possibilities, list).length > 1){
@@ -39,7 +45,12 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 		}
 	};
 	var findContainedSet = function(list){
-		return findContainedSetOne(list) || findContainedSetTwo(list);
+		for(var i=1;i<2;i++){
+			var result = findContainedSetOne(list, i) || findContainedSetTwo(list, i);
+			if(result){
+				return result;
+			}
+		}
 	};
 	var findPartWithContainedSet = function(grid, extraKind){
 		for(var i=0;i<grid.subdivisions.length;i++){
@@ -91,7 +102,7 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 						if(s.kind == subdivision.NRC && !extraKind){return;}
 						var indices = s.kind.getIndices(r, c);
 						if(indices){
-							grid.subdivisionFor(s.kind)[indices.one].map(function(p){p && p.remove(n);});
+							s[indices.one].map(function(p){p && p.remove(n);});
 						}
 					});
 				} 
