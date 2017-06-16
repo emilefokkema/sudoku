@@ -49,6 +49,32 @@ define([],function(){
 		};
 		return self;
 	};
+	numberSet.map = function(){
+		var all = {};
+
+		return {
+			set:function(set, something){
+				all[set.getNumber()] = something;
+			},
+			get:function(set){
+				return all[set.getNumber()];
+			},
+			hasKey:function(set){
+				return all.hasOwnProperty(set.getNumber());
+			},
+			traverse:function(mapper){
+				var keepGoing = true;
+				for(var n in all){
+					if(all.hasOwnProperty(n)){
+						mapper(numberSet(numberToArray(n)), all[n], function(){keepGoing = false;});
+						if(!keepGoing){
+							break;
+						}
+					}
+				}
+			}
+		};
+	};
 	window.numberSet = numberSet;
 	return numberSet;
 })

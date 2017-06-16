@@ -16,23 +16,31 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 		});
 		return result;
 	};
-	var findContainedSetOne = function(list, n){
-		// var maker = combinationMaker([0,1,2,3,4,5,6,7,8], n);
-		// var latestCombination = maker.next();
-
-		// while(!latestCombination.done){
-
-		// }
-		for(var two=0;two<9;two++){
-			var possibilities = list[two] || numberSet();
-			if(possibilities.length == 1 && reverse(possibilities, list).length > 1){
-				return {
-					numbers:possibilities,
-					indices:numberSet([two])
-				}
+	var findContainedSetOne = function(list){
+		var map = numberSet.map();
+		for(var two = 0;two<9;two++){
+			var p = list[two] || numberSet();
+			if(map.hasKey(p)){
+				map.get(p).push(two);
+			}else{
+				map.set(p, [two]);
 			}
 		}
+		var result;
+		map.traverse(function(possibilities, indices, stop){
+			var l = possibilities.length;
+			var rev = reverse(possibilities, list);
+			if(l  == indices.length && rev.length > l){
+				result = {
+					numbers:possibilities,
+					indices:numberSet(indices)
+				};
+				stop();
+			}
+		});
+		return result;
 	};
+	
 	var findContainedSetTwo = function(list){
 		for(var n=1;n<=9;n++){
 			var where = reverse(numberSet([n]), list);
@@ -45,8 +53,12 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 		}
 	};
 	var findContainedSet = function(list){
+		var result = findContainedSetOne(list);
+		if(result){
+			return result;
+		}
 		for(var i=1;i<2;i++){
-			var result = findContainedSetOne(list, i) || findContainedSetTwo(list, i);
+			var result = findContainedSetTwo(list, i);
 			if(result){
 				return result;
 			}
