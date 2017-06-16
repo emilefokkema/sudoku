@@ -1,69 +1,5 @@
-define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"],function(sudokuGrid, subdivision, numberSet, getSolution,combinationMaker){
-	
-	var reverse = function(possibilities, list){
-		var indices = numberSet();
-		for(var i=0;i<list.length;i++){
-			if(list[i] && list[i].intersectWith(possibilities).length){
-				indices.add(i);
-			}
-		}
-		return indices;
-	};
-	var image = function(indices, list){
-		var result = numberSet();
-		indices.toArray().map(function(i){
-			result = result.plus(list[i] || numberSet());
-		});
-		return result;
-	};
-	var findContainedSetOne = function(list){
-		var map = numberSet.map();
-		for(var two = 0;two<9;two++){
-			var p = list[two] || numberSet();
-			if(map.hasKey(p)){
-				map.get(p).push(two);
-			}else{
-				map.set(p, [two]);
-			}
-		}
-		var result;
-		map.traverse(function(possibilities, indices, stop){
-			var l = possibilities.length;
-			var rev = reverse(possibilities, list);
-			if(l  == indices.length && rev.length > l){
-				result = {
-					numbers:possibilities,
-					indices:numberSet(indices)
-				};
-				stop();
-			}
-		});
-		return result;
-	};
-	
-	var findContainedSetTwo = function(list){
-		for(var n=1;n<=9;n++){
-			var where = reverse(numberSet([n]), list);
-			if(where.length == 1 && image(where, list).length > 1){
-				return {
-					numbers:numberSet([n]),
-					indices:where
-				}
-			}
-		}
-	};
-	var findContainedSet = function(list){
-		var result = findContainedSetOne(list);
-		if(result){
-			return result;
-		}
-		for(var i=1;i<2;i++){
-			var result = findContainedSetTwo(list, i);
-			if(result){
-				return result;
-			}
-		}
-	};
+define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker","findContainedSet"],function(sudokuGrid, subdivision, numberSet, getSolution,combinationMaker,findContainedSet){
+
 	var findPartWithContainedSet = function(grid, extraKind){
 		for(var i=0;i<grid.subdivisions.length;i++){
 			var sub = grid.subdivisions[i];
@@ -129,20 +65,5 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"]
 			return s ? s.toArray() : null;
 		}).rows;
 	};
-
-	try{
-		var testPossibilities = getPossibilities(getSolution.fromString("000200000103005007780900000001030000035804720000090600000009045900700302000006000"));
-		for(var i=0;i<9;i++){
-			for(var j=0;j<9;j++){
-				if(testPossibilities[i][j] && testPossibilities[i][j].length != 1){
-					throw new Error("possibilities test failed");
-				}
-			}
-		}
-	}catch(e){
-		console.error(e.message);
-	}
-	
-
 	return getPossibilities;
 })
