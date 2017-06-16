@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision","numberSet","getSolution"],function(sudokuGrid, subdivision, numberSet, getSolution){
+define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker"],function(sudokuGrid, subdivision, numberSet, getSolution,combinationMaker){
 	
 	var reverse = function(possibilities, list){
 		var indices = numberSet();
@@ -16,7 +16,7 @@ define(["sudokuGrid","subdivision","numberSet","getSolution"],function(sudokuGri
 		});
 		return result;
 	};
-	var findContainedSet = function(list){
+	var findContainedSetOne = function(list){
 		for(var two=0;two<9;two++){
 			var possibilities = list[two] || numberSet();
 			if(possibilities.length == 1 && reverse(possibilities, list).length > 1){
@@ -26,6 +26,8 @@ define(["sudokuGrid","subdivision","numberSet","getSolution"],function(sudokuGri
 				}
 			}
 		}
+	};
+	var findContainedSetTwo = function(list){
 		for(var n=1;n<=9;n++){
 			var where = reverse(numberSet([n]), list);
 			if(where.length == 1 && image(where, list).length > 1){
@@ -35,6 +37,9 @@ define(["sudokuGrid","subdivision","numberSet","getSolution"],function(sudokuGri
 				}
 			}
 		}
+	};
+	var findContainedSet = function(list){
+		return findContainedSetOne(list) || findContainedSetTwo(list);
 	};
 	var findPartWithContainedSet = function(grid, extraKind){
 		for(var i=0;i<grid.subdivisions.length;i++){
