@@ -181,5 +181,19 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		};
 		return self;
 	};
-	return getSolution();
+	var fromString = function(string){
+		var match = string.match(/^(\d{9})(\d{9})(\d{9})(\d{9})(\d{9})(\d{9})(\d{9})(\d{9})(\d{9})$/);
+		if(!match){return;}
+		var result = getSolution();
+		for(var i=1;i<=9;i++){
+			match[i].match(/\d/g).map(function(n,j){
+				result.add(i - 1, j, parseInt(n) || null);
+			});
+		}
+		if(result.checkAll()){
+			return result;
+		}
+	};
+	getSolution.fromString = fromString;
+	return getSolution;
 })

@@ -1,8 +1,8 @@
-requirejs(["mobileButtons", "editor","hash","solution"],function(mobileButtons, editor, hash, solution){
+requirejs(["mobileButtons", "editor","hash"],function(mobileButtons, editor, hash){
 	hash.read(function(row, column, n){editor.setSolutionValue(row, column, n);});
-	solution.onAdd(function(){
-		hash.write(solution.getRows());
-	});
+	// solution.onAdd(function(){
+	// 	hash.write(solution.getRows());
+	// });
 	mobileButtons.append();
 	mobileButtons.init(editor);
 });

@@ -1,4 +1,4 @@
-define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","getDistribution","getPossibilities"],function(sudokuGrid, setClass, solution, subdivision, solver, makeCell, getDistribution, getPossibilities){
+define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell","getDistribution","getPossibilities","hash"],function(sudokuGrid, setClass, getSolution, subdivision, solver, makeCell, getDistribution, getPossibilities, hash){
 	var kind = {
 		NRC:{className:"nrc"},
 		NORMAL:{className:""}
@@ -37,6 +37,7 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 			revealSolutionCheckbox,
 			revealDistributionCheckbox,
 			eliminatePossibilities){
+				var solution = getSolution();
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
 				var currentlySelected = null;
@@ -112,6 +113,8 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 						function(n){
 							solution.add(row, column, n);
 							setPossibilities();
+							solver.useSolution(solution);
+							hash.write(solution.getRows());
 						},
 						function(){
 							if(currentlySelected){
@@ -150,11 +153,13 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 					}
 					setKindClass(div, kind.NRC);
 					solution.setExtraKind(subdivision.NRC);
+					solver.useSolution(solution);
 				});
 
 				normal.addEventListener('click',function(){
 					setKindClass(div, kind.NORMAL);
 					solution.setExtraKind(null);
+					solver.useSolution(solution);
 				});
 
 				revealSolutionCheckbox.addEventListener('click',function(){
@@ -173,10 +178,13 @@ define(["sudokuGrid","setClass","solution","subdivision","solver","makeCell","ge
 					setClass(div,"possibilities",checked);
 				});
 
+				solver.useSolution(solution);
+
 				return {
 					setSolutionValue:function(row, column, n){
 						if(n){grid.rows[row][column].setValue(n);}
 						solution.add(row, column, n);
+						solver.useSolution(solution);
 					},
 					suggestValueForSelected:function(n){
 						if(currentlySelected){

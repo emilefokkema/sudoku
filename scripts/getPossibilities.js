@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision, numberSet){
+define(["sudokuGrid","subdivision","numberSet","getSolution"],function(sudokuGrid, subdivision, numberSet, getSolution){
 	
 	var reverse = function(possibilities, list){
 		var indices = numberSet();
@@ -68,7 +68,7 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 			}
 		}
 	};
-	return function(solution){
+	var getPossibilities = function(solution){
 		var r, c, rows = solution.getRows();
 		var extraKind = solution.getExtraKind();
 		var grid = new sudokuGrid();
@@ -101,4 +101,20 @@ define(["sudokuGrid","subdivision","numberSet"],function(sudokuGrid, subdivision
 			return s ? s.toArray() : null;
 		}).rows;
 	};
+
+	try{
+		var testPossibilities = getPossibilities(getSolution.fromString("000200000103005007780900000001030000035804720000090600000009045900700302000006000"));
+		for(var i=0;i<9;i++){
+			for(var j=0;j<9;j++){
+				if(testPossibilities[i][j] && testPossibilities[i][j].length != 1){
+					throw new Error("possibilities test failed");
+				}
+			}
+		}
+	}catch(e){
+		console.error(e.message);
+	}
+	
+
+	return getPossibilities;
 })

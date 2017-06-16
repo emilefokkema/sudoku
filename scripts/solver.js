@@ -1,4 +1,4 @@
-define(["permutator","postponer","solution","getPossibilities"],function(permutator, postponer, solution, getPossibilities){
+define(["permutator","postponer","getSolution","getPossibilities"],function(permutator, postponer, getSolution, getPossibilities){
 	var batchSize = 5000;
 	var maxNumberOfSolutions = 20;
 	var inRandomOrder = function(arr){
@@ -78,7 +78,7 @@ define(["permutator","postponer","solution","getPossibilities"],function(permuta
 			}
 		};
 	};
-	reset = postponer(function(){
+	reset = postponer(function(solution){
 		console.log("resetting solver");
 		var somethingWasRemoved = false;
 		var newOne = solution.clone();
@@ -123,14 +123,6 @@ define(["permutator","postponer","solution","getPossibilities"],function(permuta
 		stay();
 		go();
 	}, 3000);
-	solution.onAdd(function(){
-		stop();
-		reset();
-	});
-	solution.onSetExtraKind(function(){
-		stop();
-		reset();
-	});
 	foundSolutions = [];
 	useRowFiller = function(i){
 		if(i == currentRowFillerIndex){
@@ -205,10 +197,13 @@ define(["permutator","postponer","solution","getPossibilities"],function(permuta
 		going = false;
 		onStartStopping(going);
 	};
-	reset();
 	return {
 		onStartStopping:function(f){onStartStopping = f;},
-		getSolutions:function(){return foundSolutions.map(function(s){return s.clone();});}
+		getSolutions:function(){return foundSolutions.map(function(s){return s.clone();});},
+		useSolution:function(s){
+			stop();
+			reset(s);
+		}
 	};
 	
 })
