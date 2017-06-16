@@ -31,6 +31,18 @@ define([],function(){
 					n ^= p;
 				}
 			},
+			minus:function(other){
+				var nResult = n;
+				var otherN = other.getNumber();
+				var nn,i=0;
+				while((nn = (1 << i)) <= otherN){
+					if((otherN & nn) && (nResult & nn)){
+						nResult ^= nn;
+					}
+					i++;
+				}
+				return numberSet(numberToArray(nResult));
+			},
 			intersectWith:function(other){
 				return numberSet(numberToArray(n & other.getNumber()));
 			},
@@ -45,7 +57,8 @@ define([],function(){
 				}
 			},
 			toArray:function(){return numberToArray(n);},
-			contains:function(nn){return (n & (1<<nn)) > 0;}
+			contains:function(nn){return (n & (1<<nn)) > 0;},
+			toString:function(){return this.toArray().join("");}
 		};
 		return self;
 	};

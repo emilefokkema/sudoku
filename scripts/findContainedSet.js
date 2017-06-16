@@ -39,29 +39,42 @@ define(["numberSet"],function(numberSet){
 		});
 		return result;
 	};
+
 	
 	var findContainedSetTwo = function(list){
-		for(var n=1;n<=9;n++){
-			var where = reverse(numberSet([n]), list);
-			if(where.length == 1 && image(where, list).length > 1){
-				return {
-					numbers:numberSet([n]),
-					indices:where
-				}
+		var all = numberSet();
+		for(var i=0;i<list.length;i++){
+			if(list[i]){
+				all = all.plus(list[i]);
 			}
 		}
+		all = all.toArray();
+		var map = numberSet.map();
+		for(var i=0;i<all.length;i++){
+			var p = numberSet([all[i]]);
+			var rev = reverse(p, list);
+			if(map.hasKey(rev)){
+				map.get(rev).push(all[i]);
+			}else{
+				map.set(rev, [all[i]]);
+			}
+		}
+		var result;
+		map.traverse(function(indices, possibilities, stop){
+			var l = possibilities.length;
+			var im = image(indices, list);
+			if(l == indices.length && im.length > l){
+				result = {
+					numbers:numberSet(possibilities),
+					indices:indices
+				};
+				stop();
+			}
+		});
+		return result;
 	};
 	var findContainedSet = function(list){
-		var result = findContainedSetOne(list);
-		if(result){
-			return result;
-		}
-		for(var i=1;i<2;i++){
-			var result = findContainedSetTwo(list, i);
-			if(result){
-				return result;
-			}
-		}
+		return findContainedSetOne(list) || findContainedSetTwo(list);
 	};
 	return findContainedSet;
 })

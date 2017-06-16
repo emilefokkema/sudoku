@@ -6,7 +6,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 	testSet = testSet(function(e){console.error(e);}, function(s){console.info(s);});
 
 	testSet("containedSetTest", function(test){
-		test("test1", function(){
+		test("findContainedTwoSingle", function(){
 			var testList = [numberSet([3,4,5]), numberSet([1,3,5]), numberSet([3,4,5])];
 			var set = findContainedSet(testList);
 			var indices = set.indices.toArray();
@@ -15,8 +15,17 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 			this.assert(indices[0] == 1);
 		});
 
-		test("test2", function(){
-			var testList = [numberSet([3,4,5]), numberSet([1,3,5]), numberSet([2,3,5]), numberSet([3,4,5])];
+		test("findContainedTwoSingle2", function(){
+			var testList = [numberSet([1,3,5,6,8]), numberSet([6,8,9]), numberSet([1,3,5,6]), numberSet([5,8,9]), numberSet([1,3,5]), numberSet([1,6,8]), numberSet([1,7,8,9])];
+			var set = findContainedSet(testList);
+			var indices = set.indices.toArray();
+			var numbers = set.numbers.toArray();
+			this.assert(indices.length == 1);
+			this.assert(indices[0] == 6);
+		});
+
+		test("findContainedTwoDouble", function(){
+			var testList = [numberSet([3,4,5]), numberSet([1,2,3,5]), numberSet([1,2,3,5]), numberSet([3,4,5])];
 			var set = findContainedSet(testList);
 			var indices = set.indices.toArray();
 			var numbers = set.numbers.toArray();
@@ -24,6 +33,18 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 			this.assert(indices[0] == 1);
 			this.assert(indices[1] == 2);
 		});
+
+		test("another case",function(){
+			var testList = [numberSet([2,3,8]), numberSet([1,2,6,7]), numberSet([2,6,7,8]), numberSet([1,3]), numberSet([1,2,8]), numberSet([1,8])];
+			var set = findContainedSet(testList);
+			var indices = set.indices.toArray();
+			var numbers = set.numbers.toArray();
+			this.assert(indices.length == 2);
+			this.assert(indices[0] == 1);
+			this.assert(indices[1] == 2);
+			this.assert(numbers[0] == 6);
+			this.assert(numbers[1] == 7);
+		})
 		
 	})
 
