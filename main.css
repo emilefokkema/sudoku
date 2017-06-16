@@ -348,6 +348,12 @@
 	top: 0px;
 	font-size: 12px;
 }
+.show-possibilities{
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	font-size: 12px;
+}
 
 .sudoku-cell-container.error .error{
 	background-color: #f00;
@@ -521,6 +527,16 @@
 	border-right: 2.5pt solid #888;
 	border-bottom: 2.5pt solid #888;
 }
+.possibilities .show-possibilities{
+	display: inherit;
+}
+.reveal .possibilities{
+	display: none;
+}
+.show-possibilities{
+	display: none;
+}
+
 
 @media(max-width: 500px){
 	.mobile-buttons {

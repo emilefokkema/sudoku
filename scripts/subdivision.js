@@ -14,7 +14,8 @@ define([],function(){
 		};
 		return {
 			getIndices:getIndices,
-			number:specs.number
+			number:specs.number,
+			name:specs.name
 		};
 	};
 	return {
@@ -25,7 +26,8 @@ define([],function(){
 					two:column
 				};
 			},
-			number:9
+			number:9,
+			name:"ROW"
 		}),
 		COLUMN:getSubdivision({
 			getIndices:function(row, column){
@@ -34,7 +36,8 @@ define([],function(){
 					two:row
 				};
 			},
-			number:9
+			number:9,
+			name:"COLUMN"
 		}),
 		SQUARE:getSubdivision({
 			getIndices:function(row, column){
@@ -45,7 +48,8 @@ define([],function(){
 					two: squareIndex(row - 3 * smallRow, column - 3 * smallColumn)
 				};
 			},
-			number:9
+			number:9,
+			name:"SQUARE"
 		}),
 		NRC:getSubdivision({
 			getIndices:function(row, column){
@@ -64,7 +68,8 @@ define([],function(){
 					two: two
 				};
 			},
-			number:4
+			number:4,
+			name:"NRC"
 		})
 	};
 })

@@ -1,6 +1,6 @@
 define(["setClass"],function(setClass){
 	return function(makeElement, suggestSolutionValue, setSolutionValue, select){
-		return makeElement(function(input, container, revealer, distribution, overlay){
+		return makeElement(function(input, container, revealer, distribution, overlay, possibilities){
 			var setError = function(val){
 				setClass(container,"error",val);
 			};
@@ -86,6 +86,9 @@ define(["setClass"],function(setClass){
 					input.value = '';
 					inputOnFocus = '';
 					setClass(container, "empty", true);
+				},
+				setPossibilities:function(arr){
+					possibilities.innerHTML = arr ? arr.join("") : "";
 				}
 			};
 		});
