@@ -6,4 +6,8 @@ requirejs(["mobileButtons", "editor","hash"],function(mobileButtons, editor, has
 	// });
 	mobileButtons.append();
 	mobileButtons.init(editor);
+	setTimeout(function(){
+		console.log("telling editor to start solving");
+		editor.startSolving();
+	},3000);
 });

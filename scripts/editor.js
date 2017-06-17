@@ -187,8 +187,6 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 					setClass(div,"show-hint",checked);
 				});
 
-				solver.useSolution(solution);
-
 				return {
 					setSolutionValue:function(row, column, n){
 						if(n){grid.rows[row][column].setValue(n);}
@@ -207,6 +205,9 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 					},
 					setPossibilities:function(){
 						setPossibilities();
+					},
+					startSolving:function(){
+						solver.useSolution(solution);
 					}
 				};
 			});

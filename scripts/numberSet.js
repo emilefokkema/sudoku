@@ -88,6 +88,5 @@ define([],function(){
 			}
 		};
 	};
-	window.numberSet = numberSet;
 	return numberSet;
 })
