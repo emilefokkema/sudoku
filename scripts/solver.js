@@ -100,7 +100,8 @@ define(["permutator","postponer","getSolution","getPossibilities"],function(perm
 		}
 		foundSolutions = solutionsLeft;
 		var possibilities = getPossibilities(clone);
-		possibilities.map(function(r, ri){
+		possibilities.clean();
+		possibilities.getRows().map(function(r, ri){
 			r.map(function(c, ci){
 				if(c && c.length == 1){
 					console.log("filling in single possibility");
@@ -116,6 +117,7 @@ define(["permutator","postponer","getSolution","getPossibilities"],function(perm
 		});
 		if(rowFillers.length == 0){
 			saveSolution();
+			currentSolveState = solveState.NO_SOLUTION;
 			onStartStopping(false);
 			return;
 		}

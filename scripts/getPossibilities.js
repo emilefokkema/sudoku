@@ -1,11 +1,11 @@
-define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker","findContainedSet"],function(sudokuGrid, subdivision, numberSet, getSolution,combinationMaker,findContainedSet){
+define(["sudokuGrid","subdivision","numberSet","getSolution","findContainedSet"],function(sudokuGrid, subdivision, numberSet, getSolution,findContainedSet){
 
-	var findPartWithContainedSet = function(grid, extraKind){
+	var findPartWithContainedSet = function(grid, extraKind, size){
 		for(var i=0;i<grid.subdivisions.length;i++){
 			var sub = grid.subdivisions[i];
 			if(sub.kind == subdivision.NRC && !extraKind){continue;}
 			for(var one = 0;one<sub.kind.number;one++){
-				var containedSet = findContainedSet(sub[one]);
+				var containedSet = findContainedSet(sub[one], size);
 				if(containedSet){
 					containedSet.list = sub[one];
 					containedSet.one = one;
@@ -56,14 +56,28 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","combinationMaker",
 				} 
 			}
 		}
-		var partWithContainedSet;
-		while(partWithContainedSet = findPartWithContainedSet(grid, extraKind)){
-			console.log("cleaning part with contained set");
-			cleanPartWithContainedSet(partWithContainedSet);
-		}
-		return grid.map(function(s){
-			return s ? s.toArray() : null;
-		}).rows;
+		var clean = function(){
+			var partWithContainedSet;
+			while(partWithContainedSet = findPartWithContainedSet(grid, extraKind)){
+				console.log("cleaning part with contained set");
+				cleanPartWithContainedSet(partWithContainedSet);
+			}
+		};
+		var it = {
+			clean:function(){
+				clean();
+				return it;
+			},
+			findSinglePossiblity:function(){
+				return findPartWithContainedSet(grid, extraKind, 1);
+			},
+			getRows: function(){
+				return grid.map(function(s){
+					return s ? s.toArray() : null;
+				}).rows;
+			}
+		};
+		return it;
 	};
 	return getPossibilities;
 })

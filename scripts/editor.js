@@ -41,6 +41,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 				document.body.appendChild(div);
 				var grid = new sudokuGrid();
 				var currentlySelected = null;
+				var currentHint = null;
 				var setSingleSolution = function(s){
 					if(s){
 						var rows = s.getRows();
@@ -100,10 +101,16 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 				};
 				var setPossibilities = function(){
 					var possibilities = getPossibilities(solution);
-					for(var i=0;i<9;i++){
-						for(var j=0;j<9;j++){
-							grid.rows[i][j].setPossibilities(possibilities[i][j]);
-						}
+					var singlePossibility = possibilities.findSinglePossiblity();
+					if(currentHint){
+						currentHint.hint(false);
+					}
+					if(singlePossibility){
+						setClass(div, "has-hint", true);
+						currentHint = grid.subdivisionFor(singlePossibility.kind)[singlePossibility.one][singlePossibility.indices.toArray()[0]];
+						currentHint.hint(true);
+					}else{
+						setClass(div, "has-hint", false);
 					}
 				};
 				var addCell = function(row, column, makeElement){
@@ -175,7 +182,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 					if(checked){
 						setPossibilities();
 					}
-					setClass(div,"possibilities",checked);
+					setClass(div,"show-hint",checked);
 				});
 
 				solver.useSolution(solution);
@@ -195,6 +202,9 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 						if(currentlySelected){
 							currentlySelected.clear();
 						}
+					},
+					setPossibilities:function(){
+						setPossibilities();
 					}
 				};
 			});

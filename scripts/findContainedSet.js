@@ -15,7 +15,7 @@ define(["numberSet"],function(numberSet){
 		});
 		return result;
 	};
-	var findContainedSetOne = function(list){
+	var findContainedSetOne = function(list, size){
 		var map = numberSet.map();
 		for(var two = 0;two<9;two++){
 			var p = list[two] || numberSet();
@@ -29,7 +29,7 @@ define(["numberSet"],function(numberSet){
 		map.traverse(function(possibilities, indices, stop){
 			var l = possibilities.length;
 			var rev = reverse(possibilities, list);
-			if(l  == indices.length && rev.length > l){
+			if(l  == indices.length && rev.length > l && (!size || size == l)){
 				result = {
 					numbers:possibilities,
 					indices:numberSet(indices)
@@ -41,7 +41,7 @@ define(["numberSet"],function(numberSet){
 	};
 
 	
-	var findContainedSetTwo = function(list){
+	var findContainedSetTwo = function(list, size){
 		var all = numberSet();
 		for(var i=0;i<list.length;i++){
 			if(list[i]){
@@ -63,7 +63,7 @@ define(["numberSet"],function(numberSet){
 		map.traverse(function(indices, possibilities, stop){
 			var l = possibilities.length;
 			var im = image(indices, list);
-			if(l == indices.length && im.length > l){
+			if(l == indices.length && im.length > l && (!size || size == l)){
 				result = {
 					numbers:numberSet(possibilities),
 					indices:indices
@@ -73,8 +73,8 @@ define(["numberSet"],function(numberSet){
 		});
 		return result;
 	};
-	var findContainedSet = function(list){
-		return findContainedSetOne(list) || findContainedSetTwo(list);
+	var findContainedSet = function(list, size){
+		return findContainedSetOne(list, size) || findContainedSetTwo(list, size);
 	};
 	return findContainedSet;
 })

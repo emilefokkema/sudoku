@@ -51,7 +51,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 	testSet("possibilitiesTest", function(test){
 
 		test("test1",function(){
-			var testPossibilities = getPossibilities(getSolution.fromString("000200000103005007780900000001030000035804720000090600000009045900700302000006000"));
+			var testPossibilities = getPossibilities(getSolution.fromString("000200000103005007780900000001030000035804720000090600000009045900700302000006000")).clean().getRows();
 			for(var i=0;i<9;i++){
 				for(var j=0;j<9;j++){
 					if(testPossibilities[i][j]){
@@ -64,7 +64,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 		test("test2", function(){
 			var solution = getSolution.fromString("000100000900700500406000010045000300000602400000800000804009000100370000000001000");
 			solution.setExtraKind(subdivision.NRC);
-			var testPossibilities = getPossibilities(solution);
+			var testPossibilities = getPossibilities(solution).clean().getRows();
 			for(var i=0;i<9;i++){
 				for(var j=0;j<9;j++){
 					if(testPossibilities[i][j]){
@@ -77,7 +77,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 		test("test3", function(){
 			var solution = getSolution.fromString("000400060020003100000000000700080000003005800090702000100800502000000000000000000");
 			solution.setExtraKind(subdivision.NRC);
-			var testPossibilities = getPossibilities(solution);
+			var testPossibilities = getPossibilities(solution).clean().getRows();
 			this.assert(testPossibilities[0][5].length == 1);
 			this.assert(testPossibilities[0][8].length == 1)
 		})
