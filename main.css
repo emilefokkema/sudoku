@@ -324,6 +324,7 @@
 	position:relative;
 	width:100%;
 	height:100%;
+	box-sizing: border-box;
 }
 
 .sodoku-inner-container{
@@ -354,7 +355,12 @@
 }
 
 .sudoku-cell-container.selected .selected{
-	background-color: rgba(0,0,0,0.15);
+	border: 2.5pt solid #888;
+	box-sizing: border-box;
+	width:calc(100% + 5px);
+	height: calc(100% + 5px);
+	left:-2.5px;
+	top:-2.5px;
 }
 
 .sudoku-cell-input{
@@ -521,12 +527,9 @@
 	border-right: 2.5pt solid #888;
 	border-bottom: 2.5pt solid #888;
 }
-.hint{
-	background-color: rgba(0,100,0,0.5);
-	display: none;
-}
+
 .has-hint.show-hint .hinted .hint{
-	display: inherit;
+	background-color: rgba(0,100,0,0.5);
 }
 .hint-option{
 	display: none;
