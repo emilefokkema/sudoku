@@ -160,12 +160,14 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 					}
 					setKindClass(div, kind.NRC);
 					solution.setExtraKind(subdivision.NRC);
+					setPossibilities();
 					solver.useSolution(solution);
 				});
 
 				normal.addEventListener('click',function(){
 					setKindClass(div, kind.NORMAL);
 					solution.setExtraKind(null);
+					setPossibilities();
 					solver.useSolution(solution);
 				});
 
