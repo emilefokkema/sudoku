@@ -528,7 +528,12 @@
 .has-hint.show-hint .hinted .hint{
 	display: inherit;
 }
-
+.hint-option{
+	display: none;
+}
+.has-hint .hint-option{
+	display: inherit;
+}
 
 @media(max-width: 500px){
 	.mobile-buttons {
