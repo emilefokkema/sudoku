@@ -18,9 +18,6 @@ define(["subdivision"],function(subdivision){
 			}
 		}
 		this.rows = this.subdivisionFor(subdivision.ROW);
-		this.columns = this.subdivisionFor(subdivision.COLUMN);
-		this.squares = this.subdivisionFor(subdivision.SQUARE);
-		this.nrcs = this.subdivisionFor(subdivision.NRC);
 	};
 	grid.prototype.add = function(r, c, something){
 		for(var i=0;i<this.subdivisions.length;i++){
