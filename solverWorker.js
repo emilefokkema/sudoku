@@ -123,6 +123,10 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 				}
 			});
 		});
+		if(!clone.checkAll()){
+			onStartStopping(false);
+			return;
+		}
 		rowFillers = [];
 		clone.getRows().map(function(row, rowIndex){
 			if(row.some(function(x){return !x;})){

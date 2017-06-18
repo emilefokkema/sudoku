@@ -85,14 +85,18 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 		test("testBug",function(){
 			var testSolution = getSolution.fromString("067052930901700625253069087600271300190080576730596040026010700010907862079620010");
 			var testPossibilities = getPossibilities(testSolution).clean();
+			var emptySolution = getSolution();
 			testPossibilities.getRows().map(function(r, ri){
 				r.map(function(c, ci){
 					if(c && c.length == 1){
-						testSolution.add(ri, ci, c[0]);
+						emptySolution.add(ri, ci, c[0]);
+						if(!emptySolution.checkAll()){
+							throw new Error();
+						}
 					}
 				})
 			});
-			this.assert(testSolution.checkAll());
+
 		})
 
 	});
