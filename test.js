@@ -44,6 +44,12 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 			this.assert(indices[1] == 2);
 			this.assert(numbers[0] == 6);
 			this.assert(numbers[1] == 7);
+		});
+
+		test("twoSingles", function(){
+			var testList = [numberSet([5]), numberSet([6,7]), numberSet([5])];
+			var set = findContainedSet(testList);
+			this.assert(!!set, "expected to find a set");
 		})
 		
 	})

@@ -35,6 +35,12 @@ define(["numberSet"],function(numberSet){
 					indices:numberSet(indices)
 				};
 				stop();
+			}else if(l > 0 && l < indices.length && (!size || size == l)){
+				result = {
+					numbers:possibilities,
+					indices:numberSet(indices.slice(0,l))
+				};
+				stop();
 			}
 		});
 		return result;
