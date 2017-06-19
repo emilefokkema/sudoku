@@ -91,6 +91,8 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 		test("testBug",function(){
 			var testSolution = getSolution.fromString("067052930901700625253069087600271300190080576730596040026010700010907862079620010");
 			var testPossibilities = getPossibilities(testSolution).clean();
+			var hasImpossibility = testPossibilities.hasImpossibility();
+			this.assert(hasImpossibility, "expected an impossibility");
 			var emptySolution = getSolution();
 			testPossibilities.getRows().map(function(r, ri){
 				r.map(function(c, ci){
