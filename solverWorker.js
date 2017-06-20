@@ -115,6 +115,10 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 		postFoundSolutions();
 		var possibilities = getPossibilities(clone);
 		possibilities.clean();
+		if(possibilities.hasImpossibility()){
+			onStartStopping(false);
+			return;
+		}
 		possibilities.getRows().map(function(r, ri){
 			r.map(function(c, ci){
 				if(c && c.length == 1){
@@ -123,10 +127,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 				}
 			});
 		});
-		if(!clone.checkAll()){
-			onStartStopping(false);
-			return;
-		}
 		rowFillers = [];
 		clone.getRows().map(function(row, rowIndex){
 			if(row.some(function(x){return !x;})){
