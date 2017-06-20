@@ -44,6 +44,12 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 			this.assert(indices[1] == 2);
 			this.assert(numbers[0] == 6);
 			this.assert(numbers[1] == 7);
+		});
+
+		test("twoSingles", function(){
+			var testList = [numberSet([5]), numberSet([6,7]), numberSet([5])];
+			var set = findContainedSet(testList);
+			this.assert(!!set, "expected to find a set");
 		})
 		
 	})
@@ -80,6 +86,25 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 			var testPossibilities = getPossibilities(solution).clean().getRows();
 			this.assert(testPossibilities[0][5].length == 1);
 			this.assert(testPossibilities[0][8].length == 1)
+		});
+
+		test("testBug",function(){
+			var testSolution = getSolution.fromString("067052930901700625253069087600271300190080576730596040026010700010907862079620010");
+			var testPossibilities = getPossibilities(testSolution).clean();
+			var hasImpossibility = testPossibilities.hasImpossibility();
+			this.assert(hasImpossibility, "expected an impossibility");
+			var emptySolution = getSolution();
+			testPossibilities.getRows().map(function(r, ri){
+				r.map(function(c, ci){
+					if(c && c.length == 1){
+						emptySolution.add(ri, ci, c[0]);
+						if(!emptySolution.checkAll()){
+							throw new Error();
+						}
+					}
+				})
+			});
+
 		})
 
 	});

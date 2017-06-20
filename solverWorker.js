@@ -115,6 +115,10 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 		postFoundSolutions();
 		var possibilities = getPossibilities(clone);
 		possibilities.clean();
+		if(possibilities.hasImpossibility()){
+			onStartStopping(false);
+			return;
+		}
 		possibilities.getRows().map(function(r, ri){
 			r.map(function(c, ci){
 				if(c && c.length == 1){

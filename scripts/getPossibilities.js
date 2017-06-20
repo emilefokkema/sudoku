@@ -71,6 +71,17 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","findContainedSet"]
 			findSinglePossiblity:function(){
 				return findPartWithContainedSet(grid, extraKind, 1);
 			},
+			hasImpossibility:function(){
+				var rows = grid.rows;
+				for(var i=0;i<9;i++){
+					for(var j=0;j<9;j++){
+						if(rows[i][j] && rows[i][j].length == 0){
+							return true;
+						}
+					}
+				}
+				return false;
+			},
 			getRows: function(){
 				return grid.map(function(s){
 					return s ? s.toArray() : null;
