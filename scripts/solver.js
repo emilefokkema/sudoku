@@ -1,5 +1,5 @@
 define(["permutator","postponer","getSolution","getPossibilities"],function(permutator, postponer, getSolution, getPossibilities){
-	var worker = new Worker("solverWorker.js");
+	var worker = new Worker("scripts/solverWorker.js");
 	
 	var onStartStopping = function(){};
 	var foundSolutions = [];

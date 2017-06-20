@@ -1,7 +1,7 @@
-importScripts("require.js");
+importScripts("../require.js");
 
 require.config({
-	baseUrl:"scripts/"
+	baseUrl:"../scripts/"
 });
 
 requirejs(["permutator","getSolution","getPossibilities","subdivision"],function(permutator, getSolution, getPossibilities,subdivision){
