@@ -32,17 +32,11 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 	};
 	var getSolution = function(){
 		var self;
-		var grid = new sudokuGrid();
-		var extraKind = null;
-		var onSetExtraKind = sender();
+		var grid = sudokuGrid.normal();
 		var onAdd = sender();
 		var getObjectionToAdding = function(row, column, number){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
-				var kind = subdivision.kind;
-				if(kind != sudokuSubdivision.ROW && kind != sudokuSubdivision.COLUMN && kind != sudokuSubdivision.SQUARE && extraKind != kind){
-					continue;
-				}
 				var indices = subdivision.kind.getIndices(row,column);
 				if(!indices){continue;}
 				var index = indices.one;
@@ -57,13 +51,6 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		var checkAll = function(){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
-				var kind = subdivision.kind;
-				if(kind != sudokuSubdivision.ROW &&
-					kind != sudokuSubdivision.COLUMN &&
-					kind != sudokuSubdivision.SQUARE &&
-					extraKind != kind){
-					continue;
-				}
 				for(var j=0;j<subdivision.length;j++){
 					if(containsDouble(subdivision[j])){
 						return false;
@@ -89,12 +76,16 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 					result.add(rowIndex, columnIndex, n);
 				});
 			});
-			result.setExtraKind(extraKind);
+			result.useGrid(grid.empty());
 			return result;
 		};
 
 		var getRows = function(){
 			return grid.rows;
+		};
+
+		var getGrid = function(){
+			return grid;
 		};
 
 		var contains = function(otherOne){
@@ -109,7 +100,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		};
 
 		var equals = function(otherOne){
-			if(extraKind != otherOne.getExtraKind()){return false;}
+			if(!arrayEquals(grid.getKinds(), otherOne.getGrid().getKinds())){return false;}
 			var rows = getRows();
 			var otherRows = otherOne.getRows();
 			for(var i=0;i<9;i++){
@@ -136,19 +127,16 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			console.log(toString());
 		};
 
-		var setExtraKind = function(e){
-			extraKind = e;
-			onSetExtraKind(e);
+		var useGrid = function(g){
+			grid = grid.copyToGrid(g);
 			return self;
 		};
 
-		var getExtraKind = function(){return extraKind;};
-
 		var checkRow = function(rowIndex){
-			for(var i=0;i<4;i++){
+			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
 				var kind = subdivision.kind;
-				if(kind == sudokuSubdivision.COLUMN || kind == sudokuSubdivision.SQUARE || kind == extraKind){
+				if(kind != sudokuSubdivision.ROW){
 					var checked = 0;
 					for(var j=0;j<9;j++){
 						var indices = kind.getIndices(rowIndex, j);
@@ -174,13 +162,12 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			contains:contains,
 			clone:clone,
 			log:log,
+			useGrid:useGrid,
+			getGrid:getGrid,
 			equals:equals,
 			getRows:getRows,
 			toFancyString:toFancyString,
-			onSetExtraKind:function(f){onSetExtraKind.add(f);},
 			onAdd:function(f){onAdd.add(f);},
-			setExtraKind:setExtraKind,
-			getExtraKind:getExtraKind,
 			toString:toString,
 			checkRow:checkRow
 		};

@@ -4,7 +4,7 @@ require.config({
 	baseUrl:"../scripts/"
 });
 
-requirejs(["permutator","getSolution","getPossibilities","subdivision"],function(permutator, getSolution, getPossibilities,subdivision){
+requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGrid"],function(permutator, getSolution, getPossibilities,subdivision,sudokuGrid){
 	var batchSize = 5000;
 	var maxNumberOfSolutions = 20;
 	var inRandomOrder = function(arr){
@@ -102,7 +102,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 		clone = newOne.clone();
 		var solutionsLeft = [];
 		for(var i=0;i<foundSolutions.length;i++){
-			foundSolutions[i].setExtraKind(clone.getExtraKind());
+			foundSolutions[i].useGrid(clone.getGrid().empty());
 			if(foundSolutions[i].checkAll() && foundSolutions[i].contains(clone)){
 				solutionsLeft.push(foundSolutions[i]);
 			}
@@ -231,9 +231,13 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision"],function
 		if(name == "useSolution"){
 			var body = data.body;
 			var s = getSolution.fromString(data.body);
-			if(data.extraKind){
-				s.setExtraKind(subdivision.NRC);
+			var kinds = [];
+			for(var p in subdivision){
+				if(subdivision.hasOwnProperty(p) && data.kinds.indexOf(subdivision[p].name) > -1){
+					kinds.push(subdivision[p]);
+				}
 			}
+			s.useGrid(new sudokuGrid(kinds));
 			stop();
 			reset(s);
 		}

@@ -39,7 +39,7 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 			eliminatePossibilities){
 				var solution = getSolution();
 				document.body.appendChild(div);
-				var grid = new sudokuGrid();
+				var grid = sudokuGrid.normal();
 				var currentlySelected = null;
 				var currentHint = null;
 				var setSingleSolution = function(s){
@@ -152,21 +152,23 @@ define(["sudokuGrid","setClass","getSolution","subdivision","solver","makeCell",
 				});
 
 				nrc.addEventListener('click',function(){
-					var valid = solution.clone().setExtraKind(subdivision.NRC).checkAll();
+					var valid = solution.clone().useGrid(sudokuGrid.nrc()).checkAll();
 					if(!valid){
 						nrc.checked = false;
 						normal.checked = true;
 						return;
 					}
 					setKindClass(div, kind.NRC);
-					solution.setExtraKind(subdivision.NRC);
+					grid = grid.copyToGrid(sudokuGrid.nrc())
+					solution.useGrid(sudokuGrid.nrc());
 					setPossibilities();
 					solver.useSolution(solution);
 				});
 
 				normal.addEventListener('click',function(){
 					setKindClass(div, kind.NORMAL);
-					solution.setExtraKind(null);
+					grid = grid.copyToGrid(sudokuGrid.normal());
+					solution.useGrid(sudokuGrid.normal());
 					setPossibilities();
 					solver.useSolution(solution);
 				});

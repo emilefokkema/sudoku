@@ -21,7 +21,7 @@ define(["permutator","postponer","getSolution","getPossibilities"],function(perm
 			worker.postMessage({
 				name:"useSolution",
 				body:s.toString(),
-				extraKind:!!s.getExtraKind()
+				kinds:s.getGrid().getKinds().map(function(k){return k.name;})
 			});
 		}
 	};

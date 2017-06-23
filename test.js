@@ -2,8 +2,10 @@ require.config({
 	baseUrl:"scripts/"
 });
 
-requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet","findContainedSet"],function(getSolution, testSet, getPossibilities, subdivision, numberSet, findContainedSet){
-	testSet = testSet(function(e){console.error(e);}, function(s){console.info(s);});
+requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet","findContainedSet", "sudokuGrid"],function(getSolution, testSet, getPossibilities, subdivision, numberSet, findContainedSet, sudokuGrid){
+	testSet = testSet(function(e){
+		throw e;
+	}, function(s){console.info(s);});
 
 	testSet("containedSetTest", function(test){
 		test("findContainedTwoSingle", function(){
@@ -69,7 +71,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 
 		test("test2", function(){
 			var solution = getSolution.fromString("000100000900700500406000010045000300000602400000800000804009000100370000000001000");
-			solution.setExtraKind(subdivision.NRC);
+			solution.useGrid(sudokuGrid.nrc());
 			var testPossibilities = getPossibilities(solution).clean().getRows();
 			for(var i=0;i<9;i++){
 				for(var j=0;j<9;j++){
@@ -82,7 +84,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 
 		test("test3", function(){
 			var solution = getSolution.fromString("000400060020003100000000000700080000003005800090702000100800502000000000000000000");
-			solution.setExtraKind(subdivision.NRC);
+			solution.useGrid(sudokuGrid.nrc());
 			var testPossibilities = getPossibilities(solution).clean().getRows();
 			this.assert(testPossibilities[0][5].length == 1);
 			this.assert(testPossibilities[0][8].length == 1)
