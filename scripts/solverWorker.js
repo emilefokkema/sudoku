@@ -151,10 +151,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		});
 	};
 	useRowFiller = function(i){
-		if(i == currentRowFillerIndex){
-			currentRowFiller = rowFillers[currentRowFillerIndex];
-			return solveState.SOLVING;
-		}
 		if(i == -1){
 			return solveState.NO_SOLUTION;
 		}
@@ -181,8 +177,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		}
 		else if(clone.checkRow(currentRowFiller.rowIndex)){
 			goForward();
-		}else{
-			stay();
 		}
 	};
 	saveSolution = function(){
