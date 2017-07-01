@@ -22,12 +22,13 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		currentRowFiller,
 		rowFillers,
 		currentRowFillerIndex,
-		useRowFiller,
 		doStep,
 		getRowFiller,
+		rowIsNotFull,
 		go,
 		solveState,
 		currentSolveState,
+		findNextRowFiller,
 		going,
 		postFoundSolutions,
 		doBatch,
@@ -35,7 +36,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		saveSolution,
 		foundSolutions,
 		onStartStopping,
-		stay,
 		goForward,
 		goBack;
 
@@ -65,13 +65,13 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 				numbersToUse.splice(numbersToUse.indexOf(row[i]),1);
 			}
 		}
+		_permutator = new permutator(unfilledIndices.length);
+		currentPermutation = null;
+		numbersToUse = inRandomOrder(numbersToUse);
 		reset = function(){
 			unfilledIndices.map(function(i){
 				clone.add(rowIndex, i, null);
 			});
-			_permutator = new permutator(unfilledIndices.length);
-			currentPermutation = null;
-			numbersToUse = inRandomOrder(numbersToUse);
 		};
 		fillNext = function(){
 			if(currentPermutation && currentPermutation.done){return false;}
@@ -81,7 +81,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			}
 			return true;
 		};
-		reset();
 		return {
 			reset:reset,
 			fillNext:fillNext,
@@ -128,51 +127,61 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			});
 		});
 		rowFillers = [];
-		clone.getRows().map(function(row, rowIndex){
-			if(row.some(function(x){return !x;})){
-				rowFillers.push(getRowFiller(row, rowIndex));
-			}
-		});
-		if(rowFillers.length == 0){
+		currentRowFiller = null;
+		var nextRowFiller = findNextRowFiller();
+		if(!nextRowFiller){
 			saveSolution();
 			currentSolveState = solveState.NO_SOLUTION;
 			onStartStopping(false);
 			return;
 		}
-		currentRowFillerIndex = 0;
-		stay();
+		
+		currentRowFiller = nextRowFiller;
+		currentSolveState = solveState.SOLVING;
 		go();
 	};
 	foundSolutions = [];
+	rowIsFull = function(row){
+		return row.every(function(x){return x;});
+	};
+	findNextRowFiller = function(){
+		var currentRowIndex = currentRowFiller ? currentRowFiller.rowIndex : 0;
+		var rows = clone.getRows();
+		var currentRow;
+		while(currentRowIndex < 9 && rowIsFull(currentRow = rows[currentRowIndex])){
+			currentRowIndex++;
+		}
+		if(currentRowIndex < 9){
+			var result = getRowFiller(currentRow, currentRowIndex);
+			rowFillers.push(result);
+			return result;
+		}
+	};
 	postFoundSolutions = function(){
 		postMessage({
 			name:"foundSolutions",
 			solutions:foundSolutions.map(function(s){return s.toString();})
 		});
 	};
-	useRowFiller = function(i){
-		if(i == -1){
-			return solveState.NO_SOLUTION;
-		}
-		if(i == rowFillers.length){
-			return solveState.SOLUTION;
-		}
-		currentRowFillerIndex = i;
-		currentRowFiller = rowFillers[currentRowFillerIndex];
-		return solveState.SOLVING;
-	};
-	stay = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex);
-	};
 	goForward = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex + 1);
+		var nextRowFiller = findNextRowFiller();
+		if(!nextRowFiller){
+			currentSolveState = solveState.SOLUTION;
+			return;
+		}
+		currentRowFiller = nextRowFiller;
 	};
 	goBack = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex - 1);
+		currentRowFiller.reset();
+		rowFillers.pop();
+		if(rowFillers.length == 0){
+			currentSolveState = solveState.NO_SOLUTION;
+			return;
+		}
+		currentRowFiller = rowFillers[rowFillers.length - 1];
 	};
 	doStep = function(){
 		if(!currentRowFiller.fillNext()){
-			currentRowFiller.reset();
 			goBack();
 		}
 		else if(clone.checkRow(currentRowFiller.rowIndex)){
@@ -199,9 +208,9 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		else if(currentSolveState == solveState.SOLUTION){
 			//console.log("found solution:\r\n"+clone.toString());
 			saveSolution();
-			stay();
 			if(foundSolutions.length < maxNumberOfSolutions){
 				onStartStopping(true);
+				currentSolveState = solveState.SOLVING;
 				setTimeout(doBatch,1);
 			}else{
 				onStartStopping(false);
