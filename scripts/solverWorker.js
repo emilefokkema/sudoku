@@ -59,6 +59,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			currentPermutation,
 			fillNext,
 			conclude,
+			unconclude,
 			conclusions = [];
 		for(var i=0;i<row.length;i++){
 			if(!row[i]){
@@ -74,18 +75,22 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			unfilledIndices.map(function(i){
 				clone.add(rowIndex, i, null);
 			});
-			conclusions.map(function(c){
-				clone.add(c.row, c.column, null);
-			});
-			conclusions = [];
+			unconclude();
 		};
 		fillNext = function(){
+			unconclude();
 			if(currentPermutation && currentPermutation.done){return false;}
 			currentPermutation = _permutator.next();
 			for(var i=0;i<unfilledIndices.length;i++){
 				clone.add(rowIndex, unfilledIndices[currentPermutation.value[i]], numbersToUse[i]);
 			}
 			return true;
+		};
+		unconclude = function(){
+			conclusions.map(function(c){
+				clone.add(c.row, c.column, null);
+			});
+			conclusions = [];
 		};
 		conclude = function(){
 			getPossibilities(clone).clean().forEachSingle(function(ri, ci, n){
