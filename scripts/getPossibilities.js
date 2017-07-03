@@ -56,7 +56,6 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","findContainedSet"]
 		var clean = function(){
 			var partWithContainedSet;
 			while(partWithContainedSet = findPartWithContainedSet(grid)){
-				console.log("cleaning part with contained set");
 				cleanPartWithContainedSet(partWithContainedSet);
 			}
 		};
@@ -78,6 +77,16 @@ define(["sudokuGrid","subdivision","numberSet","getSolution","findContainedSet"]
 					}
 				}
 				return false;
+			},
+			forEachSingle:function(map){
+				var rows = grid.rows;
+				for(var i=0;i<9;i++){
+					for(var j=0;j<9;j++){
+						if(rows[i][j] && rows[i][j].length == 1){
+							map(i, j, rows[i][j].toArray()[0]);
+						}
+					}
+				}
 			},
 			getRows: function(){
 				return grid.map(function(s){
