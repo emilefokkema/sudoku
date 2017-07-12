@@ -22,12 +22,13 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		currentRowFiller,
 		rowFillers,
 		currentRowFillerIndex,
-		useRowFiller,
 		doStep,
 		getRowFiller,
+		rowIsNotFull,
 		go,
 		solveState,
 		currentSolveState,
+		findNextRowFiller,
 		going,
 		postFoundSolutions,
 		doBatch,
@@ -35,7 +36,6 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		saveSolution,
 		foundSolutions,
 		onStartStopping,
-		stay,
 		goForward,
 		goBack;
 
@@ -57,7 +57,10 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			_permutator,
 			reset,
 			currentPermutation,
-			fillNext;
+			fillNext,
+			conclude,
+			unconclude,
+			conclusions = [];
 		for(var i=0;i<row.length;i++){
 			if(!row[i]){
 				unfilledIndices.push(i);
@@ -65,15 +68,17 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 				numbersToUse.splice(numbersToUse.indexOf(row[i]),1);
 			}
 		}
+		_permutator = new permutator(unfilledIndices.length);
+		currentPermutation = null;
+		numbersToUse = inRandomOrder(numbersToUse);
 		reset = function(){
 			unfilledIndices.map(function(i){
 				clone.add(rowIndex, i, null);
 			});
-			_permutator = new permutator(unfilledIndices.length);
-			currentPermutation = null;
-			numbersToUse = inRandomOrder(numbersToUse);
+			unconclude();
 		};
 		fillNext = function(){
+			unconclude();
 			if(currentPermutation && currentPermutation.done){return false;}
 			currentPermutation = _permutator.next();
 			for(var i=0;i<unfilledIndices.length;i++){
@@ -81,14 +86,26 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			}
 			return true;
 		};
-		reset();
+		unconclude = function(){
+			conclusions.map(function(c){
+				clone.add(c.row, c.column, null);
+			});
+			conclusions = [];
+		};
+		conclude = function(){
+			getPossibilities(clone).clean().forEachSingle(function(ri, ci, n){
+				conclusions.push({
+					row:ri,
+					column:ci
+				});
+				clone.add(ri, ci, n);
+			});
+		};
 		return {
 			reset:reset,
 			fillNext:fillNext,
 			rowIndex:rowIndex,
-			done:function(){
-				return currentPermutation.done;
-			}
+			conclude:conclude,
 		};
 	};
 	reset = function(solution){
@@ -111,6 +128,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			console.log("addition agrees with all found solutions");
 			return;
 		}
+		console.log("solutions left: "+solutionsLeft.length);
 		foundSolutions = solutionsLeft;
 		postFoundSolutions();
 		var possibilities = getPossibilities(clone);
@@ -119,76 +137,77 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			onStartStopping(false);
 			return;
 		}
-		possibilities.getRows().map(function(r, ri){
-			r.map(function(c, ci){
-				if(c && c.length == 1){
-					console.log("filling in single possibility");
-					clone.add(ri, ci, c[0]);
-				}
-			});
+		possibilities.forEachSingle(function(ri, ci, n){
+			console.log("filling in single possibility");
+			clone.add(ri, ci, n);
 		});
 		rowFillers = [];
-		clone.getRows().map(function(row, rowIndex){
-			if(row.some(function(x){return !x;})){
-				rowFillers.push(getRowFiller(row, rowIndex));
-			}
-		});
-		if(rowFillers.length == 0){
+		currentRowFiller = null;
+		var nextRowFiller = findNextRowFiller();
+		if(!nextRowFiller){
 			saveSolution();
 			currentSolveState = solveState.NO_SOLUTION;
 			onStartStopping(false);
 			return;
 		}
-		currentRowFillerIndex = 0;
-		stay();
+		
+		currentRowFiller = nextRowFiller;
+		currentSolveState = solveState.SOLVING;
 		go();
 	};
 	foundSolutions = [];
+	rowIsFull = function(row){
+		return row.every(function(x){return x;});
+	};
+	findNextRowFiller = function(){
+		var currentRowIndex = currentRowFiller ? currentRowFiller.rowIndex : 0;
+		var rows = clone.getRows();
+		var currentRow;
+		while(currentRowIndex < 9 && rowIsFull(currentRow = rows[currentRowIndex])){
+			currentRowIndex++;
+		}
+		if(currentRowIndex < 9){
+			var result = getRowFiller(currentRow, currentRowIndex);
+			rowFillers.push(result);
+			return result;
+		}
+	};
 	postFoundSolutions = function(){
 		postMessage({
 			name:"foundSolutions",
 			solutions:foundSolutions.map(function(s){return s.toString();})
 		});
 	};
-	useRowFiller = function(i){
-		if(i == currentRowFillerIndex){
-			currentRowFiller = rowFillers[currentRowFillerIndex];
-			return solveState.SOLVING;
-		}
-		if(i == -1){
-			return solveState.NO_SOLUTION;
-		}
-		if(i == rowFillers.length){
-			return solveState.SOLUTION;
-		}
-		currentRowFillerIndex = i;
-		currentRowFiller = rowFillers[currentRowFillerIndex];
-		return solveState.SOLVING;
-	};
-	stay = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex);
-	};
 	goForward = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex + 1);
+		currentRowFiller.conclude();
+		var nextRowFiller = findNextRowFiller();
+		if(!nextRowFiller){
+			currentSolveState = solveState.SOLUTION;
+			return;
+		}
+		currentRowFiller = nextRowFiller;
 	};
 	goBack = function(){
-		currentSolveState = useRowFiller(currentRowFillerIndex - 1);
+		currentRowFiller.reset();
+		rowFillers.pop();
+		if(rowFillers.length == 0){
+			currentSolveState = solveState.NO_SOLUTION;
+			return;
+		}
+		currentRowFiller = rowFillers[rowFillers.length - 1];
 	};
 	doStep = function(){
 		if(!currentRowFiller.fillNext()){
-			currentRowFiller.reset();
 			goBack();
 		}
 		else if(clone.checkRow(currentRowFiller.rowIndex)){
 			goForward();
-		}else{
-			stay();
 		}
 	};
 	saveSolution = function(){
 		if(!foundSolutions.some(function(s){return s.equals(clone);})){
-			console.log("found new solution");
 			foundSolutions.push(clone.clone());
+			console.log("found new solution. total: "+foundSolutions.length);
 			postFoundSolutions();
 		}
 	};
@@ -203,11 +222,10 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			setTimeout(doBatch,1);
 		}
 		else if(currentSolveState == solveState.SOLUTION){
-			//console.log("found solution:\r\n"+clone.toString());
 			saveSolution();
-			stay();
 			if(foundSolutions.length < maxNumberOfSolutions){
 				onStartStopping(true);
+				currentSolveState = solveState.SOLVING;
 				setTimeout(doBatch,1);
 			}else{
 				onStartStopping(false);
