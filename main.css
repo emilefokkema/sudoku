@@ -1,0 +1,548 @@
+@keyframes borderbusyright{
+	0% {border-right-color: #000;}
+	50% {border-right-color: #aaa;}
+	100% {border-right-color: #000;}
+}
+
+@keyframes borderbusyleft{
+	0% {border-left-color: #000;}
+	50% {border-left-color: #aaa;}
+	100% {border-left-color: #000;}
+}
+
+@keyframes borderbusytop{
+	0% {border-top-color: #000;}
+	50% {border-top-color: #aaa;}
+	100% {border-top-color: #000;}
+}
+
+@keyframes borderbusybottom{
+	0% {border-bottom-color: #000;}
+	50% {border-bottom-color: #aaa;}
+	100% {border-bottom-color: #000;}
+}
+
+@keyframes borderbusytopright{
+	0% {
+		border-top-color: #000;
+		border-right-color: #000;
+	}
+	50% {
+		border-top-color: #aaa;
+		border-right-color: #aaa;
+	}
+	100% {
+		border-top-color: #000;
+		border-right-color: #000;
+	}
+}
+
+@keyframes borderbusytopleft{
+	0% {
+		border-top-color: #000;
+		border-left-color: #000;
+	}
+	50% {
+		border-top-color: #aaa;
+		border-left-color: #aaa;
+	}
+	100% {
+		border-top-color: #000;
+		border-left-color: #000;
+	}
+}
+
+@keyframes borderbusybottomright{
+	0% {
+		border-bottom-color: #000;
+		border-right-color: #000;
+	}
+	50% {
+		border-bottom-color: #aaa;
+		border-right-color: #aaa;
+	}
+	100% {
+		border-bottom-color: #000;
+		border-right-color: #000;
+	}
+}
+
+@keyframes borderbusybottomleft{
+	0% {
+		border-bottom-color: #000;
+		border-left-color: #000;
+	}
+	50% {
+		border-bottom-color: #aaa;
+		border-left-color: #aaa;
+	}
+	100% {
+		border-bottom-color: #000;
+		border-left-color: #000;
+	}
+}
+
+.sudoku-container{
+	width:450px;
+	height:450px;
+	position: relative;
+
+}
+
+.sudoku-table{
+	position:absolute;
+	left:0px;
+	top:0px;
+	width:450px;
+	height:450px;
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+	color:inherit;
+}
+
+.sudoku-table-row{
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+	display: block;
+	height: 50px;
+}
+
+.sudoku-table-cell{
+	margin:0px;
+	padding:0px;
+	border-spacing:0px;
+	height:50px;
+	width:50px;
+}
+
+.sudoku-table-cell:nth-child(3n+1){
+	border-right:1pt solid #000;
+	border-left:2.5pt solid #000;
+}
+
+.sudoku-table-cell:nth-child(3n+2){
+	border-right:1pt solid #000;
+}
+
+.sudoku-table-cell:nth-child(9n+9){
+	border-right:2.5pt solid #000;
+}
+
+.sudoku-table-row:nth-child(3n+1) td{
+	border-top:2.5pt solid #000;
+	border-bottom: 1pt solid #000;
+}
+
+.sudoku-table-row:nth-child(3n+2) td{
+	border-bottom: 1pt solid #000;
+}
+
+.sudoku-table-row:nth-child(9n+9) td{
+	border-bottom:2.5pt solid #000;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) td{
+	animation-name: borderbusytop;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) td{
+	animation-name: borderbusybottom;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-cell:nth-child(9n+9){
+	animation-name: borderbusyright;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-cell:nth-child(9n+1){
+	animation-name: borderbusyleft;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) td:nth-child(9n+9){
+	animation-name: borderbusytopright;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) td:nth-child(9n+1){
+	animation-name: borderbusytopleft;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) td:nth-child(9n+1){
+	animation-name: borderbusybottomleft;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) td:nth-child(9n+9){
+	animation-name: borderbusybottomright;
+	animation-duration: 1.6s;
+	animation-iteration-count: infinite;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 0.1s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+2){
+	animation-delay: 0.2s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+3){
+	animation-delay: 0.3s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+4){
+	animation-delay: 0.4s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+5){
+	animation-delay: 0.5s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+6){
+	animation-delay: 0.6s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+7){
+	animation-delay: 0.7s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+8){
+	animation-delay: 0.8s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+1) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 0.9s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+2) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+3) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.1s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+4) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.2s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+5) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.3s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+6) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.4s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+7) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.5s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+8) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.6s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+9){
+	animation-delay: 1.7s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+8){
+	animation-delay: 1.8s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+7){
+	animation-delay: 1.9s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+6){
+	animation-delay: 2s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+5){
+	animation-delay: 2.1s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+4){
+	animation-delay: 2.2s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+3){
+	animation-delay: 2.3s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+2){
+	animation-delay: 2.4s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+9) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 2.5s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+8) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 2.6s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+7) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 2.7s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+6) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 2.8s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+5) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 2.9s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+4) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 3s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+3) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 3.1s;
+}
+
+.busy-state.busy .sudoku-table-row:nth-child(9n+2) .sudoku-table-cell:nth-child(9n+1){
+	animation-delay: 3.2s;
+}
+
+
+.sudoku-cell-container{
+	position:relative;
+	width:100%;
+	height:100%;
+	box-sizing: border-box;
+}
+
+.sodoku-inner-container{
+	position: absolute;
+	width:100%;
+	height: 100%;
+	left:0px;
+	top:0px;
+}
+
+.sudoku-text{
+	font-family: Arial;
+}
+
+.sudoku-text-grey {
+	color:#ccc;
+}
+
+.distribution {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	font-size: 12px;
+}
+
+.sudoku-cell-container.error .error{
+	background-color: #f00;
+}
+
+.sudoku-cell-container.selected .selected{
+	border: 2.5pt solid #888;
+	box-sizing: border-box;
+	width:calc(100% + 5px);
+	height: calc(100% + 5px);
+	left:-2.5px;
+	top:-2.5px;
+}
+
+.sudoku-cell-input{
+	text-align:center;
+	border:0px;
+	width:50%;
+	font-size:26px;
+	position:relative;
+	top:50%;
+	transform:translateY(-50%);
+	background-color:transparent;
+	box-sizing: border-box;
+	display: inline-block;
+}
+
+.settings-button {
+	width: 12px;
+	height: 12px;
+	position: absolute;
+	left: 0px;
+	bottom: 0px;
+	background-color: #000;
+	transition-property: width,height,background-color;
+	transition-duration: 0.15s;
+}
+
+.settings-content {
+	display: none;
+}
+
+.sudoku-container.show-settings .settings-content{
+	display: inherit;
+}
+
+.close-settings-button{
+	position: absolute;
+	right: 2px;
+	top: 2px;
+	width: 12px;
+	height: 12px;
+	background-color: #000;
+}
+
+.sudoku-container.show-settings .settings-button {
+	width: 450px;
+	height: 450px;
+	border:2.5pt solid #888;
+	box-sizing: border-box;
+	background-color: rgba(255,255,255,0.9);
+}
+
+.settings-option{
+	display: inline-block;
+	width:225px;
+	height: 50px;
+	font-size: 16px;
+	color:#000;
+	padding: 10px;
+}
+
+.nrc .sudoku-table-cell {
+	background-color: #ccc;
+}
+
+.nrc .sudoku-text-grey{
+	color:#eee;
+}
+
+
+.nrc tr:nth-child(4n+1) .sudoku-table-cell{
+	background-color: #fff;
+}
+
+.nrc tr:nth-child(4n+1) .sudoku-text-grey{
+	color:#ccc;
+}
+
+.nrc .sudoku-table-cell:nth-child(4n+1) {
+	background-color: #fff;
+}
+
+.nrc .sudoku-table-cell:nth-child(4n+1) .sudoku-text-grey{
+	color:#ccc;
+}
+
+.state .state {
+	display: none;
+}
+
+.busy-state .busy{
+	display: none;
+}
+
+.busy-state.busy .busy{
+	display: inherit;
+}
+
+.state.no-solution .no-solution{
+	display: inherit;
+}
+
+.state.many-solutions .many-solutions{
+	display: inherit;
+}
+
+.state.one-solution .one-solution{
+	display: inherit;
+}
+
+.busy-state.busy .one-solution{
+	display: none;
+}
+
+.sodoku-reveal-container{
+	display: none;
+}
+
+.mobile-overlay{
+	display: none;
+}
+
+.sudoku-container.one-solution.reveal-solution .empty .sodoku-reveal-container{
+	display: inherit;
+}
+
+.distribution {
+	display: none;
+}
+
+.sudoku-container.many-solutions.reveal-distribution .empty .distribution{
+	display: inherit;
+}
+
+.settings-part{
+	padding: 5px;
+}
+
+.diagnosis{
+	background-color:#eee;
+	color:#888;
+	border: 0.5pt solid #888;
+	border-radius: 3px;
+}
+
+.mobile-button{
+	width:50px;
+	height: 50px;
+	color: #888;
+	display:inline-block;
+	position: relative;
+	box-sizing: border-box;
+}
+.mobile-button:nth-child(9n+1){
+	width:46px;
+}
+.mobile-button:nth-child(9n+9){
+	width:46px;
+}
+.mobile-buttons {
+	display: none;
+	max-width: 450px;
+	box-sizing: border-box;
+	border-left: 2.5pt solid #888;
+	border-right: 2.5pt solid #888;
+	border-bottom: 2.5pt solid #888;
+}
+
+.has-hint.show-hint .hinted .hint{
+	background-color: rgba(0,100,0,0.5);
+}
+.hint-option{
+	display: none;
+}
+.has-hint .hint-option{
+	display: inherit;
+}
+
+@media(max-width: 500px){
+	.mobile-buttons {
+		display: inherit;
+	}
+	.mobile-overlay{
+		display: inherit;
+	}
+}
