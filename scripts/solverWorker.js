@@ -58,6 +58,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			reset,
 			currentPermutation,
 			fillNext,
+			isDone,
 			conclude,
 			unconclude,
 			conclusions = [];
@@ -77,12 +78,18 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			});
 			unconclude();
 		};
+		isDone = function(){
+			return currentPermutation && currentPermutation.done;
+		};
 		fillNext = function(){
-			unconclude();
-			if(currentPermutation && currentPermutation.done){return false;}
+			reset();
 			currentPermutation = _permutator.next();
 			for(var i=0;i<unfilledIndices.length;i++){
-				clone.add(rowIndex, unfilledIndices[currentPermutation.value[i]], numbersToUse[i]);
+				var columnIndex = unfilledIndices[currentPermutation.value[i]];
+				clone.add(rowIndex, columnIndex, numbersToUse[i]);
+				if(!clone.checkRowAndColumn(rowIndex, columnIndex)){
+					return false;
+				}
 			}
 			return true;
 		};
@@ -104,6 +111,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		return {
 			reset:reset,
 			fillNext:fillNext,
+			isDone:isDone,
 			rowIndex:rowIndex,
 			conclude:conclude,
 		};
@@ -197,10 +205,11 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 		currentRowFiller = rowFillers[rowFillers.length - 1];
 	};
 	doStep = function(){
-		if(!currentRowFiller.fillNext()){
+		if(currentRowFiller.isDone()){
 			goBack();
+			return;
 		}
-		else if(clone.checkRow(currentRowFiller.rowIndex)){
+		if(currentRowFiller.fillNext()){
 			goForward();
 		}
 	};

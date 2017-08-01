@@ -132,6 +132,22 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			return self;
 		};
 
+		var checkRowAndColumn = function(rowIndex, columnIndex){
+			for(var i=0;i<grid.subdivisions.length;i++){
+				var subdivision = grid.subdivisions[i];
+				var kind = subdivision.kind;
+				if(kind != sudokuSubdivision.ROW){
+					var indices = kind.getIndices(rowIndex, columnIndex);
+					if(!indices){continue;}
+					var one = indices.one;
+					if(containsDouble(subdivision[one])){
+						return false;
+					}
+				}
+			}
+			return true;
+		};
+
 		var checkRow = function(rowIndex){
 			for(var i=0;i<grid.subdivisions.length;i++){
 				var subdivision = grid.subdivisions[i];
@@ -169,7 +185,8 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			toFancyString:toFancyString,
 			onAdd:function(f){onAdd.add(f);},
 			toString:toString,
-			checkRow:checkRow
+			checkRow:checkRow,
+			checkRowAndColumn:checkRowAndColumn
 		};
 		return self;
 	};
