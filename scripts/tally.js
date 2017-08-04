@@ -7,6 +7,12 @@ define(["numberSet"],function(numberSet){
 				sets[indices.one].add(number);
 			}
 		};
+		var remove = function(row, column, number){
+			var indices = kind.getIndices(row, column);
+			if(indices){
+				sets[indices.one].remove(number);
+			}
+		};
 		var canAdd = function(row, column, number){
 			var indices = kind.getIndices(row, column);
 			if(!indices){
@@ -29,6 +35,7 @@ define(["numberSet"],function(numberSet){
 		};
 		return {
 			add:add,
+			remove:remove,
 			canAdd:canAdd,
 			getObjectionToAdding:getObjectionToAdding
 		};
@@ -38,6 +45,11 @@ define(["numberSet"],function(numberSet){
 		var add = function(row, column, number){
 			for(var i=0;i<tallies.length;i++){
 				tallies[i].add(row, column, number);
+			}
+		};
+		var remove = function(row, column, number){
+			for(var i=0;i<tallies.length;i++){
+				tallies[i].remove(row, column, number);
 			}
 		};
 		var canAdd = function(row, column, number){
@@ -59,6 +71,7 @@ define(["numberSet"],function(numberSet){
 		};
 		return {
 			add:add,
+			remove:remove,
 			canAdd:canAdd,
 			getObjectionToAdding:getObjectionToAdding
 		};

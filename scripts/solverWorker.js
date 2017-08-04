@@ -86,8 +86,7 @@ requirejs(["permutator","getSolution","getPossibilities","subdivision","sudokuGr
 			currentPermutation = _permutator.next();
 			for(var i=0;i<unfilledIndices.length;i++){
 				var columnIndex = unfilledIndices[currentPermutation.value[i]];
-				clone.add(rowIndex, columnIndex, numbersToUse[i]);
-				if(!clone.checkRowAndColumn(rowIndex, columnIndex)){
+				if(!clone.tryToAdd(rowIndex, columnIndex, numbersToUse[i])){
 					return false;
 				}
 			}
