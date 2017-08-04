@@ -114,7 +114,7 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 	testSet("tallyTest", function(test){
 		test("test1", function(){
 			var grid = sudokuGrid.normal();
-			var testTally = tally(grid);
+			var testTally = tally(grid.subdivisions);
 			testTally.add(0,0,1);
 			this.assert(!testTally.canAdd(0,1,1), "tally should not be able to add 1 on (0,1)");
 			this.assert(!testTally.canAdd(1,0,1), "tally should not be able to add 1 on (1,0)");
