@@ -2,7 +2,7 @@ require.config({
 	baseUrl:"scripts/"
 });
 
-requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet","findContainedSet", "sudokuGrid"],function(getSolution, testSet, getPossibilities, subdivision, numberSet, findContainedSet, sudokuGrid){
+requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet","findContainedSet", "sudokuGrid", "tally"],function(getSolution, testSet, getPossibilities, subdivision, numberSet, findContainedSet, sudokuGrid, tally){
 	testSet = testSet(function(e){
 		throw e;
 	}, function(s){console.info(s);});
@@ -109,5 +109,35 @@ requirejs(["getSolution","testSet","getPossibilities","subdivision","numberSet",
 
 		})
 
+	});
+
+	testSet("tallyTest", function(test){
+		test("testTallyNormal", function(){
+			var grid = sudokuGrid.normal();
+			var testTally = tally(grid.kinds);
+			testTally.add(0,0,1);
+			this.assert(!testTally.canAdd(0,1,1), "tally should not be able to add 1 on (0,1)");
+			this.assert(!testTally.canAdd(1,0,1), "tally should not be able to add 1 on (1,0)");
+			this.assert(!testTally.canAdd(1,1,1), "tally should not be able to add 1 on (1,1)");
+			this.assert(!testTally.canAdd(3,0,1), "tally should not be able to add 1 on (3,0)");
+			this.assert(testTally.canAdd(3,1,1), "tally should be able to add 1 on (3,1)");
+		});
+		test("testTallyNrc", function(){
+			var grid = sudokuGrid.nrc();
+			var testTally = tally(grid.kinds);
+			testTally.add(1,1,1);
+			this.assert(!testTally.canAdd(0,1,1), "tally should not be able to add 1 on (0,1)");
+			this.assert(!testTally.canAdd(1,0,1), "tally should not be able to add 1 on (1,0)");
+			this.assert(!testTally.canAdd(0,0,1), "tally should not be able to add 1 on (0,0)");
+			this.assert(!testTally.canAdd(3,1,1), "tally should not be able to add 1 on (3,1)");
+		});
+		test("testTallyObjection", function(){
+			var grid = sudokuGrid.normal();
+			var testTally = tally(grid.kinds);
+			testTally.add(0,0,1);
+			var objection = testTally.getObjectionToAdding(1,0,1);
+			this.assert(objection.kind == subdivision.COLUMN, "the objection should be about the column");
+			this.assert(objection.index == 0, "the objection should be about the first column");
+		});
 	});
 })

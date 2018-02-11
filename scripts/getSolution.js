@@ -1,4 +1,4 @@
-define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivision,sender){
+define(["sudokuGrid","subdivision","sender","tally"],function(sudokuGrid,sudokuSubdivision,sender,getTally){
 	var containsDouble = function(arr){
 		var toFind, arri, l = arr.length, found = 0;
 		for(var i=0;i<l;i++){
@@ -33,20 +33,10 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 	var getSolution = function(){
 		var self;
 		var grid = sudokuGrid.normal();
+		var tally = getTally(grid.kinds);
 		var onAdd = sender();
 		var getObjectionToAdding = function(row, column, number){
-			for(var i=0;i<grid.subdivisions.length;i++){
-				var subdivision = grid.subdivisions[i];
-				var indices = subdivision.kind.getIndices(row,column);
-				if(!indices){continue;}
-				var index = indices.one;
-				if(subdivision[index].some(function(n, j){return n == number && j != indices.two;})){
-					return {
-						kind:subdivision.kind,
-						index: index
-					};
-				}
-			}
+			return tally.getObjectionToAdding(row, column, number);
 		};
 		var checkAll = function(){
 			for(var i=0;i<grid.subdivisions.length;i++){
@@ -61,8 +51,24 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 		};
 
 		var add = function(row, column, number){
+			if(number){
+				tally.add(row, column, number);
+			}else{
+				var old = grid.rows[row][column];
+				if(old){
+					tally.remove(row, column, old);
+				}
+			}
 			grid.add(row, column, number);
 			onAdd(row, column, number);
+		};
+
+		var tryToAdd = function(row, column, number){
+			if(tally.canAdd(row, column, number)){
+				add(row, column, number);
+				return true;
+			}
+			return false;
 		};
 
 		var clear = function(row, column){
@@ -129,34 +135,21 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 
 		var useGrid = function(g){
 			grid = grid.copyToGrid(g);
-			return self;
-		};
-
-		var checkRow = function(rowIndex){
-			for(var i=0;i<grid.subdivisions.length;i++){
-				var subdivision = grid.subdivisions[i];
-				var kind = subdivision.kind;
-				if(kind != sudokuSubdivision.ROW){
-					var checked = 0;
-					for(var j=0;j<9;j++){
-						var indices = kind.getIndices(rowIndex, j);
-						if(!indices){continue;}
-						var one = indices.one;
-						var maskOne = 1 << one;
-						if(checked & maskOne){continue;}
-						checked |= maskOne;
-						if(containsDouble(subdivision[one])){
-							return false;
-						}
+			tally = getTally(grid.kinds);
+			for(var i=0;i<9;i++){
+				for(var j=0;j<9;j++){
+					if(grid.rows[i][j]){
+						tally.add(i,j,grid.rows[i][j]);
 					}
 				}
 			}
-			return true;
+			return self;
 		};
 
 		self = {
 			getObjectionToAdding:getObjectionToAdding,
 			add:add,
+			tryToAdd:tryToAdd,
 			clear:clear,
 			checkAll:checkAll,
 			contains:contains,
@@ -168,8 +161,7 @@ define(["sudokuGrid","subdivision","sender"],function(sudokuGrid,sudokuSubdivisi
 			getRows:getRows,
 			toFancyString:toFancyString,
 			onAdd:function(f){onAdd.add(f);},
-			toString:toString,
-			checkRow:checkRow
+			toString:toString
 		};
 		return self;
 	};
